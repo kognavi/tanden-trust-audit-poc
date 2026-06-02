@@ -1,0 +1,22 @@
+{
+  "evidenceId": "evd-2026-000001",
+  "eventType": "CONSENT_GRANTED",
+  "subjectId": "subject-demo-001",
+  "actorId": "actor-demo-001",
+  "occurredAt": "2026-06-02T03:00:00Z",
+  "sourceSystem": "tanden-trust-audit-poc",
+  "purpose": "Demonstrate tamper-evident consent evidence for a prototype audit trail.",
+  "consent": {
+    "status": "granted",
+    "scope": [
+      "activity_recording",
+      "audit_verification"
+    ],
+    "version": "v1.0"
+  },
+  "metadata": {
+    "environment": "demo",
+    "containsPersonalData": false,
+    "notes": "This is synthetic sample data for demonstration only."
+  }
+}

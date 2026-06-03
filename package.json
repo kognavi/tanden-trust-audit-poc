@@ -1,0 +1,30 @@
+{
+  "name": "tanden-trust-audit-poc",
+  "version": "0.1.0",
+  "description": "A tamper-evident audit trail prototype for consent history, activity records, and trust events using AWS, AI, and Web3-compatible verification.",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "hash": "node scripts/hash-evidence.js samples/evidence-consent.json",
+    "verify": "node scripts/verify-evidence.js samples/evidence-consent.json 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10",
+    "demo:tamper": "perl -pi -e 's/\"status\": \"granted\"/\"status\": \"revoked\"/' samples/evidence-consent.json",
+    "demo:restore": "perl -pi -e 's/\"status\": \"revoked\"/\"status\": \"granted\"/' samples/evidence-consent.json",
+    "demo": "npm run hash && npm run verify"
+  },
+  "keywords": [
+    "audit-trail",
+    "tamper-evident",
+    "sha256",
+    "aws",
+    "web3",
+    "ai",
+    "evidence",
+    "compliance",
+    "trust"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

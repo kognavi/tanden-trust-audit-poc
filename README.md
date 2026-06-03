@@ -6,7 +6,7 @@ Tanden Trust Audit PoC is a prototype system for recording consent history, acti
 
 This PoC explores how invisible trust events, such as consent, participation, contribution, and verification history, can be recorded as digital evidence.
 
-Detailed data is stored off-chain on AWS. Evidence metadata is hashed and verified. Future extensions may include external timestamping, blockchain anchoring, and verifiable credentials.
+Detailed evidence data is stored off-chain. Evidence data is hashed and verified. Future extensions may include AWS-based storage, external timestamping, blockchain anchoring, and verifiable credentials.
 
 ## Why This PoC
 
@@ -14,10 +14,10 @@ In many organizations, important trust-related events are recorded in fragmented
 
 This PoC focuses on how those events can be:
 
-- recorded as structured evidence
-- protected against tampering
-- verified later by hash comparison
-- extended toward Web3-compatible verification
+- Recorded as structured evidence
+- Protected against tampering
+- Verified later by hash comparison
+- Extended toward Web3-compatible verification
 
 ## Use Cases
 
@@ -43,37 +43,55 @@ Planned initial architecture:
 
 ## Phase 1 MVP
 
-The first version focuses on the smallest useful audit trail flow:
+Implemented:
 
-- Create a consent or audit event
-- Generate an evidence JSON file
+- Create a sample evidence JSON file
 - Calculate a SHA-256 hash
-- Store the evidence file
-- Store metadata
-- Recalculate the hash for verification
-- Display whether the evidence has been tampered with
+- Verify evidence integrity by hash comparison
+- Demonstrate tamper detection from the command line
+
+Planned:
+
+- Store evidence files in Amazon S3
+- Store metadata in Amazon DynamoDB
+- Display verification results in a web UI
+- Add API-based registration and verification flow
 
 ## Repository Structure
+
+Current structure:
 
 ```text
 tanden-trust-audit-poc/
 ├── README.md
+├── LICENSE
+├── .gitignore
 ├── docs/
 │   ├── architecture.md
 │   ├── security.md
 │   ├── audit-design.md
 │   ├── threat-model.md
 │   └── roadmap.md
-├── frontend/
-├── backend/
-├── infra/
 ├── scripts/
+│   ├── hash-evidence.js
+│   └── verify-evidence.js
 └── samples/
+    └── evidence-consent.json
+```
+
+Planned future structure:
+
+```text
+frontend/
+backend/
+infra/
 ```
 
 ## Current Status
 
 This repository is currently in the design and Phase 1 prototype stage.
+
+The current implementation supports local SHA-256 hash generation and verification for structured JSON evidence.
 
 ## Disclaimer
 
@@ -82,7 +100,6 @@ This is a technical prototype and not a production-ready compliance system.
 It does not provide legal, financial, regulatory, or compliance advice.
 
 Do not store real personal information, KYC documents, secrets, private keys, or production credentials in this repository.
-
 
 ## Requirements
 
@@ -256,4 +273,3 @@ Planned future improvements include:
 - Record audit events with CloudTrail and CloudWatch
 - Anchor hashes to a blockchain or timestamping service
 - Add AI-assisted audit review while keeping original evidence verifiable
-

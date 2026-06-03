@@ -1,5 +1,8 @@
 # Tanden Trust Audit PoC
 
+![Verify Evidence Integrity](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml/badge.svg)
+
+
 Tanden Trust Audit PoC is a prototype system for recording consent history, activity records, and audit events in a tamper-evident way using AWS, AI, and Web3-compatible verification.
 
 ## Concept

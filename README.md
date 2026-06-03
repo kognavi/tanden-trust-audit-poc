@@ -22,6 +22,11 @@ This PoC focuses on how those events can be:
 - Verified later by hash comparison
 - Extended toward Web3-compatible verification
 
+- ## Portfolio Summary
+
+See [docs/portfolio-summary.md](docs/portfolio-summary.md) for a concise overview of the project, implementation details, verification results, and interview talking points.
+
+
 ## Use Cases
 
 - Consent history tracking

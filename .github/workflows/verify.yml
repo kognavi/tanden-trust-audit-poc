@@ -1,0 +1,35 @@
+name: Verify Evidence Integrity
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify-evidence:
+    name: Verify evidence hash
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Show Node.js version
+        run: node -v
+
+      - name: Show npm scripts
+        run: npm run
+
+      - name: Generate evidence hash
+        run: npm run hash
+
+      - name: Verify evidence integrity
+        run: npm run verify

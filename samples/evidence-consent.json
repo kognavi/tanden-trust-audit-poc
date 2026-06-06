@@ -1,4 +1,6 @@
 {
+  "schemaVersion": "1.0.0",
+  "hashAlgorithm": "SHA-256",
   "evidenceId": "evd-2026-000001",
   "eventType": "CONSENT_GRANTED",
   "subjectId": "subject-demo-001",

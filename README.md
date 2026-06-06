@@ -281,3 +281,9 @@ Planned future improvements include:
 - Record audit events with CloudTrail and CloudWatch
 - Anchor hashes to a blockchain or timestamping service
 - Add AI-assisted audit review while keeping original evidence verifiable
+
+## Architecture
+
+For a possible AWS-based extension of this PoC, see:
+
+- [AWS Architecture for Evidence Integrity Verification](docs/aws-architecture.md)

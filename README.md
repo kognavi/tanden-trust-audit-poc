@@ -152,8 +152,8 @@ Example output:
 
 ```text
 Evidence file: samples/evidence-consent.json
-Canonical JSON: {"actorId":"actor-demo-001","consent":{"scope":["activity_recording","audit_verification"],"status":"granted","version":"v1.0"},"eventType":"CONSENT_GRANTED","evidenceId":"evd-2026-000001","metadata":{"containsPersonalData":false,"environment":"demo","notes":"This is synthetic sample data for demonstration only."},"occurredAt":"2026-06-02T03:00:00Z","purpose":"Demonstrate tamper-evident consent evidence for a prototype audit trail.","sourceSystem":"tanden-trust-audit-poc","subjectId":"subject-demo-001"}
-SHA-256 hash: 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+Canonical JSON: {"actorId":"actor-demo-001","consent":{"scope":["activity_recording","audit_verification"],"status":"granted","version":"v1.0"},"eventType":"CONSENT_GRANTED","evidenceId":"evd-2026-000001","hashAlgorithm":"SHA-256","metadata":{"containsPersonalData":false,"environment":"demo","notes":"This is synthetic sample data for demonstration only."},"occurredAt":"2026-06-02T03:00:00Z","purpose":"Demonstrate tamper-evident consent evidence for a prototype audit trail.","schemaVersion":"1.0.0","sourceSystem":"tanden-trust-audit-poc","subjectId":"subject-demo-001"}
+SHA-256 hash: ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 ```
 
 ### 3. Verify evidence integrity
@@ -161,15 +161,15 @@ SHA-256 hash: 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
 Use the generated hash as the expected hash:
 
 ```bash
-node scripts/verify-evidence.js samples/evidence-consent.json 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+node scripts/verify-evidence.js samples/evidence-consent.json ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 ```
 
 Expected output:
 
 ```text
 Evidence file: samples/evidence-consent.json
-Expected hash: 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
-Calculated hash: 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+Expected hash: ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
+Calculated hash: ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 Verification result: VALID
 ```
 
@@ -202,14 +202,14 @@ perl -pi -e 's/"status": "granted"/"status": "revoked"/' samples/evidence-consen
 ### 2. Verify again with the original hash
 
 ```bash
-node scripts/verify-evidence.js samples/evidence-consent.json 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+node scripts/verify-evidence.js samples/evidence-consent.json ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 ```
 
 Expected output:
 
 ```text
 Evidence file: samples/evidence-consent.json
-Expected hash: 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+Expected hash: ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 Calculated hash: 209f5c412879a5cdb1db9e9f939b39eb056afcd62f158c6305b6788429a47158
 Verification result: INVALID
 ```
@@ -225,7 +225,7 @@ perl -pi -e 's/"status": "revoked"/"status": "granted"/' samples/evidence-consen
 Verify again:
 
 ```bash
-node scripts/verify-evidence.js samples/evidence-consent.json 98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+node scripts/verify-evidence.js samples/evidence-consent.json ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 ```
 
 Expected output:
@@ -252,7 +252,7 @@ This allows the system to detect even small changes in the evidence file.
 The following hash was generated from `samples/evidence-consent.json`:
 
 ```text
-98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 ```
 
 Verification result:

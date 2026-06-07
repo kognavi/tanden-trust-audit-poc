@@ -28,6 +28,9 @@ jobs:
       - name: Show npm scripts
         run: npm run
 
+      - name: Run automated tests
+        run: npm test
+
       - name: Generate evidence hash
         run: npm run hash
 

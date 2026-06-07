@@ -10,7 +10,7 @@
     "demo:tamper": "perl -pi -e 's/\"status\": \"granted\"/\"status\": \"revoked\"/' samples/evidence-consent.json",
     "demo:restore": "perl -pi -e 's/\"status\": \"revoked\"/\"status\": \"granted\"/' samples/evidence-consent.json",
     "demo": "npm run hash && npm run verify",
-    "test": "node --test tests/audit.test.js"
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [
     "audit-trail",

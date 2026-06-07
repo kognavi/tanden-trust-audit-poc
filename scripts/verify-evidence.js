@@ -1,4 +1,4 @@
-const { hashFile, verifyFile } = require("../lib/audit");
+const { hashFile } = require("../lib/audit");
 
 const filePath = process.argv[2];
 const expectedHash = process.argv[3];

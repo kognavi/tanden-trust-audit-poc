@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  verify-evidence:
-    name: Verify evidence hash
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
 
     steps:
@@ -25,11 +25,5 @@ jobs:
       - name: Show Node.js version
         run: node -v
 
-      - name: Show npm scripts
-        run: npm run
-
-      - name: Generate evidence hash
-        run: npm run hash
-
-      - name: Verify evidence integrity
-        run: npm run verify
+      - name: Run tests
+        run: npm test

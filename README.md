@@ -22,7 +22,13 @@ This PoC focuses on how those events can be:
 - Verified later by hash comparison
 - Extended toward Web3-compatible verification
 
-- ## Portfolio Summary
+## Audit and Internal Control Perspective
+
+This PoC refers to Japanese IT audit and internal control references such as METI System Management Standards and METI IT Control Guidance, with SOC 2 Trust Services Criteria used as a supplementary reference.
+
+See [Framework Selection](docs/framework-selection.md) for details.
+
+## Portfolio Summary
 
 See [docs/portfolio-summary.md](docs/portfolio-summary.md) for a concise overview of the project, implementation details, verification results, and interview talking points.
 

@@ -85,6 +85,7 @@ tanden-trust-audit-poc/
 │   ├── security.md
 │   ├── audit-design.md
 │   ├── threat-model.md
+│   ├── framework-selection.md
 │   └── roadmap.md
 ├── scripts/
 │   ├── hash-evidence.js

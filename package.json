@@ -7,9 +7,10 @@
   "scripts": {
     "hash": "node scripts/hash-evidence.js samples/evidence-consent.json",
     "verify": "node scripts/verify-evidence.js samples/evidence-consent.json ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c",
+    "validate:evidence": "node scripts/validate-evidence.js samples/evidence-consent.json schemas/evidence.schema.json",
     "demo:tamper": "perl -pi -e 's/\"status\": \"granted\"/\"status\": \"revoked\"/' samples/evidence-consent.json",
     "demo:restore": "perl -pi -e 's/\"status\": \"revoked\"/\"status\": \"granted\"/' samples/evidence-consent.json",
-    "demo": "npm run hash && npm run verify",
+    "demo": "npm run validate:evidence && npm run hash && npm run verify",
     "test": "node --test tests/*.test.js"
   },
   "keywords": [
@@ -27,5 +28,9 @@
   "license": "MIT",
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
   }
 }

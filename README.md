@@ -87,11 +87,15 @@ tanden-trust-audit-poc/
 │   ├── threat-model.md
 │   ├── framework-selection.md
 │   └── roadmap.md
+├── schemas/
+│   └── evidence.schema.json
 ├── scripts/
 │   ├── hash-evidence.js
+│   ├── validate-evidence.js
 │   └── verify-evidence.js
 └── samples/
     └── evidence-consent.json
+
 ```
 
 Planned future structure:
@@ -181,6 +185,43 @@ Verification result: VALID
 ```
 
 If the result is `VALID`, the evidence file matches the expected hash.
+
+
+## JSON Schema Validation
+
+This PoC includes JSON Schema validation for evidence records.
+
+Hash verification can detect whether an evidence file has changed after hash generation.  
+However, cryptographic integrity alone does not prove that the evidence record has the required structure for audit and internal control purposes.
+
+JSON Schema validation checks whether an evidence JSON file includes required fields and follows the expected data structure.
+
+Run schema validation:
+
+```bash
+npm run validate:evidence
+```
+
+Expected result:
+
+```text
+Schema validation result: VALID
+```
+
+The schema is defined in:
+
+```text
+schemas/evidence.schema.json
+```
+
+The validation script is defined in:
+
+```text
+scripts/validate-evidence.js
+```
+
+This validation layer complements hash-based integrity verification by checking structural validity before cryptographic verification.
+
 
 ## Tamper Detection Demo
 

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/tanden-trust-audit-poc/schemas/evidence.schema.json",
+  "title": "Evidence Record",
+  "description": "JSON Schema for a synthetic audit evidence record used in Tanden Trust Audit PoC.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "hashAlgorithm",
+    "evidenceId",
+    "eventType",
+    "subjectId",
+    "actorId",
+    "occurredAt",
+    "sourceSystem",
+    "purpose",
+    "consent",
+    "metadata"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the evidence schema."
+    },
+    "hashAlgorithm": {
+      "type": "string",
+      "const": "SHA-256",
+      "description": "Hash algorithm used for integrity verification."
+    },
+    "evidenceId": {
+      "type": "string",
+      "pattern": "^evd-[0-9]{4}-[0-9]{6}$",
+      "description": "Unique identifier for the evidence record."
+    },
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "CONSENT_GRANTED",
+        "CONSENT_REVOKED",
+        "ACTIVITY_RECORDED",
+        "TRUST_EVENT_RECORDED"
+      ],
+      "description": "Type of trust or audit event."
+    },
+    "subjectId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Synthetic identifier of the subject of the evidence."
+    },
+    "actorId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Synthetic identifier of the actor who triggered or recorded the event."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the event occurred."
+    },
+    "sourceSystem": {
+      "type": "string",
+      "minLength": 1,
+      "description": "System that produced the evidence record."
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Purpose of recording this evidence."
+    },
+    "consent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "scope",
+        "version"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "granted",
+            "revoked"
+          ],
+          "description": "Consent status."
+        },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Scope of consent."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Consent policy or form version."
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "containsPersonalData",
+        "notes"
+      ],
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": [
+            "demo",
+            "test",
+            "development"
+          ],
+          "description": "Execution environment."
+        },
+        "containsPersonalData": {
+          "type": "boolean",
+          "description": "Whether the evidence record contains real personal data."
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Additional notes for the sample evidence."
+        }
+      }
+    }
+  }
+}

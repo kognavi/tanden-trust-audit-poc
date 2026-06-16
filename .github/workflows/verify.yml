@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  test:
-    name: Run tests
+  verify:
+    name: Verify evidence integrity
     runs-on: ubuntu-latest
 
     steps:

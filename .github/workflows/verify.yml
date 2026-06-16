@@ -31,6 +31,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Validate evidence schema
+        run: npm run validate:evidence
+
       - name: Hash evidence
         run: npm run hash
 

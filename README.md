@@ -1,6 +1,6 @@
 # Tanden Trust Audit PoC
 
-![Verify Evidence Integrity](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml/badge.svg)
+[![Verify Evidence Integrity](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml/badge.svg)](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml)
 
 A tamper-evident audit trail prototype for consent history, activity records, and trust events using JSON Schema validation and SHA-256 hash verification.
 

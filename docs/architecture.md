@@ -10,7 +10,7 @@ The initial implementation focuses on local evidence generation and hash verific
 
 1. A trust-related event occurs.
 2. The event is represented as an evidence JSON document.
-3. The evidence JSON is canonicalized.
+3. The evidence JSON is canonicalized using RFC 8785 JCS-compatible canonicalization.
 4. A SHA-256 hash is calculated.
 5. The evidence document is stored.
 6. Metadata and hash are stored separately.

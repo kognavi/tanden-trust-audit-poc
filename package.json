@@ -32,5 +32,8 @@
   "devDependencies": {
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1"
+  },
+  "dependencies": {
+    "canonicalize": "^3.0.0"
   }
 }

@@ -33,7 +33,7 @@ This PoC combines:
 
 - Validate audit evidence records against a JSON Schema
 - Detect malformed or unexpected evidence structures
-- Generate canonical JSON from evidence data
+- Generate RFC 8785 JCS-compatible canonical JSON from evidence data
 - Calculate SHA-256 hash values
 - Verify whether evidence has been modified
 - Run automated tests using Node.js built-in test runner
@@ -50,7 +50,7 @@ Evidence JSON
   ↓
 JSON Schema validation
   ↓
-Canonical JSON generation
+RFC 8785 JCS-compatible canonical JSON generation
   ↓
 SHA-256 hash calculation
   ↓
@@ -131,7 +131,7 @@ Schema validation result: VALID
 npm run hash
 ```
 
-This command generates a canonical JSON representation and calculates a SHA-256 hash.
+This command generates an RFC 8785 JCS-compatible canonical JSON representation and calculates a SHA-256 hash.
 
 ---
 
@@ -232,7 +232,7 @@ This PoC demonstrates a two-layer validation approach:
 
 2. **Cryptographic integrity verification**
    - Uses SHA-256 to detect changes to the evidence payload
-   - Produces deterministic hashes from canonical JSON
+   - Produces deterministic hashes from RFC 8785 JCS-compatible canonical JSON
 
 This design is useful as a foundation for:
 
@@ -284,3 +284,27 @@ Potential future enhancements include:
 ## License
 
 MIT
+
+## JSON Canonicalization
+
+This PoC uses RFC 8785 JSON Canonicalization Scheme (JCS) compatible canonicalization via the `canonicalize` package before calculating SHA-256 hashes.
+
+Using JCS-compatible canonicalization avoids relying on ad-hoc key sorting and helps produce stable, interoperable hash inputs across implementations.
+
+The verification flow is:
+
+```text
+Evidence JSON
+  ↓
+JSON Schema validation
+  ↓
+RFC 8785 JCS-compatible canonicalization
+  ↓
+SHA-256 hash calculation
+  ↓
+Hash comparison
+  ↓
+VALID / INVALID
+```
+
+This PoC focuses on structural validation and tamper detection. It does not prove that the original event content is true, nor does it provide legal audit certification by itself.

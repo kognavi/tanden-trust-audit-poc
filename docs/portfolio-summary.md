@@ -31,7 +31,7 @@ This fragmentation makes it difficult to prove:
 
 ## Solution
 
-This PoC records trust-related events as structured JSON evidence and generates a SHA-256 hash from canonicalized JSON data.
+This PoC records trust-related events as structured JSON evidence and generates a SHA-256 hash from RFC 8785 JCS-compatible canonicalized JSON data.
 
 The generated hash acts as a digital fingerprint of the evidence.
 

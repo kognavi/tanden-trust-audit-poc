@@ -12,18 +12,21 @@ if (!filePath || !expectedHash) {
   process.exit(1);
 }
 
-try {
-  const calculatedHash = hashFile(filePath);
-  const result = calculatedHash === expectedHash ? "VALID" : "INVALID";
+(async () => {
+  try {
+    const calculatedHash = await hashFile(filePath);
+    const result = calculatedHash === expectedHash ? "VALID" : "INVALID";
 
-  console.log("Evidence file:", filePath);
-  console.log("Expected hash:", expectedHash);
-  console.log("Calculated hash:", calculatedHash);
-  console.log("Verification result:", result);
+    console.log("Evidence file:", filePath);
+    console.log("Canonicalization: RFC 8785 JSON Canonicalization Scheme (JCS)");
+    console.log("Expected hash:", expectedHash);
+    console.log("Calculated hash:", calculatedHash);
+    console.log("Verification result:", result);
 
-  process.exit(result === "VALID" ? 0 : 2);
-} catch (error) {
-  console.error("Failed to verify evidence file.");
-  console.error(error.message);
-  process.exit(1);
-}
+    process.exit(result === "VALID" ? 0 : 2);
+  } catch (error) {
+    console.error("Failed to verify evidence file.");
+    console.error(error.message);
+    process.exit(1);
+  }
+})();

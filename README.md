@@ -96,6 +96,13 @@ This separates two important concerns:
 
 ---
 
+## Design Documents
+
+Additional design documents are available in the `docs` directory:
+
+- [Framework Selection](docs/framework-selection.md)
+- [Audit Procedures](docs/audit-procedures.md)
+
 ## Requirements
 
 - Node.js 20 or later

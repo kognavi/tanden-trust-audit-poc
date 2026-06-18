@@ -105,6 +105,7 @@ Additional design documents are available in the `docs` directory:
 - [Control Mapping](docs/control-mapping.md)
 - [Evidence Lifecycle](docs/evidence-lifecycle.md)
 - [Threat Model](docs/threat-model.md)
+- [AWS Reference Architecture](docs/aws-reference-architecture.md)
 
 ## Requirements
 

@@ -106,6 +106,7 @@ Additional design documents are available in the `docs` directory:
 - [Evidence Lifecycle](docs/evidence-lifecycle.md)
 - [Threat Model](docs/threat-model.md)
 - [AWS Reference Architecture](docs/aws-reference-architecture.md)
+- [KMS Signing Design](docs/kms-signing-design.md)
 
 ## Requirements
 

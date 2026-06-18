@@ -1,124 +1,315 @@
 # Threat Model
 
+## Purpose
+
+This document describes the threat model for the Tanden Trust Audit PoC.
+
+The purpose is to identify potential threats against evidence records, hash verification, auditability, and future production-oriented architectures.
+
+This PoC is not a production security system. The threat model is intended for design, demonstration, learning, and portfolio purposes.
+
 ## Scope
 
-This document describes potential threats for the Tanden Trust Audit PoC.
+This threat model focuses on the following assets:
 
-The current scope is a prototype for tamper-evident audit trails using structured evidence files, cryptographic hashes, and future AWS-based storage.
+- evidence JSON records
+- JSON Schema validation rules
+- canonicalized evidence representation
+- SHA-256 evidence digest
+- verification process
+- sample evidence files
+- design documents
+- future immutable storage design
+- future signing and audit logging design
 
-## Assets
+The current MVP runs locally and uses synthetic demo data only.
 
-Important assets include:
+## Out of Scope
 
-- Evidence JSON documents
-- Evidence hashes
-- Audit metadata
-- Timestamp records
-- Access logs
-- Future API endpoints
-- Future AWS resources such as S3, DynamoDB, Lambda, and KMS keys
+The following items are out of scope for the current MVP:
 
-## Threat Actors
+- production identity and access management
+- production key management
+- network perimeter security
+- runtime intrusion detection
+- formal compliance certification
+- legal retention enforcement
+- third-party audit attestation
+- real personal data processing
+- production blockchain anchoring
+- smart contract security review
 
-Potential threat actors include:
+These may be considered in future versions.
 
-- External attackers
-- Malicious insiders
-- Compromised user accounts
-- Misconfigured automation
-- Accidental operators
-- Future compromised API clients
+## Trust Boundaries
 
-## Key Threats
+| Boundary | Description |
+|---|---|
+| Local developer environment | The PoC currently runs on a local machine. |
+| Evidence file boundary | Evidence JSON files are treated as input to validation, hashing, and verification. |
+| Schema boundary | JSON Schema defines expected evidence structure. |
+| Hash calculation boundary | Canonicalization and SHA-256 digest generation create the tamper-evident fingerprint. |
+| Reviewer boundary | A reviewer independently re-runs validation and verification commands. |
+| Future storage boundary | Production versions may store evidence in controlled or immutable storage. |
+| Future key boundary | Production versions may use KMS-backed signing and verification. |
 
-### 1. Evidence Tampering
+## Key Security Assumptions
 
-An attacker may modify an evidence JSON document after it has been recorded.
+The current MVP assumes:
 
-Mitigations:
+- evidence samples are synthetic and do not contain real personal data
+- the local development environment is trusted for demonstration purposes
+- commands are executed by an authorized reviewer or developer
+- the schema file has not been maliciously modified
+- the verification script has not been maliciously modified
+- the expected hash value is obtained from a trusted source
+- Node.js and npm dependencies are trusted within the local environment
 
-- Calculate SHA-256 hashes
-- Store hashes separately from evidence data
-- Use S3 Versioning
-- Consider S3 Object Lock
-- Record verification results
+In production, these assumptions would need stronger technical controls.
 
-### 2. Metadata Manipulation
+## Threat Summary
 
-An attacker may modify audit metadata, such as timestamps, subject IDs, or event types.
+| ID | Threat | Current MVP Coverage | Future Mitigation |
+|---|---|---|---|
+| T1 | Evidence tampering | SHA-256 verification detects content changes | Immutable storage, digital signatures, audit logs |
+| T2 | Hash substitution | Not fully mitigated | Trusted digest registry, KMS signing, blockchain anchoring |
+| T3 | Schema bypass | JSON Schema rejects unexpected or invalid fields | CI enforcement, schema registry, version governance |
+| T4 | Replay attack | Not fully mitigated | Nonce, sequence number, event ID uniqueness, timestamp validation |
+| T5 | Timestamp manipulation | Format validation only | Trusted timestamping, server-side event time, signed timestamps |
+| T6 | Unauthorized evidence creation | Not mitigated in MVP | IAM, signed producer identity, API authentication |
+| T7 | Evidence deletion | Not mitigated in local files | S3 Object Lock, retention policy, backups, CloudTrail |
+| T8 | Insider misuse | Not mitigated in MVP | Least privilege, separation of duties, immutable logs |
+| T9 | Verification script tampering | Partially covered by tests | Code review, protected branches, CI checks |
+| T10 | Key compromise | Not applicable in MVP | KMS key policy, rotation, monitoring, separation of duties |
+| T11 | Dependency compromise | Partially mitigated by tests only | Lockfile review, dependency scanning, SCA tools |
+| T12 | Audit log tampering | Not applicable in MVP | CloudTrail, log integrity validation, centralized logging |
 
-Mitigations:
+## Threat Details
 
-- Store immutable event records where possible
-- Use append-only design
-- Log metadata changes
-- Use DynamoDB conditional writes in future implementation
+### T1. Evidence Tampering
 
-### 3. Credential Leakage
+An attacker modifies an evidence JSON record after it has been created.
 
-Secrets, API keys, or private keys may be accidentally committed to the repository.
+Examples include:
 
-Mitigations:
+- changing `consent.status`
+- changing `actorId`
+- changing `occurredAt`
+- modifying `purpose`
+- deleting metadata
+- changing the evidence subject
 
-- Use `.gitignore`
-- Never commit `.env` files
-- Use GitHub secret scanning
-- Use AWS IAM roles instead of long-lived access keys
-- Rotate credentials if exposure is suspected
+The current MVP calculates a SHA-256 hash over canonicalized JSON. If the evidence content changes, the calculated digest changes.
 
-### 4. Unauthorized Access
+Current command:
 
-Users or systems may access evidence data without proper authorization.
+- `npm run verify`
 
-Mitigations:
+Future mitigations include S3 Object Lock, AWS KMS signatures, protected digest registries, CloudTrail logging, and blockchain anchoring.
 
-- Apply least privilege access
-- Use IAM policies with narrow permissions
-- Enable S3 Block Public Access
-- Log access using CloudTrail
-- Consider encryption with KMS
+### T2. Hash Substitution
 
-### 5. Privacy Leakage
+An attacker modifies both the evidence file and the expected hash value.
 
-Personal or sensitive data may be exposed through evidence documents, metadata, logs, or future blockchain anchoring.
+The current MVP demonstrates hash verification but does not provide a trusted digest source. The expected hash is currently passed as a command-line argument.
 
-Mitigations:
+Future mitigations include an immutable digest registry, KMS-signed digest records, transparency logs, and blockchain anchoring.
 
-- Do not store personal data on-chain
-- Use pseudonymous identifiers
-- Minimize stored data
-- Separate personal data from verification metadata
-- Apply retention policies
+### T3. Schema Bypass
 
-### 6. AI Misinterpretation
+An attacker attempts to submit malformed, incomplete, or unexpected evidence data.
 
-AI-generated analysis may misinterpret evidence or produce unreliable conclusions.
+Examples include:
 
-Mitigations:
+- missing required fields
+- invalid `eventType`
+- invalid `consent.status`
+- malformed `occurredAt`
+- additional unexpected properties
+- wrong data types
 
-- Keep AI output separate from source evidence
-- Store references to original evidence
-- Require human review for important decisions
-- Log AI prompts, model versions, and outputs where appropriate
+The current MVP validates evidence records against JSON Schema.
 
-## Future Security Enhancements
+Current command:
 
-- S3 Object Lock
-- AWS KMS encryption
-- IAM Access Analyzer
-- CloudTrail and CloudWatch monitoring
-- DynamoDB Streams for audit event tracking
-- External timestamping
-- Blockchain hash anchoring
-- Verifiable Credentials
-- Zero-knowledge proof based selective disclosure
+- `npm run validate:evidence`
 
-## Non-Goals
+Future mitigations include CI enforcement, schema registry governance, schema version checks, compatibility tests, and schema hash tracking.
 
-This PoC does not aim to:
+### T4. Replay Attack
 
-- Store real personal information
-- Provide production-grade identity verification
-- Store sensitive data on a public blockchain
-- Replace legal contracts or regulatory audits
-- Make fully automated decisions using AI
+An attacker reuses a previously valid evidence record in a different context.
+
+Examples include:
+
+- resubmitting an old consent event
+- reusing a valid evidence ID
+- presenting outdated consent as current
+- replaying evidence after consent revocation
+
+The current MVP includes `evidenceId` and `occurredAt`, but it does not enforce uniqueness or freshness.
+
+Future mitigations include unique evidence ID enforcement, sequence numbers, nonce values, freshness checks, duplicate rejection, and consent state indexing.
+
+### T5. Timestamp Manipulation
+
+An attacker changes the event timestamp or submits a misleading timestamp.
+
+The current MVP validates that `occurredAt` uses a valid date-time format, but it does not prove that the timestamp is true or trusted.
+
+Future mitigations include server-side timestamping, trusted timestamp authorities, signed timestamps, separate ingestion time, CloudTrail timestamps, and EventBridge timestamps.
+
+### T6. Unauthorized Evidence Creation
+
+An unauthorized actor creates fake evidence records, such as forged consent events or fabricated audit records.
+
+The MVP does not implement identity, authentication, or authorization.
+
+Future mitigations include IAM-based producer identity, API authentication, signed evidence, producer identity metadata, AWS KMS asymmetric signing, and least privilege access.
+
+### T7. Evidence Deletion
+
+An attacker deletes evidence records to hide activity.
+
+The MVP uses local files and does not prevent deletion.
+
+Future mitigations include S3 Object Lock, S3 Versioning, retention policies, replication, backup, CloudTrail monitoring, and alerts on suspicious delete operations.
+
+### T8. Insider Misuse
+
+A privileged insider misuses access to alter, delete, or selectively disclose evidence.
+
+The MVP does not implement access controls or separation of duties.
+
+Future mitigations include least privilege IAM, separation of duties, CloudTrail logging, AWS Organizations SCPs, restricted KMS key policies, approval workflows, immutable storage, and append-only logging.
+
+### T9. Verification Script Tampering
+
+An attacker modifies the verification script so that it always returns valid results.
+
+Automated tests validate expected behavior.
+
+Current command:
+
+- `npm test`
+
+Future mitigations include protected branches, code review, CI checks, commit signing, release checksums, code signing, restricted modification rights, and independent verification implementations.
+
+### T10. Key Compromise
+
+In future versions, signing keys may be compromised or misused.
+
+The MVP does not use cryptographic signing keys.
+
+Future mitigations include AWS KMS asymmetric keys, restricted key policies, CloudTrail logging for KMS operations, key rotation, separation of key administrators and key users, careful grant usage, and anomaly monitoring.
+
+### T11. Dependency Compromise
+
+A malicious dependency or compromised package may affect validation, hashing, or testing behavior.
+
+The MVP includes automated tests, but does not perform formal dependency security scanning.
+
+Future mitigations include `package-lock.json` review, dependency scanning, `npm audit` in CI, pinned versions, minimal dependencies, transitive dependency review, SCA tools, and SBOM generation.
+
+### T12. Audit Log Tampering
+
+In a production system, attackers may attempt to modify or delete logs that record evidence creation, access, verification, or deletion events.
+
+The MVP does not implement production audit logging.
+
+Future mitigations include CloudTrail organization trails, dedicated log accounts, S3 Object Lock for log buckets, CloudWatch Logs retention policies, centralized log aggregation, log delivery monitoring, and suspicious activity alerts.
+
+## STRIDE Mapping
+
+| STRIDE Category | Example Threats |
+|---|---|
+| Spoofing | Unauthorized evidence creation, impersonated source systems |
+| Tampering | Evidence tampering, hash substitution, script tampering |
+| Repudiation | Missing audit logs, lack of signed producer identity |
+| Information Disclosure | Unauthorized access to evidence metadata |
+| Denial of Service | Deletion of evidence, blocking verification process |
+| Elevation of Privilege | Insider misuse, excessive IAM permissions |
+
+## Current MVP Security Posture
+
+The current MVP provides:
+
+- deterministic canonicalization
+- SHA-256 evidence digest generation
+- tamper detection when expected digest is trusted
+- JSON Schema validation
+- negative tests for invalid evidence
+- negative tests for tampered evidence
+- reviewer reperformance using local commands
+
+The current MVP does not provide:
+
+- tamper prevention
+- trusted timestamping
+- trusted digest storage
+- digital signatures
+- access control
+- immutable storage
+- production audit logging
+- key management
+- automated alerting
+- compliance certification
+
+## Recommended Production Architecture Controls
+
+| Control Area | Recommended Controls |
+|---|---|
+| Identity | IAM roles, producer identity, reviewer identity |
+| Integrity | JCS canonicalization, SHA-256, KMS signatures |
+| Immutability | S3 Object Lock, versioning, retention policies |
+| Traceability | CloudTrail, CloudWatch Logs, EventBridge events |
+| Authorization | Least privilege, separation of duties, SCPs |
+| Key Management | AWS KMS asymmetric keys, restricted key policies |
+| Availability | Cross-region replication, backup and restore |
+| Monitoring | Security alerts, deletion detection, KMS anomaly detection |
+| Governance | Schema registry, change review, protected branches |
+| Long-term Trust | Blockchain anchoring, timestamping, transparency logs |
+
+## Relationship to Other Design Documents
+
+This threat model complements the following documents:
+
+- `docs/framework-selection.md`
+- `docs/audit-procedures.md`
+- `docs/control-mapping.md`
+- `docs/evidence-lifecycle.md`
+
+| Document | Main Question |
+|---|---|
+| `framework-selection.md` | Why were the current tools and architecture selected? |
+| `audit-procedures.md` | How can a reviewer inspect or reperform verification? |
+| `control-mapping.md` | Which control objectives are supported by which evidence fields and checks? |
+| `evidence-lifecycle.md` | What lifecycle does evidence follow from creation to retention or archival? |
+| `threat-model.md` | What threats are considered, and how are they currently or potentially mitigated? |
+
+## Future Enhancements
+
+Future versions may add:
+
+- attack scenario test cases
+- dedicated tampered evidence samples
+- duplicate evidence ID detection
+- replay attack simulation
+- expected digest registry
+- AWS KMS signing and verification workflow
+- S3 Object Lock reference implementation
+- CloudTrail-based audit logging design
+- threat-to-control mapping table
+- risk severity and likelihood scoring
+- blockchain anchoring design
+- CI-based security checks
+- dependency scanning
+- SBOM generation
+
+## Limitations
+
+This document is a conceptual threat model for a local PoC.
+
+It does not represent a formal security assessment, penetration test, compliance audit, legal opinion, or production security certification.
+
+Before production use, the architecture should be reviewed by qualified security, compliance, legal, and audit professionals.

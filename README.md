@@ -102,6 +102,7 @@ Additional design documents are available in the `docs` directory:
 
 - [Framework Selection](docs/framework-selection.md)
 - [Audit Procedures](docs/audit-procedures.md)
+- [Control Mapping](docs/control-mapping.md)
 
 ## Requirements
 

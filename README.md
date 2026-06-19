@@ -109,6 +109,7 @@ Additional design documents are available in the `docs` directory:
 - [KMS Signing Design](docs/kms-signing-design.md)
 - [Attack Scenarios](docs/attack-scenarios.md)
 - [Portfolio Summary](docs/portfolio-summary.md)
+- [Verification Runbook](docs/verification-runbook.md)
 
 ## Requirements
 

@@ -107,6 +107,7 @@ Additional design documents are available in the `docs` directory:
 - [Threat Model](docs/threat-model.md)
 - [AWS Reference Architecture](docs/aws-reference-architecture.md)
 - [KMS Signing Design](docs/kms-signing-design.md)
+- [Attack Scenarios](docs/attack-scenarios.md)
 
 ## Requirements
 

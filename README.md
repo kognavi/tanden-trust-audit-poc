@@ -108,6 +108,7 @@ Additional design documents are available in the `docs` directory:
 - [AWS Reference Architecture](docs/aws-reference-architecture.md)
 - [KMS Signing Design](docs/kms-signing-design.md)
 - [Attack Scenarios](docs/attack-scenarios.md)
+- [Portfolio Summary](docs/portfolio-summary.md)
 
 ## Requirements
 

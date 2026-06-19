@@ -6,182 +6,326 @@ Tanden Trust Audit PoC
 
 ## Overview
 
-Tanden Trust Audit PoC is a prototype system for recording consent history, activity records, and audit-related trust events in a tamper-evident way.
+Tanden Trust Audit PoC is a prototype system for recording trust-related evidence, such as consent history, activity records, and audit events, in a tamper-evident way.
 
-The project demonstrates how structured JSON evidence can be hashed, verified, and checked for tampering using SHA-256.
+The project demonstrates how structured JSON evidence can be validated, canonicalized, hashed, verified, tested, and documented as part of an audit-oriented evidence management workflow.
 
-Future extensions include AWS-based evidence storage, AI-assisted audit review, and Web3-compatible verification through timestamping or blockchain anchoring.
+The current implementation is a local MVP, while the design documents describe how the system could evolve into a production-grade AWS-based evidence platform.
 
-## Problem
+## Problem Statement
 
 In many organizations, important trust-related events are recorded across fragmented tools such as:
 
-- Spreadsheets
-- Forms
-- Chat logs
-- Internal systems
-- Manual approval records
+- spreadsheets
+- application logs
+- SaaS audit logs
+- manual approval records
+- exported CSV files
+- screenshots
+- internal workflow tools
 
-This fragmentation makes it difficult to prove:
+These records are often difficult to verify later because reviewers may not know:
 
-- Who gave consent
-- When an event occurred
-- Whether evidence was changed later
-- Whether audit records are trustworthy
+- whether the evidence was modified
+- whether the evidence came from a trusted source
+- whether the expected hash or metadata was replaced
+- whether the event was replayed
+- whether the storage layer is immutable
+- whether privileged insiders could bypass controls
+- whether audit procedures are reproducible
 
-## Solution
+This PoC explores how to make evidence more verifiable, reproducible, and explainable.
 
-This PoC records trust-related events as structured JSON evidence and generates a SHA-256 hash from RFC 8785 JCS-compatible canonicalized JSON data.
+## What This PoC Demonstrates
 
-The generated hash acts as a digital fingerprint of the evidence.
+This project demonstrates a practical evidence verification workflow:
 
-If any field in the evidence file changes, the recalculated hash changes as well, allowing the system to detect tampering.
+1. Define structured evidence as JSON.
+2. Validate evidence with JSON Schema.
+3. Canonicalize JSON deterministically.
+4. Generate a SHA-256 digest.
+5. Verify evidence against an expected digest.
+6. Test valid and invalid evidence cases.
+7. Document audit procedures.
+8. Map controls to evidence and verification steps.
+9. Model threats and attack scenarios.
+10. Design a production-oriented AWS architecture.
+11. Extend the trust model with AWS KMS asymmetric signing.
 
 ## Implemented Features
 
-The current implementation includes:
+The current MVP includes:
 
-- Sample consent evidence JSON
-- Canonical JSON generation
-- SHA-256 hash generation
-- Evidence integrity verification
-- Tamper detection demo
-- npm scripts for repeatable execution
-- Local verification result documentation
-- GitHub Actions workflow for automated verification
-- README status badge showing CI result
+- sample evidence record
+- JSON Schema for evidence validation
+- validation script
+- SHA-256 hash generation script
+- verification script
+- deterministic JSON canonicalization using RFC 8785 JCS
+- automated tests using Node.js test runner
+- positive tests for valid evidence
+- negative tests for tampered evidence, wrong hashes, schema violations, and invalid fields
+- reproducible command-line verification workflow
 
-## Technical Stack
+## Core Technical Concepts
 
-Current implementation:
+| Concept | Purpose |
+|---|---|
+| JSON Schema | Ensures evidence follows an expected structure. |
+| RFC 8785 JCS | Produces deterministic canonical JSON for stable hashing. |
+| SHA-256 | Creates a digest used for tamper-evident verification. |
+| Hash verification | Detects whether evidence content changed. |
+| Automated tests | Prove that normal and tampered cases behave as expected. |
+| Audit procedures | Allow reviewers to reproduce verification steps. |
+| Threat modeling | Identifies realistic risks and required controls. |
+| AWS KMS signing design | Adds authenticity and stronger non-repudiation support. |
 
-- Node.js
-- JavaScript
-- SHA-256
-- JSON
-- npm scripts
-- GitHub Actions
+## Security and Audit Design
 
-Planned AWS/Web3 architecture:
+The project includes design documents covering:
 
-- Amazon S3 for evidence storage
-- Amazon S3 Object Lock for immutability
+- framework selection
+- audit procedures
+- control mapping
+- evidence lifecycle
+- threat model
+- AWS reference architecture
+- KMS signing design
+- attack scenarios
+
+Together, these documents show how a simple local verification workflow can be extended into a broader security and audit architecture.
+
+## AWS Production Architecture Design
+
+The AWS reference architecture describes a possible production design using:
+
+- Amazon API Gateway for ingestion APIs
+- AWS Lambda for validation, hashing, and orchestration
+- Amazon S3 with Object Lock for immutable evidence storage
 - Amazon DynamoDB for evidence metadata
-- AWS Lambda for hash generation and verification
-- Amazon API Gateway for API access
-- AWS KMS for encryption
-- Amazon CloudTrail and CloudWatch for audit logging
-- Amazon Bedrock for AI-assisted audit review
-- OpenTimestamps or blockchain anchoring for external verification
+- AWS KMS for asymmetric signing and key protection
+- AWS CloudTrail for audit logging
+- Amazon CloudWatch for monitoring and alarms
+- Amazon EventBridge for event-driven workflows
+- IAM least privilege policies
+- separation of duties for key administration and signing
 
-## Verification Result
+The design is aligned with the AWS Well-Architected Framework pillars:
 
-The following hash was generated from `samples/evidence-consent.json`:
+- Operational Excellence
+- Security
+- Reliability
+- Performance Efficiency
+- Cost Optimization
+- Sustainability
+
+## KMS Signing Design Value
+
+Hash verification can detect whether evidence content has changed.
+
+However, a hash alone does not prove who generated or approved the digest.
+
+The KMS signing design addresses this limitation by introducing AWS KMS asymmetric signing.
+
+A future production workflow could:
+
+1. validate the evidence
+2. canonicalize the evidence
+3. calculate a SHA-256 digest
+4. sign the digest using AWS KMS
+5. store evidence, metadata, digest, signature, key ID, and algorithm
+6. verify the signature during audit review
+
+This adds stronger support for:
+
+- evidence authenticity
+- signer accountability
+- least privilege signing workflows
+- CloudTrail-based auditability
+- separation of duties
+- long-term verification
+
+## Attack Scenario Coverage
+
+The project documents practical attack scenarios such as:
+
+- evidence tampering
+- expected hash substitution
+- replay attack
+- unauthorized producer
+- schema bypass
+- timestamp manipulation
+- S3 deletion or overwrite attempt
+- KMS key misuse
+- KMS key deletion or disablement
+- insider admin risk
+- CI/CD compromise
+- dependency compromise
+
+Each scenario is mapped to preventive, detective, and recovery controls.
+
+## Skills Demonstrated
+
+This project demonstrates skills in:
+
+### Software Engineering
+
+- Node.js scripting
+- JSON Schema validation
+- deterministic data processing
+- automated testing
+- command-line tooling
+- Git and GitHub workflow
+- pull request based development
+
+### Security Engineering
+
+- tamper-evident evidence design
+- hashing and canonicalization
+- digital signature design
+- threat modeling
+- attack scenario analysis
+- least privilege design
+- audit logging strategy
+- insider risk consideration
+
+### AWS Architecture
+
+- serverless architecture design
+- S3 immutability design
+- DynamoDB metadata modeling
+- KMS asymmetric signing design
+- CloudTrail auditability
+- IAM role separation
+- Well-Architected Framework alignment
+
+### Audit and Compliance Thinking
+
+- reproducible verification procedures
+- control mapping
+- evidence lifecycle modeling
+- reviewer-oriented documentation
+- production limitations and assumptions
+- separation between conceptual design and compliance certification
+
+## Why This Matters
+
+Many audit and compliance workflows still depend on fragile evidence handling.
+
+This project shows how cloud-native architecture and cryptographic verification can make evidence more trustworthy.
+
+The value is not only in generating a hash, but in designing the surrounding process:
+
+- who can create evidence
+- who can sign evidence
+- where evidence is stored
+- how reviewers verify it
+- how tampering is detected
+- how metadata is protected
+- how actions are logged
+- how privileged access is controlled
+
+This reflects the mindset needed for real-world security, audit, and cloud architecture work.
+
+## Interview Talking Points
+
+A concise explanation of this project:
+
+> I built a tamper-evident audit evidence PoC using JSON Schema validation, RFC 8785 JSON canonicalization, SHA-256 hashing, and automated verification tests.
+>
+> I also documented how the local MVP could evolve into a production AWS architecture using API Gateway, Lambda, S3 Object Lock, DynamoDB, KMS asymmetric signing, IAM least privilege, CloudTrail, CloudWatch, and EventBridge.
+>
+> The project includes audit procedures, control mapping, evidence lifecycle design, threat modeling, KMS signing design, and attack scenarios. The goal is to show not only implementation ability, but also security architecture, auditability, and production design thinking.
+
+## Repository Structure Highlights
+
+Important files and directories:
 
 ```text
-98b0a0065072fb968a2f414acea48833d640c42522a767aa7dd55c8282b52d10
+samples/
+  evidence-consent.json
+
+schemas/
+  evidence.schema.json
+
+scripts/
+  validate-evidence.js
+  hash-evidence.js
+  verify-evidence.js
+
+tests/
+  *.test.js
+
+docs/
+  framework-selection.md
+  audit-procedures.md
+  control-mapping.md
+  evidence-lifecycle.md
+  threat-model.md
+  aws-reference-architecture.md
+  kms-signing-design.md
+  attack-scenarios.md
+  portfolio-summary.md
 ```
 
-Original evidence verification:
+## Verification Commands
 
-```text
-Verification result: VALID
-```
-
-After changing:
-
-```json
-"status": "granted"
-```
-
-to:
-
-```json
-"status": "revoked"
-```
-
-The verification result became:
-
-```text
-Verification result: INVALID
-```
-
-After restoring the original value, the result returned to:
-
-```text
-Verification result: VALID
-```
-
-## Security Considerations
-
-This PoC focuses on integrity verification.
-
-Current security considerations include:
-
-- Do not store real personal data in the repository
-- Do not store secrets, credentials, private keys, or KYC documents
-- Use synthetic sample data only
-- Use hash comparison to detect evidence modification
-- Keep evidence data and verification metadata separated in future architecture
-
-Planned security improvements include:
-
-- Server-side encryption with AWS KMS
-- S3 Versioning
-- S3 Object Lock
-- IAM least privilege design
-- CloudTrail logging
-- Evidence metadata signing
-- External timestamping
-- Blockchain anchoring
-
-## GitHub Actions CI
-
-This repository includes a GitHub Actions workflow that automatically runs evidence verification on push and pull request events.
-
-The workflow executes:
+Typical verification commands:
 
 ```bash
+npm test
+npm run validate:evidence
 npm run hash
 npm run verify
 ```
 
-The README displays the current CI status using a GitHub Actions badge.
+Expected results include:
 
-## What I Learned
+- all automated tests pass
+- evidence schema validation returns `VALID`
+- generated hash is stable
+- verification result returns `VALID`
 
-Through this project, I practiced:
+## Current Status
 
-- Designing a tamper-evident audit trail
-- Creating structured JSON evidence
-- Implementing hash-based integrity verification
-- Writing reusable Node.js scripts
-- Documenting verification results
-- Creating npm scripts for repeatable operations
-- Setting up GitHub Actions for automated checks
-- Connecting AWS, AI, and Web3 concepts into a practical PoC roadmap
+The project currently includes:
 
-## Interview Talking Points
+- working local MVP
+- automated tests
+- reproducible verification workflow
+- security and audit documentation
+- AWS production reference design
+- KMS signing design
+- attack scenario analysis
+- portfolio-oriented summary
 
-I can explain:
+## Future Roadmap
 
-- Why audit evidence should be structured
-- How SHA-256 detects tampering
-- Why canonical JSON is important for stable hashing
-- How evidence can be stored off-chain while hashes can be anchored externally
-- How AWS services such as S3, DynamoDB, Lambda, KMS, and CloudTrail can support an audit trail system
-- How AI can assist audit review without replacing original verifiable evidence
-- How GitHub Actions improves repeatability and reliability
+Possible future improvements include:
 
-## Future Enhancements
+1. Add GitHub Actions CI.
+2. Add a verification runbook.
+3. Add architecture diagrams.
+4. Implement a local signature verification mock.
+5. Add AWS CDK or Terraform infrastructure design.
+6. Add DynamoDB metadata schema examples.
+7. Add S3 Object Lock configuration examples.
+8. Add KMS signing and verification sample code.
+9. Add API Gateway and Lambda ingestion prototype.
+10. Explore optional blockchain anchoring or timestamping.
 
-Next planned improvements:
+## Limitations
 
-- Add evidence generation script
-- Add multiple evidence samples
-- Add automated tamper detection test
-- Implement API-based hash verification
-- Design AWS infrastructure with IaC
-- Add S3 and DynamoDB integration
-- Add external timestamping or blockchain anchoring
-- Add AI-assisted audit summarization
+This project is a prototype and portfolio artifact.
+
+It does not represent:
+
+- a production deployment
+- a formal security certification
+- a legal compliance opinion
+- a completed audit system
+- a cryptographic review
+- a penetration test
+- a managed service offering
+
+Before production use, the design should be reviewed by qualified security engineers, AWS architects, compliance professionals, auditors, and legal professionals.

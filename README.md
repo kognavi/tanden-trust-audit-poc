@@ -68,6 +68,85 @@ This separates two important concerns:
 
 ---
 
+## Security Model and Current Limitations
+
+The current local MVP demonstrates tamper-evident evidence verification using:
+
+- JSON Schema validation
+- RFC 8785 JSON Canonicalization Scheme
+- SHA-256 hashing
+- deterministic verification scripts
+- automated tests
+- GitHub Actions CI
+
+This local workflow can detect whether the evidence content has changed.
+
+However, hash verification alone does not prove:
+
+- who produced the evidence
+- who approved the expected hash
+- whether the expected hash was stored in a trusted location
+- whether an attacker replaced both the evidence and the expected hash
+- whether evidence records were deleted, reordered, or omitted
+- whether the event timestamp came from a trusted time source
+- whether the evidence was stored immutably
+
+For this reason, the project separates the current local MVP from the production-oriented security design.
+
+In the production-oriented design, the local hash-based workflow is extended with:
+
+- AWS KMS asymmetric signing for authenticity and stronger non-repudiation
+- S3 Object Lock for immutable evidence storage
+- DynamoDB for evidence metadata, digest, signature, sequence, and verification state
+- CloudTrail for signing, storage, and administrative audit logs
+- IAM least privilege and separation of duties
+- optional hash chaining or Merkle tree anchoring for sequence and completeness checks
+- EventBridge and CloudWatch for monitoring and operational visibility
+
+In short:
+
+| Security property | Local MVP | Production-oriented design |
+|---|---|---|
+| Schema correctness | JSON Schema | JSON Schema |
+| Deterministic canonicalization | RFC 8785 JCS | RFC 8785 JCS |
+| Content tamper detection | SHA-256 hash verification | SHA-256 hash verification |
+| Authenticity | Not fully proven locally | AWS KMS asymmetric signing |
+| Non-repudiation support | Limited | KMS signing, IAM controls, and CloudTrail |
+| Trusted expected hash | Manual/local assumption | Signed digest and controlled metadata storage |
+| Immutable storage | Not included locally | S3 Object Lock |
+| Sequence/completeness checks | Not included locally | Hash chain or Merkle tree roadmap |
+| Trusted timestamping | Not included locally | Ingestion time, CloudTrail, and optional external timestamping |
+| Operational auditability | Local logs and tests | CloudTrail, CloudWatch, EventBridge, and runbooks |
+
+This distinction is intentional.
+
+The local MVP is designed to be reproducible and easy to review.  
+The AWS production-oriented design describes how the same evidence workflow can be hardened for stronger authenticity, immutability, auditability, and operational control.
+
+---
+
+## Project Completion Target
+
+This portfolio project is considered complete when it demonstrates:
+
+- local evidence validation
+- deterministic canonicalization
+- SHA-256 tamper detection
+- automated tests
+- GitHub Actions CI
+- verification runbook
+- threat model and attack scenarios
+- AWS KMS signing design
+- AWS production reference architecture
+- documented hash-only limitations
+- architecture diagrams
+- local signature verification prototype
+- hash chain verification prototype
+
+The project does not aim to provide a production SaaS, legal compliance certification, or complete AWS deployment in its current phase.
+
+---
+
 ## Project Structure
 
 ```text

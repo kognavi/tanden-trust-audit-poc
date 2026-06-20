@@ -36,6 +36,8 @@ This PoC combines:
 - Generate RFC 8785 JCS-compatible canonical JSON from evidence data
 - Calculate SHA-256 hash values
 - Verify whether evidence has been modified
+- Sign and verify evidence using local ECDSA P-256 keys for demonstration
+- Detect tampering with public-key signature verification
 - Run automated tests using Node.js built-in test runner
 - Run validation and verification automatically in GitHub Actions
 
@@ -157,18 +159,24 @@ The project does not aim to provide a production SaaS, legal compliance certific
 ├── docs/
 │   └── framework-selection.md
 ├── lib/
-│   └── schema-validation.js
+│   ├── audit.js
+│   ├── schema-validation.js
+│   └── signature.js
 ├── samples/
 │   └── evidence-consent.json
 ├── schemas/
 │   └── evidence.schema.json
 ├── scripts/
+│   ├── generate-local-keys.js
 │   ├── hash-evidence.js
+│   ├── sign-evidence.js
 │   ├── validate-evidence.js
-│   └── verify-evidence.js
+│   ├── verify-evidence.js
+│   └── verify-signature.js
 ├── tests/
 │   ├── audit.test.js
-│   └── schema-validation.test.js
+│   ├── schema-validation.test.js
+│   └── signature.test.js
 ├── package.json
 └── README.md
 ```
@@ -241,6 +249,63 @@ Expected result:
 ```text
 Verification result: VALID
 ```
+
+---
+
+### Run local signature verification demo
+
+This project also includes a local ECDSA P-256 signature verification demo.
+
+The signature workflow demonstrates authenticity and tamper detection beyond simple hash comparison:
+
+```text
+Evidence JSON
+  ↓
+RFC 8785 JCS-compatible canonical JSON generation
+  ↓
+SHA-256 digest calculation
+  ↓
+ECDSA P-256 signing with local private key
+  ↓
+ECDSA P-256 verification with local public key
+  ↓
+VALID / INVALID result
+```
+
+Run the local signature demo:
+
+```bash
+rm -rf .local-keys signatures
+npm run generate:keys
+npm run sign
+npm run verify:signature
+npm run demo:tamper
+npm run verify:signature || true
+npm run demo:restore
+npm run verify:signature
+```
+
+Expected result:
+
+```text
+Verification result: VALID
+Verification result: INVALID
+Verification result: VALID
+```
+
+The second verification result becomes `INVALID` because the evidence content is modified after signing.  
+After restoring the evidence content, the same signature verifies as `VALID` again.
+
+Local private keys and generated signatures are intentionally ignored by Git:
+
+```text
+.local-keys/
+signatures/
+*.sig
+```
+
+> Note: This local signing workflow is for demonstration only.  
+> In production, private keys should be managed by AWS KMS or CloudHSM, evidence should be stored with immutability controls such as S3 Object Lock, and verification metadata should be persisted in an auditable store.
 
 ---
 

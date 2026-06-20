@@ -48,6 +48,22 @@ The MVP currently does not provide:
 | Scalability | Support event-driven ingestion and verification. |
 | Cost Control | Use managed services and lifecycle policies appropriately. |
 
+## Trust Boundary Model
+
+The production-oriented design separates trust boundaries explicitly.
+
+| Boundary | Description | Design implication |
+|---|---|---|
+| Producer boundary | External or upstream systems that submit evidence events. | Producers are authenticated and authorized, but submitted payloads are still validated and canonicalized. |
+| Ingestion boundary | API Gateway and Lambda receive, validate, and normalize evidence. | Direct writes to evidence storage should be restricted; ingestion should happen through controlled workflows. |
+| Storage boundary | S3 and DynamoDB preserve evidence artifacts and metadata. | Evidence objects, digests, signatures, and metadata should be protected with least privilege and audit logging. |
+| Key management boundary | AWS KMS protects signing keys. | Key administrators should not be able to sign evidence, and signing roles should not administer keys. |
+| Audit boundary | CloudTrail, CloudWatch, Config, and security services record operational and administrative activity. | Audit logs should be stored separately and protected from modification. |
+| Reviewer boundary | Auditors or reviewers reperform verification. | Reviewers should have read-only access to evidence, metadata, signatures, and verification material. |
+
+This separation prevents the architecture from relying on a single trusted component.
+
+
 ## High-Level AWS Service Mapping
 
 | Layer | AWS Services | Purpose |
@@ -55,7 +71,7 @@ The MVP currently does not provide:
 | Ingestion | Amazon API Gateway, AWS Lambda | Receive evidence events from trusted producers. |
 | Validation | AWS Lambda, JSON Schema | Validate evidence structure and required fields. |
 | Canonicalization and Hashing | AWS Lambda | Produce canonical JSON and SHA-256 digest. |
-| Signing | AWS KMS | Sign evidence digests or canonical evidence records. |
+| Signing | AWS KMS | Sign SHA-256 digests derived from canonical evidence records. |
 | Evidence Store | Amazon S3 | Store original and canonical evidence artifacts. |
 | Immutability | S3 Object Lock, S3 Versioning | Protect evidence from deletion or overwriting. |
 | Metadata Store | Amazon DynamoDB | Store evidence metadata, digest, status, and lifecycle state. |
@@ -186,6 +202,31 @@ Potential indexes:
 | subjectId-occurredAt-index | Query evidence history for a subject. |
 | lifecycleState-index | Query pending, rejected, or failed evidence. |
 
+### Recommended key design
+
+A simple metadata table can use the evidence ID as the primary access pattern.
+
+| Key | Example | Purpose |
+|---|---|---|
+| PK | `EVIDENCE#evd-2026-000001` | Groups all records related to one evidence item. |
+| SK | `METADATA#v1` | Stores the current metadata record. |
+
+For lifecycle history or verification history, additional sort keys can be added.
+
+| Record type | PK | SK |
+|---|---|---|
+| Metadata | `EVIDENCE#<evidenceId>` | `METADATA#v1` |
+| Lifecycle event | `EVIDENCE#<evidenceId>` | `EVENT#<timestamp>#<eventType>` |
+| Verification result | `EVIDENCE#<evidenceId>` | `VERIFICATION#<timestamp>` |
+
+Recommended write controls:
+
+- use conditional writes to reject duplicate `evidenceId` values
+- store large artifacts in S3, not DynamoDB
+- store digests, signatures, object keys, and lifecycle state in DynamoDB
+- avoid updating immutable historical records
+- append lifecycle and verification events instead of overwriting them
+
 ## KMS Signing Design
 
 AWS KMS asymmetric keys can be used to sign evidence digests.
@@ -197,6 +238,27 @@ Recommended workflow:
 3. Sign the digest using an AWS KMS asymmetric signing key.
 4. Store the digest, signature, key ID, algorithm, and signing timestamp.
 5. Verify the signature during reviewer reperformance.
+   
+### Signature target decision
+
+The recommended signing target is the SHA-256 digest of the canonical evidence record, not the raw JSON payload.
+
+| Option | Assessment |
+|---|---|
+| Sign raw JSON | Not recommended because semantically identical JSON can have different whitespace or key ordering. |
+| Sign canonical JSON | Valid, but larger payloads increase operational complexity. |
+| Sign SHA-256 digest of canonical JSON | Recommended because it is deterministic, compact, and easy to verify. |
+
+Recommended signing approach:
+
+- canonicalize the evidence record with RFC 8785 JCS
+- calculate the SHA-256 digest
+- call AWS KMS Sign using an asymmetric signing key
+- store the digest, signature, key ID, signing algorithm, and canonicalization method
+- verify by recomputing the canonical digest and checking the signature
+
+This design makes the signature stable across formatting differences while keeping the signing operation small and auditable.
+
 
 Benefits:
 
@@ -300,6 +362,23 @@ Recommended considerations:
 - document legal hold behavior
 - test lifecycle transitions before production use
 
+### Object Lock mode recommendation
+
+For portfolio, development, and non-regulated environments, Governance Mode is usually safer because privileged users can still recover from configuration mistakes.
+
+For strict regulated retention requirements, Compliance Mode may be appropriate, but it should be used carefully because retention cannot be shortened by any user, including the root user.
+
+Recommended approach:
+
+| Environment | Recommended mode | Reason |
+|---|---|---|
+| Local learning / portfolio | Not required | The local MVP does not deploy S3. |
+| AWS prototype | Governance Mode | Allows testing immutability while retaining controlled administrative recovery. |
+| Regulated production | Compliance Mode, if legally required | Provides stronger retention guarantees but increases operational risk. |
+
+Object Lock mode should be selected with input from security, compliance, legal, and audit stakeholders.
+
+
 ## Reliability Considerations
 
 Recommended reliability controls:
@@ -313,6 +392,23 @@ Recommended reliability controls:
 - enable DynamoDB backups
 - consider cross-region replication
 - monitor ingestion and verification failures
+
+## Failure Handling Matrix
+
+A production-oriented evidence system should define how partial failures are handled.
+
+| Failure scenario | Risk | Recommended handling |
+|---|---|---|
+| Schema validation fails | Invalid evidence could enter the audit trail. | Reject the event, log the reason, and publish `EVIDENCE_REJECTED`. |
+| Duplicate `evidenceId` is received | Existing evidence could be overwritten or confused. | Use DynamoDB conditional writes and return a conflict response. |
+| KMS signing fails | Evidence cannot be authenticated. | Do not mark evidence as signed; retry safely or move to a failed state for review. |
+| S3 write succeeds but DynamoDB write fails | Artifact exists without searchable metadata. | Use idempotent retries and reconciliation jobs based on object keys. |
+| DynamoDB write succeeds but S3 write fails | Metadata points to missing evidence. | Mark lifecycle state as failed and alert operations. |
+| EventBridge publish fails | Downstream workflows may not run. | Retry or send to a dead-letter queue. |
+| Verification fails | Evidence may be corrupted or metadata may not match. | Mark as failed verification, alert reviewers, and preserve all artifacts for investigation. |
+| CloudTrail or logging disabled | Auditability is weakened. | Alert immediately and treat as a security incident. |
+
+The design should prefer explicit failed states over silent retries that hide audit-relevant failures.
 
 ## Cost Optimization Considerations
 
@@ -367,7 +463,7 @@ This document complements:
 
 Future versions may add:
 
-- Mermaid or draw.io architecture diagram
+- additional deployment-level diagrams for multi-account and multi-region designs
 - Terraform or AWS CDK reference implementation
 - API Gateway and Lambda ingestion prototype
 - KMS signing and verification script

@@ -468,3 +468,22 @@ VALID / INVALID
 ```
 
 This PoC focuses on structural validation and tamper detection. It does not prove that the original event content is true, nor does it provide legal audit certification by itself.
+
+## Articles
+
+This project is part of an ongoing exploration of AI × Web3 digital proof, audit evidence, and verifiable trust.
+
+- AI×Web3で「見えない信頼」を証明する  
+  https://note.com/fair_beetle339/n/nbc14f4e803b7
+
+- 「見えない信頼」をどう作るか：AI×Web3デジタル証明の実装編  
+  https://note.com/fair_beetle339/n/n22ef0c27423a
+
+- 「見えない信頼」は誰が買うのか：AI×Web3デジタル証明の事業編  
+  https://note.com/fair_beetle339/n/nffa803738f55
+
+- Tanden Trust Audit PoC：AI×Web3デジタル証明の土台をGitHubで実装する  
+  https://note.com/fair_beetle339/n/n432d57838031
+
+- Tanden Trust Audit PoC：ハッシュ検証から電子署名による真正性確認へ  
+  https://note.com/fair_beetle339/n/ne53bc5b3d170

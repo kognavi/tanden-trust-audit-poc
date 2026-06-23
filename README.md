@@ -437,19 +437,59 @@ Actual audit, compliance, legal, and security requirements should be reviewed wi
 
 ## Future Roadmap
 
+### v0.1.0 MVP Scope
+
+The v0.1.0 MVP focuses on a reproducible local proof of concept for tamper-evident audit evidence.
+
+Included in v0.1.0:
+
+- JSON Schema validation
+- RFC 8785 JCS-compatible canonicalization
+- SHA-256 evidence hashing
+- Hash-based tamper detection
+- Local ECDSA P-256 signature generation and verification
+- Local tamper detection demo
+- Automated tests
+- GitHub Actions CI
+- Verification runbook
+- Threat model and attack scenarios
+- AWS-oriented production design documents
+
+### Phase 2: AWS-backed authenticity and immutability
+
 Potential future enhancements include:
 
-- Add approval metadata
-- Add role-based access control metadata
-- Add retention policy metadata
-- Add exception handling flags
-- Add UUID-based evidence identifiers
-- Add digital signatures
-- Add AWS KMS integration
-- Add Amazon S3 Object Lock support
-- Add blockchain anchoring
-- Add OpenAPI documentation
-- Add architecture diagrams
+- AWS KMS asymmetric signing implementation
+- S3 Object Lock based immutable evidence storage
+- DynamoDB metadata persistence for digest, signature, sequence, and verification state
+- CloudTrail and CloudWatch based operational auditability
+- IAM least-privilege execution roles
+- Key rotation and verification policy documentation
+
+### Phase 3: Productization and external verification
+
+Potential future enhancements include:
+
+- API layer with OpenAPI documentation
+- Approval metadata
+- Role-based access control metadata
+- Retention policy metadata
+- Exception handling flags
+- UUID-based evidence identifiers
+- Hash chain or Merkle tree based completeness verification
+- Blockchain anchoring
+- Multi-tenant SaaS architecture
+
+### Out of Scope for v0.1.0
+
+The v0.1.0 MVP does not aim to provide:
+
+- A deployed production AWS environment
+- Legal advice
+- Audit opinion
+- Regulatory compliance certification
+- Production SaaS functionality
+- Default blockchain anchoring
 
 ---
 

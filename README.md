@@ -469,6 +469,10 @@ VALID / INVALID
 
 This PoC focuses on structural validation and tamper detection. It does not prove that the original event content is true, nor does it provide legal audit certification by itself.
 
+## Design Documents
+
+- [AWS KMS Key Management Design](docs/aws-kms-key-management-design.md)
+
 ## Articles
 
 This project is part of an ongoing exploration of AI × Web3 digital proof, audit evidence, and verifiable trust.

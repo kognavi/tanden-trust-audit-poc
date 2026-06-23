@@ -8,6 +8,16 @@ This project demonstrates how structured audit evidence can be validated, hashed
 
 ---
 
+## Current Status
+
+**MVP status:** v0.1.0 candidate.
+
+The local proof of concept currently supports schema validation, RFC 8785 JCS-compatible canonicalization, SHA-256 tamper detection, local ECDSA P-256 signature verification, automated tests, and GitHub Actions CI.
+
+Production-oriented AWS hardening, including AWS KMS-backed signing and immutable storage, is documented as a future extension rather than included as a deployed production system.
+
+---
+
 ## Overview
 
 Modern digital trust systems require more than simply storing records.
@@ -193,9 +203,11 @@ Additional design documents are available in the `docs` directory:
 - [Control Mapping](docs/control-mapping.md)
 - [Evidence Lifecycle](docs/evidence-lifecycle.md)
 - [Threat Model](docs/threat-model.md)
-- [AWS Reference Architecture](docs/aws-reference-architecture.md)
-- [KMS Signing Design](docs/kms-signing-design.md)
 - [Attack Scenarios](docs/attack-scenarios.md)
+- [Signature Provider Design](docs/signature-provider-design.md)
+- [KMS Signing Design](docs/kms-signing-design.md)
+- [AWS KMS Key Management Design](docs/aws-kms-key-management-design.md)
+- [AWS Reference Architecture](docs/aws-reference-architecture.md)
 - [Portfolio Summary](docs/portfolio-summary.md)
 - [Verification Runbook](docs/verification-runbook.md)
 
@@ -468,10 +480,6 @@ VALID / INVALID
 ```
 
 This PoC focuses on structural validation and tamper detection. It does not prove that the original event content is true, nor does it provide legal audit certification by itself.
-
-## Design Documents
-
-- [AWS KMS Key Management Design](docs/aws-kms-key-management-design.md)
 
 ## Articles
 

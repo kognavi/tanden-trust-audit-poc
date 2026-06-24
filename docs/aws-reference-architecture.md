@@ -188,7 +188,7 @@ Example attributes:
 | hashAlgorithm | Hash algorithm such as SHA-256. |
 | digest | Calculated evidence digest. |
 | kmsKeyId | KMS key used for signing. |
-| signature | Signature over digest or canonical evidence. |
+| signature | Signature over the SHA-256 digest of the canonical evidence. |
 | lifecycleState | Current lifecycle state. |
 | s3ObjectKey | Location of evidence artifact. |
 | retentionUntil | Retention expiration timestamp. |

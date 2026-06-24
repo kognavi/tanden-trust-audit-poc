@@ -162,7 +162,7 @@ Recommended metadata fields:
 | canonicalizationMethod | Canonicalization method, such as RFC 8785 JCS. |
 | hashAlgorithm | Hash algorithm, such as SHA-256. |
 | digest | SHA-256 digest of the canonical evidence. |
-| signature | Signature over the digest or canonical evidence. |
+| signature | Signature over the SHA-256 digest of the canonical evidence. |
 | signingAlgorithm | KMS signing algorithm. |
 | kmsKeyId | KMS key ID or key ARN used for signing. |
 | signedAt | Server-side signing timestamp. |

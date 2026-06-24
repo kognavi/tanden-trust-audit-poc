@@ -114,7 +114,7 @@ It proves that the evidence matches the digest, but not that the digest came fro
 ### Future AWS Controls
 
 - AWS KMS asymmetric signing
-- signature over digest or canonical evidence
+- signature over the SHA-256 digest of the canonical evidence
 - CloudTrail logs for KMS Sign
 - restricted kms:Sign permission
 - immutable storage for metadata

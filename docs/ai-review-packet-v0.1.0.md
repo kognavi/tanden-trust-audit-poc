@@ -225,7 +225,8 @@ Please review the following files and directories where available:
 ```text
 README.md
 package.json
-src/
+lib/
+scripts/
 tests/
 docs/portfolio-summary.md
 docs/threat-model.md
@@ -241,7 +242,8 @@ If the review environment has limited context size, prioritize:
 
 ```text
 README.md
-src/
+lib/
+scripts/
 tests/
 docs/portfolio-summary.md
 docs/threat-model.md

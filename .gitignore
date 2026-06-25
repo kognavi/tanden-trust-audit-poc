@@ -146,3 +146,24 @@ vite.config.ts.timestamp-*
 .local-keys/
 signatures/
 *.sig
+
+# Local private keys and sensitive crypto material
+*.key
+*.priv
+*private*.pem
+*secret*.pem
+*.p8
+*.p12
+
+# Generated local verification artifacts
+*.canonical.json
+*.tampered.json
+
+# Temporary files
+tmp/
+*.tmp
+
+# OS / editor files
+.DS_Store
+.vscode/
+.idea/

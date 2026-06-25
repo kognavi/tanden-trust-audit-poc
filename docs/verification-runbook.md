@@ -247,11 +247,19 @@ Canonicalization: RFC 8785 JSON Canonicalization Scheme (JCS)
 SHA-256 hash: ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
 ```
 
-The current expected hash for the sample evidence is:
+The current expected hash for the sample evidence is stored in:
 
 ```text
-ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
+samples/evidence-consent.expected.sha256
 ```
+
+The sidecar file uses a `sha256sum`-style format:
+
+```text
+ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c  samples/evidence-consent.json
+```
+
+In this local MVP, this sidecar file is a local trust assumption. In production, expected digests should be protected by signed metadata, immutable storage, or a trusted registry.
 
 If the sample evidence changes intentionally, this hash will also change.
 
@@ -298,7 +306,7 @@ The verification script can also be run directly.
 Example:
 
 ```bash
-node scripts/verify-evidence.js samples/evidence-consent.json ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
+node scripts/verify-evidence.js samples/evidence-consent.json samples/evidence-consent.expected.sha256
 ```
 
 Expected result:
@@ -349,10 +357,10 @@ to:
 "status": "denied"
 ```
 
-Then run verification using the original expected hash:
+Then run verification using the original expected hash sidecar:
 
 ```bash
-node scripts/verify-evidence.js /tmp/evidence-consent-tampered.json ea1e30d81b674069d1663be70397ed3884d038381b310748d9ff88661916ea6c
+node scripts/verify-evidence.js /tmp/evidence-consent-tampered.json samples/evidence-consent.expected.sha256
 ```
 
 Expected result:

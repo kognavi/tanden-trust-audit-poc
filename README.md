@@ -256,6 +256,10 @@ This command generates an RFC 8785 JCS-compatible canonical JSON representation 
 npm run verify
 ```
 
+The sample verification command reads the trusted expected digest from `samples/evidence-consent.expected.sha256`.
+
+In this local MVP, the sidecar expected digest file is a local trust assumption. In production, expected digests should be protected by signed metadata, immutable storage, or a trusted registry.
+
 Expected result:
 
 ```text

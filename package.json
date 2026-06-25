@@ -11,8 +11,8 @@
     "generate:keys": "node scripts/generate-local-keys.js",
     "sign": "node scripts/sign-evidence.js samples/evidence-consent.json",
     "verify:signature": "node scripts/verify-signature.js samples/evidence-consent.json signatures/evidence-consent.sig",
-    "demo:tamper": "perl -pi -e 's/\"status\": \"granted\"/\"status\": \"revoked\"/' samples/evidence-consent.json",
-    "demo:restore": "perl -pi -e 's/\"status\": \"revoked\"/\"status\": \"granted\"/' samples/evidence-consent.json",
+    "demo:tamper": "node scripts/tamper-evidence.js",
+    "demo:restore": "git checkout -- samples/evidence-consent.json",
     "demo": "npm run validate:evidence && npm run hash && npm run verify",
     "test": "node --test tests/*.test.js"
   },

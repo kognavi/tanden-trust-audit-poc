@@ -14,7 +14,11 @@ This project demonstrates how structured audit evidence can be validated, hashed
 
 The local proof of concept currently supports schema validation, RFC 8785 JCS-compatible canonicalization, SHA-256 tamper detection, local ECDSA P-256 signature verification, automated tests, and GitHub Actions CI.
 
-Production-oriented AWS hardening, including AWS KMS-backed signing and immutable storage, is documented as a future extension rather than included as a deployed production system.
+Phase 2 AWS-backed MVP planning has been documented. The Phase 2 plan preserves the local verification semantics while introducing an AWS-backed storage and verification direction using Amazon S3, digest metadata, and future AWS KMS integration.
+
+The current Phase 2 metadata storage decision is documented in ADR 0001: expected digest metadata will initially use S3 sidecar metadata objects. DynamoDB and signed metadata remain future options.
+
+Production-oriented AWS hardening, including AWS KMS-backed signing, immutable storage, richer metadata indexing, and operational monitoring, is documented as a future extension rather than included as a deployed production system.
 
 ---
 
@@ -167,6 +171,14 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   └── workflows/
 │       └── verify.yml
 ├── docs/
+│   ├── adr/
+│   │   └── 0001-digest-metadata-storage.md
+│   ├── phase-2-aws/
+│   │   ├── acceptance-criteria.md
+│   │   ├── design.md
+│   │   ├── non-goals.md
+│   │   ├── requirements.md
+│   │   └── tasks.md
 │   └── framework-selection.md
 ├── lib/
 │   ├── audit.js
@@ -210,6 +222,18 @@ Additional design documents are available in the `docs` directory:
 - [AWS Reference Architecture](docs/aws-reference-architecture.md)
 - [Portfolio Summary](docs/portfolio-summary.md)
 - [Verification Runbook](docs/verification-runbook.md)
+
+Phase 2 AWS-backed MVP planning:
+
+- [Phase 2 Requirements](docs/phase-2-aws/requirements.md)
+- [Phase 2 Design](docs/phase-2-aws/design.md)
+- [Phase 2 Tasks](docs/phase-2-aws/tasks.md)
+- [Phase 2 Acceptance Criteria](docs/phase-2-aws/acceptance-criteria.md)
+- [Phase 2 Non-Goals](docs/phase-2-aws/non-goals.md)
+
+Architecture Decision Records:
+
+- [ADR 0001: Digest Metadata Storage](docs/adr/0001-digest-metadata-storage.md)
 
 ## Requirements
 

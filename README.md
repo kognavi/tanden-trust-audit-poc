@@ -2,9 +2,9 @@
 
 [![Verify Evidence Integrity](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml/badge.svg)](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml)
 
-A tamper-evident audit trail prototype for consent history, activity records, and trust events using JSON Schema validation and SHA-256 hash verification.
+A tamper-evident audit trail prototype for consent history, activity records, and trust events using JSON Schema validation, SHA-256 hash verification, local signature verification, and sidecar metadata verification.
 
-This project demonstrates how structured audit evidence can be validated, hashed, and verified in a reproducible way. It is designed as a technical proof of concept for audit trails, consent records, trust logs, AI-assisted governance, and Web3-compatible verification workflows.
+This project demonstrates how structured audit evidence can be validated, hashed, signed, stored, and verified in a reproducible way. It is designed as a technical proof of concept for audit trails, consent records, trust logs, AI-assisted governance, and Web3-compatible verification workflows.
 
 ---
 
@@ -14,11 +14,11 @@ This project demonstrates how structured audit evidence can be validated, hashed
 
 The local proof of concept currently supports schema validation, RFC 8785 JCS-compatible canonicalization, SHA-256 tamper detection, local ECDSA P-256 signature verification, automated tests, and GitHub Actions CI.
 
-Phase 2 AWS-backed MVP planning has been documented. The Phase 2 plan preserves the local verification semantics while introducing an AWS-backed storage and verification direction using Amazon S3, digest metadata, and future AWS KMS integration.
+Phase 2 AWS-backed MVP work is now partially implemented. The project includes sidecar metadata schema validation, canonical metadata signing payloads, ECDSA P-256 sidecar metadata signing and verification, full evidence + sidecar metadata verification, local JSON object storage, and S3-compatible JSON object storage.
 
-The current Phase 2 metadata storage decision is documented in ADR 0001: expected digest metadata will initially use S3 sidecar metadata objects. DynamoDB and signed metadata remain future options.
+The default test suite verifies both local and S3 sidecar storage flows without requiring AWS credentials or real S3 buckets. S3 behavior is tested through an injected in-memory fake S3 client so that tests remain fast, deterministic, and suitable for CI.
 
-Production-oriented AWS hardening, including AWS KMS-backed signing, immutable storage, richer metadata indexing, and operational monitoring, is documented as a future extension rather than included as a deployed production system.
+The current Phase 2 metadata storage decisions are documented in ADR 0001 and ADR 0002. Expected digest metadata initially uses sidecar metadata objects, and S3 JSON object storage is implemented as a pluggable backend. DynamoDB, AWS KMS-backed signing, immutable storage, richer metadata indexing, and operational monitoring remain future production hardening options rather than deployed production features.
 
 ---
 
@@ -37,7 +37,11 @@ For audit evidence to be useful, it should satisfy at least two technical requir
 This PoC combines:
 
 - **JSON Schema validation** for structural correctness
+- **RFC 8785 JCS-compatible canonicalization** for stable cryptographic inputs
 - **SHA-256 hashing** for tamper-evident verification
+- **ECDSA P-256 signatures** for local authenticity demonstrations
+- **Sidecar metadata verification** for separating evidence content from verification metadata
+- **Local and S3-compatible JSON object storage** for storage abstraction
 - **Automated tests** for regression prevention
 - **GitHub Actions CI** for reproducible validation
 
@@ -52,6 +56,13 @@ This PoC combines:
 - Verify whether evidence has been modified
 - Sign and verify evidence using local ECDSA P-256 keys for demonstration
 - Detect tampering with public-key signature verification
+- Validate v1 sidecar metadata for stored evidence
+- Generate canonical sidecar metadata signing payloads
+- Sign and verify sidecar metadata with local ECDSA P-256 keys
+- Verify evidence together with signed sidecar metadata
+- Store and load JSON evidence metadata through `LocalJsonObjectStore`
+- Store and load JSON evidence metadata through `S3JsonObjectStore`
+- Test S3-compatible storage flows using an injected in-memory fake S3 client
 - Run automated tests using Node.js built-in test runner
 - Run validation and verification automatically in GitHub Actions
 
@@ -84,6 +95,46 @@ This separates two important concerns:
 
 ---
 
+## Sidecar Metadata Verification Flow
+
+Phase 2 extends the basic evidence verification flow with signed sidecar metadata.
+
+```text
+Evidence JSON
+  ↓
+RFC 8785 JCS-compatible canonicalization
+  ↓
+SHA-256 evidence digest
+  ↓
+Sidecar metadata creation
+  ↓
+Canonical metadata signing payload
+  ↓
+ECDSA P-256 metadata signature
+  ↓
+Store evidence and sidecar metadata
+  ↓
+Load evidence and sidecar metadata
+  ↓
+Verify evidence digest and metadata signature
+  ↓
+VALID / INVALID result
+```
+
+This design separates:
+
+| Layer | Purpose |
+|---|---|
+| Evidence object | Stores the original audit evidence |
+| Sidecar metadata object | Stores digest, algorithm, timestamp, evidence reference, and signature |
+| Signature verification | Confirms that metadata was signed by the expected key |
+| Digest verification | Confirms that loaded evidence matches the signed metadata |
+
+The storage layer is intentionally not treated as the cryptographic trust boundary.  
+Even when evidence and metadata are loaded from local storage or S3-compatible storage, the verification layer must still validate the evidence digest and sidecar metadata signature.
+
+---
+
 ## Security Model and Current Limitations
 
 The current local MVP demonstrates tamper-evident evidence verification using:
@@ -92,6 +143,8 @@ The current local MVP demonstrates tamper-evident evidence verification using:
 - RFC 8785 JSON Canonicalization Scheme
 - SHA-256 hashing
 - deterministic verification scripts
+- local ECDSA P-256 signature verification
+- sidecar metadata signing and verification
 - automated tests
 - GitHub Actions CI
 
@@ -126,9 +179,10 @@ In short:
 | Schema correctness | JSON Schema | JSON Schema |
 | Deterministic canonicalization | RFC 8785 JCS | RFC 8785 JCS |
 | Content tamper detection | SHA-256 hash verification | SHA-256 hash verification |
-| Authenticity | Not fully proven locally | AWS KMS asymmetric signing |
+| Local authenticity demo | Local ECDSA P-256 signatures | AWS KMS asymmetric signing |
+| Sidecar metadata authenticity | Local ECDSA P-256 metadata signature | KMS-backed metadata signature |
 | Non-repudiation support | Limited | KMS signing, IAM controls, and CloudTrail |
-| Trusted expected hash | Manual/local assumption | Signed digest and controlled metadata storage |
+| Trusted expected hash | Signed sidecar metadata in current PoC | Signed digest and controlled metadata storage |
 | Immutable storage | Not included locally | S3 Object Lock |
 | Sequence/completeness checks | Not included locally | Hash chain or Merkle tree roadmap |
 | Trusted timestamping | Not included locally | Ingestion time, CloudTrail, and optional external timestamping |
@@ -157,6 +211,10 @@ This portfolio project is considered complete when it demonstrates:
 - documented hash-only limitations
 - architecture diagrams
 - local signature verification prototype
+- sidecar metadata signature verification prototype
+- local JSON object storage prototype
+- S3-compatible JSON object storage prototype
+- local and S3 sidecar storage E2E tests
 - hash chain verification prototype
 
 The project does not aim to provide a production SaaS, legal compliance certification, or complete AWS deployment in its current phase.
@@ -172,7 +230,8 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │       └── verify.yml
 ├── docs/
 │   ├── adr/
-│   │   └── 0001-digest-metadata-storage.md
+│   │   ├── 0001-digest-metadata-storage.md
+│   │   └── 0002-s3-json-object-store.md
 │   ├── phase-2-aws/
 │   │   ├── acceptance-criteria.md
 │   │   ├── design.md
@@ -182,7 +241,13 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   └── framework-selection.md
 ├── lib/
 │   ├── audit.js
+│   ├── json-object-store.js
+│   ├── metadata-signing-payload.js
+│   ├── s3-json-object-store.js
 │   ├── schema-validation.js
+│   ├── sidecar-metadata-schema.js
+│   ├── sidecar-metadata-signature.js
+│   ├── sidecar-verification.js
 │   └── signature.js
 ├── samples/
 │   └── evidence-consent.json
@@ -197,7 +262,15 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   └── verify-signature.js
 ├── tests/
 │   ├── audit.test.js
+│   ├── json-object-store.test.js
+│   ├── local-sidecar-e2e.test.js
+│   ├── metadata-signing-payload.test.js
+│   ├── s3-json-object-store.test.js
+│   ├── s3-sidecar-e2e.test.js
 │   ├── schema-validation.test.js
+│   ├── sidecar-metadata-schema.test.js
+│   ├── sidecar-metadata-signature.test.js
+│   ├── sidecar-verification.test.js
 │   └── signature.test.js
 ├── package.json
 └── README.md
@@ -223,7 +296,7 @@ Additional design documents are available in the `docs` directory:
 - [Portfolio Summary](docs/portfolio-summary.md)
 - [Verification Runbook](docs/verification-runbook.md)
 
-Phase 2 AWS-backed MVP planning:
+Phase 2 AWS-backed MVP planning and design:
 
 - [Phase 2 Requirements](docs/phase-2-aws/requirements.md)
 - [Phase 2 Design](docs/phase-2-aws/design.md)
@@ -234,6 +307,46 @@ Phase 2 AWS-backed MVP planning:
 Architecture Decision Records:
 
 - [ADR 0001: Digest Metadata Storage](docs/adr/0001-digest-metadata-storage.md)
+- [ADR 0002: S3 JSON Object Store](docs/adr/0002-s3-json-object-store.md)
+
+---
+
+## Phase 2 Implementation Status
+
+Current Phase 2 implementation includes:
+
+- v1 sidecar metadata schema validation
+- canonical sidecar metadata signing payload generation
+- ECDSA P-256 sidecar metadata signing and verification
+- full evidence + sidecar metadata verification
+- local JSON object storage through `LocalJsonObjectStore`
+- S3-compatible JSON object storage through `S3JsonObjectStore`
+- local sidecar storage E2E tests
+- S3 sidecar storage E2E tests using an in-memory fake S3 client
+
+The default test suite does not require AWS credentials or real S3 buckets.
+
+```bash
+npm test
+```
+
+Current status:
+
+```text
+79 tests passing
+```
+
+Production hardening still pending:
+
+- real AWS S3 integration tests
+- S3 Versioning
+- S3 Object Lock
+- SSE-S3 or SSE-KMS
+- AWS KMS-backed signing
+- IAM least-privilege examples
+- lifecycle and retention policy documentation
+
+---
 
 ## Requirements
 
@@ -379,6 +492,25 @@ The test suite covers:
 - Unexpected additional properties
 - Invalid enum values
 - Hash verification success and failure cases
+- RFC 8785 JCS-compatible canonicalization stability
+- Local ECDSA P-256 signing and verification
+- Sidecar metadata schema validation
+- Canonical sidecar metadata signing payload generation
+- Sidecar metadata signature generation and verification
+- Full evidence + sidecar metadata verification
+- Local JSON object storage
+- S3-compatible JSON object storage
+- Local sidecar storage E2E flows
+- S3 sidecar storage E2E flows using an in-memory fake S3 client
+- Tampered evidence detection
+- Tampered metadata detection
+- Missing object handling
+
+Current expected result:
+
+```text
+79 tests passing
+```
 
 ---
 
@@ -423,7 +555,7 @@ samples/evidence-consent.json
 
 ## Security and Audit Design Notes
 
-This PoC demonstrates a two-layer validation approach:
+This PoC demonstrates a layered validation approach:
 
 1. **Schema-level validation**
    - Ensures that required fields exist
@@ -433,6 +565,14 @@ This PoC demonstrates a two-layer validation approach:
 2. **Cryptographic integrity verification**
    - Uses SHA-256 to detect changes to the evidence payload
    - Produces deterministic hashes from RFC 8785 JCS-compatible canonical JSON
+
+3. **Signature verification**
+   - Uses local ECDSA P-256 signatures for demonstration
+   - Shows how authenticity checks can be added beyond raw hash comparison
+
+4. **Sidecar metadata verification**
+   - Stores digest and verification metadata separately from evidence content
+   - Verifies metadata signatures and evidence digest consistency after loading
 
 This design is useful as a foundation for:
 
@@ -457,7 +597,9 @@ It does not provide:
 - Production-grade identity management
 - Production-grade key management
 - Non-repudiation guarantees
+- Production-grade immutable storage by default
 - Blockchain anchoring by default
+- A deployed production AWS environment
 
 Actual audit, compliance, legal, and security requirements should be reviewed with qualified professionals.
 
@@ -477,6 +619,13 @@ Included in v0.1.0:
 - Hash-based tamper detection
 - Local ECDSA P-256 signature generation and verification
 - Local tamper detection demo
+- Sidecar metadata schema validation
+- Canonical sidecar metadata signing payload generation
+- Sidecar metadata signing and verification
+- Evidence + sidecar metadata verification
+- Local JSON object storage
+- S3-compatible JSON object storage
+- Local and S3 sidecar storage E2E tests
 - Automated tests
 - GitHub Actions CI
 - Verification runbook
@@ -485,14 +634,30 @@ Included in v0.1.0:
 
 ### Phase 2: AWS-backed authenticity and immutability
 
-Potential future enhancements include:
+Phase 2 currently includes local and S3-compatible sidecar metadata storage and verification prototypes.
 
+Implemented Phase 2 capabilities:
+
+- Sidecar metadata validation
+- Signed sidecar metadata verification
+- Evidence + metadata verification
+- Local JSON object storage
+- S3-compatible JSON object storage
+- In-memory fake S3 client testing
+- Local and S3 sidecar E2E tests
+
+Potential future production hardening includes:
+
+- Real AWS S3 integration tests
 - AWS KMS asymmetric signing implementation
 - S3 Object Lock based immutable evidence storage
+- S3 Versioning
+- SSE-S3 or SSE-KMS encryption
 - DynamoDB metadata persistence for digest, signature, sequence, and verification state
 - CloudTrail and CloudWatch based operational auditability
 - IAM least-privilege execution roles
 - Key rotation and verification policy documentation
+- Lifecycle and retention policy documentation
 
 ### Phase 3: Productization and external verification
 
@@ -525,9 +690,11 @@ The v0.1.0 MVP does not aim to provide:
 
 MIT
 
+---
+
 ## JSON Canonicalization
 
-This PoC uses RFC 8785 JSON Canonicalization Scheme (JCS) compatible canonicalization via the `canonicalize` package before calculating SHA-256 hashes.
+This PoC uses RFC 8785 JSON Canonicalization Scheme, JCS, compatible canonicalization via the `canonicalize` package before calculating SHA-256 hashes.
 
 Using JCS-compatible canonicalization avoids relying on ad-hoc key sorting and helps produce stable, interoperable hash inputs across implementations.
 
@@ -548,6 +715,8 @@ VALID / INVALID
 ```
 
 This PoC focuses on structural validation and tamper detection. It does not prove that the original event content is true, nor does it provide legal audit certification by itself.
+
+---
 
 ## Articles
 

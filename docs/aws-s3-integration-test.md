@@ -140,3 +140,43 @@ Reasons:
 - it can fail due to IAM, bucket policy, or regional configuration outside the codebase
 
 If CI execution is required in the future, configure it as a manually triggered or protected workflow with explicit AWS credentials and a dedicated test bucket.
+
+## Verified example
+
+The gated AWS S3 integration test was manually verified against a real S3 bucket.
+
+Environment:
+
+```text
+AWS_REGION=ap-northeast-1
+RUN_AWS_INTEGRATION_TESTS=1
+AWS_S3_INTEGRATION_BUCKET=<redacted-test-bucket>
+```
+
+Result:
+
+```text
+tests 1
+pass 1
+fail 0
+skipped 0
+```
+
+Cleanup check:
+
+```text
+No objects remained under integration-tests/s3-json-object-store/.
+```
+
+Resource cleanup:
+
+```text
+The temporary test bucket was removed after verification.
+```
+
+Note:
+
+```text
+The verification used SSE-S3 default encryption and public access blocking.
+AWS account ID and bucket name are intentionally redacted.
+```

@@ -1,5 +1,10 @@
 # AWS KMS Signing Design
 
+> **Note:** This is an early draft. See [`docs/kms-signing-design.md`](./kms-signing-design.md)
+> for the current, more complete KMS signing design.
+
+---
+
 ## Overview
 
 This document describes a future design for adding AWS KMS-based digital signatures to the tamper-evident audit trail PoC.

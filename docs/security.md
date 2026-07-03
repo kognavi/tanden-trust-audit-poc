@@ -1,5 +1,15 @@
 # Security Design
 
+> **Note:** This document has been superseded by [`docs/threat-model.md`](./threat-model.md),
+> which provides the current, detailed threat model including assets, trust
+> boundaries, threat actors, STRIDE mapping, and residual risks. This file is
+> kept for historical reference only.
+
+---
+
+## Key Security Principles
+
+
 ## Key Security Principles
 
 - Do not store real personal information in this prototype

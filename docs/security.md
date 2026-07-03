@@ -9,9 +9,6 @@
 
 ## Key Security Principles
 
-
-## Key Security Principles
-
 - Do not store real personal information in this prototype
 - Do not commit secrets, API keys, private keys, or credentials
 - Store detailed evidence data off-chain

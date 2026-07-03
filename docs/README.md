@@ -48,6 +48,7 @@ documentation for the Tanden Trust Audit PoC.
 |---|---|
 | `adr/0001-digest-metadata-storage.md` | Digest and metadata storage approach |
 | `adr/0002-s3-json-object-store.md` | S3 JSON object store design |
+| `adr/0003-s3-object-lock-consideration.md` | Decision to defer S3 Object Lock enforcement for the current MVP |
 
 ## Phase 2 (AWS) Planning
 

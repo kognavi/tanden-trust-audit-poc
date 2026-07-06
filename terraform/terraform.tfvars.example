@@ -1,0 +1,7 @@
+# terraform.tfvars.example
+# このファイルをコピーして terraform.tfvars を作成し、実際の値を設定してください。
+# terraform.tfvars はリポジトリにコミットしないでください（.gitignore 済み）。
+
+alert_email          = "your-email@example.com"
+monthly_budget_limit = 20
+budget_name          = "tanden-trust-audit-poc-monthly"

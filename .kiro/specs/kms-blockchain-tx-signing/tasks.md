@@ -49,20 +49,29 @@
     - `signatureBase64` フィールドは `signature` Buffer を `toString('base64')` したものと等しくなるよう保証する
     - _要件: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 10.1_
 
-- [ ] 3. QLDB 署名イベントロガーの実装
-  - [ ] 3.1 `lib/qldb-signing-logger.js` を作成する
-    - `QldbSigningLogger` クラスを定義し、コンストラクターでQLDBセッションクライアントを注入できる設計にする
+- [ ] 3. Aurora PostgreSQL 署名イベントロガーの実装
+  - 注意: Amazon QLDB は 2025年7月31日にサービス完全終了済み。AWS公式移行推奨先である Amazon Aurora PostgreSQL（append-onlyテーブル設計）で同等の署名イベントログ機能を実装する。
+  - [ ] 3.1 `lib/pg-signing-logger.js` を作成する
+    - `PgSigningLogger` クラスを定義し、コンストラクターで `pg`（node-postgres）クライアントまたはプールを注入できる設計にする（テスト時にモッククライアントを差し込めるようにする）
     - `logSigningEvent(eventRecord)` メソッドを実装し、`schemas/signing-event.schema.json` を用いてAJVスキーマ検証を実行する
-    - スキーマ検証失敗時はQLDB書き込みをスキップし、バリデーションエラーをコンソールログに記録する
-    - QLDBへの書き込み（`SigningEvents` テーブルへの `INSERT`）を実装する
-    - QLDB書き込み失敗時はエラーをコンソールログに記録し、例外を再スローしない（非ブロッキング）
+    - スキーマ検証失敗時はDB書き込みをスキップし、バリデーションエラーをコンソールログに記録する
+    - `signing_events` テーブルへの `INSERT` を実装する（`event_id`・`event_type`・`evidence_id`・`digest_hex`・`kms_key_id`・`signing_algorithm`・`signed_at`・`signer_role_arn`・`status`・`valid`・`created_at` カラム）
+    - テーブルは append-only 設計とし、`UPDATE`・`DELETE` は行わない（不変性を保証）
+    - DB書き込み失敗時はエラーをコンソールログに記録し、例外を再スローしない（非ブロッキング）
     - _要件: 3.1, 3.2, 3.3, 3.5, 3.6, 4.3, 4.4_
 
-  - [ ] 3.2 `AwsKmsProvider` に QLDB ロガー呼び出しを統合する
-    - `signEvidence` 正常完了後、`eventType: "SIGN"` の `Signing_Event_Record` を `QldbSigningLogger.logSigningEvent` で非同期書き込む（`await` せず `.catch(console.error)` パターンで非ブロッキングにする）
+  - [ ] 3.2 `AwsKmsProvider` に Aurora PostgreSQL ロガー呼び出しを統合する
+    - `signEvidence` 正常完了後、`eventType: "SIGN"` の `Signing_Event_Record` を `PgSigningLogger.logSigningEvent` で非同期書き込む（`await` せず `.catch(console.error)` パターンで非ブロッキングにする）
     - `verifyEvidenceSignature` 完了後、`eventType: "VERIFY"` と検証結果（`valid: true/false`）を含む `Signing_Event_Record` を同様に書き込む
     - `AwsKmsProvider` コンストラクターでロガーインスタンスも外部注入できるようにし、テスト時にモックを差し込めるようにする
     - _要件: 3.1, 3.3, 3.4, 3.5_
+
+  - [ ] 3.3 Aurora PostgreSQL の `signing_events` テーブルDDLを作成する
+    - `docs/pg-signing-events-schema.sql` に CREATE TABLE 文を記述する
+    - `event_id UUID PRIMARY KEY`・`event_type VARCHAR(10) NOT NULL CHECK (event_type IN ('SIGN', 'VERIFY'))`・`digest_hex CHAR(64) NOT NULL`・`created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` を含む
+    - `DELETE` 権限を署名ロール・検証ロールから剥奪するコメントを記述し、append-only の運用方針を明記する
+    - `package.json` の `dependencies` に `"pg": "^8.0.0"` を固定バージョンで追加する
+    - _要件: 3.1, 3.2_
 
 - [ ] 4. チェックポイント — ここまでの動作確認
   - 既存テストスイートを `USE_KMS` 未設定で実行し、全テストがパスすることを確認する。問題があればユーザーに報告する。

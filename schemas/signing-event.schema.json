@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/tanden-trust-audit-poc/schemas/signing-event.schema.json",
+  "title": "Signing Event Record",
+  "description": "JSON Schema for a KMS signing or verification event record used in Tanden Trust Audit PoC.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "eventType",
+    "evidenceId",
+    "digestHex",
+    "kmsKeyId",
+    "signingAlgorithm",
+    "signedAt"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this signing event (UUID v4)."
+    },
+    "eventType": {
+      "type": "string",
+      "enum": ["SIGN", "VERIFY"],
+      "description": "Type of KMS operation performed."
+    },
+    "evidenceId": {
+      "type": "string",
+      "pattern": "^evd-[0-9]{4}-[0-9]{6}$",
+      "description": "Identifier of the evidence record that was signed or verified."
+    },
+    "digestHex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 digest of the evidence record in lowercase hexadecimal (64 characters)."
+    },
+    "kmsKeyId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ARN or key ID of the AWS KMS key used for signing or verification."
+    },
+    "signingAlgorithm": {
+      "type": "string",
+      "minLength": 1,
+      "description": "KMS signing algorithm used (e.g. ECDSA_SHA_256)."
+    },
+    "signedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when the signing or verification operation was performed."
+    },
+    "signerRoleArn": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ARN of the IAM role that performed the signing or verification operation."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["SUCCESS", "FAILURE"],
+      "description": "Status of the signing event."
+    },
+    "valid": {
+      "type": "boolean",
+      "description": "Result of a VERIFY operation. true if the signature was valid, false otherwise."
+    }
+  }
+}

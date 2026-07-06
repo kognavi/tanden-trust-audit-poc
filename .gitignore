@@ -167,3 +167,8 @@ tmp/
 .DS_Store
 .vscode/
 .idea/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl

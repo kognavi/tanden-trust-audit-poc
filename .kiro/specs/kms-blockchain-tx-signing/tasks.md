@@ -9,7 +9,7 @@
 ## Tasks
 
 - [ ] 1. 署名イベントスキーマの定義
-  - [ ] 1.1 `schemas/signing-event.schema.json` を作成する
+  - [x] 1.1 `schemas/signing-event.schema.json` を作成する
     - `eventId`（UUID形式）・`eventType`（`"SIGN"` or `"VERIFY"` 列挙型）・`evidenceId`・`digestHex`（64文字16進数 pattern制約）・`kmsKeyId`・`signingAlgorithm`・`signedAt`（ISO 8601 date-time format）を必須フィールドとして定義
     - `signerRoleArn`・`status`・`valid` フィールドをオプションとして定義
     - `$schema`・`title`・`description` を含め、AJVで検証可能な JSON Schema Draft-07 形式で記述

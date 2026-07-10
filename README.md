@@ -686,6 +686,42 @@ The v0.1.0 MVP does not aim to provide:
 
 ---
 
+## Cost Guardrail (AWS Budget Alert)
+
+This project uses AWS KMS and related services in later phases, which incur real AWS costs.
+To prevent unexpected charges, an AWS Budgets alert is configured via Terraform in the `terraform/` directory.
+
+### What it does
+
+- Sets a monthly cost budget (default: $20 USD) on the AWS account
+- Sends SNS email notifications at 50%, 80%, 100% actual spend, and 100% forecasted spend
+- Uses an SNS topic with an email subscription as the alert delivery mechanism
+
+### Files
+
+```text
+terraform/
+├── provider.tf               # AWS provider (ap-northeast-1, ken-sso profile)
+├── budget_alert.tf           # AWS Budgets + SNS topic + subscription
+├── terraform.tfvars.example  # Template — copy to terraform.tfvars and fill in values
+└── terraform.tfvars          # Actual values (gitignored, never committed)
+```
+
+### Setup
+
+```bash
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+# Edit terraform/terraform.tfvars and set your alert_email
+cd terraform
+terraform init
+terraform apply
+```
+
+> `terraform.tfvars`, `*.tfstate`, and `.terraform/` are excluded from git via `.gitignore`.
+> The `alert_email` variable is marked `sensitive = true` in Terraform to prevent accidental log exposure.
+
+---
+
 ## License
 
 MIT

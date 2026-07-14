@@ -49,9 +49,9 @@
     - `signatureBase64` フィールドは `signature` Buffer を `toString('base64')` したものと等しくなるよう保証する
     - _要件: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 10.1_
 
-- [ ] 3. Aurora PostgreSQL 署名イベントロガーの実装
+- [x] 3. Aurora PostgreSQL 署名イベントロガーの実装
   - 注意: Amazon QLDB は 2025年7月31日にサービス完全終了済み。AWS公式移行推奨先である Amazon Aurora PostgreSQL（append-onlyテーブル設計）で同等の署名イベントログ機能を実装する。
-  - [ ] 3.1 `lib/pg-signing-logger.js` を作成する
+  - [x] 3.1 `lib/pg-signing-logger.js` を作成する
     - `PgSigningLogger` クラスを定義し、コンストラクターで `pg`（node-postgres）クライアントまたはプールを注入できる設計にする（テスト時にモッククライアントを差し込めるようにする）
     - `appendEvent(eventRecord)` メソッドを実装し、`schemas/signing-event.schema.json` を用いてAJVスキーマ検証を実行する
     - スキーマ検証失敗時はDB書き込みをスキップし、バリデーションエラーを例外としてスローする
@@ -63,7 +63,7 @@
     - `verifyChainIntegrity()` メソッドを実装し、先頭から `row_hash` を再計算してチェーンの完全性（削除・並び替え・改ざんの検知）を検証する
     - _要件: 3.1, 3.2, 3.3, 3.6, 4.3, 4.4_（要件3.5はタスク3.2の設計変更に伴い置き換え。ADR 0004参照）
 
-  - [ ] 3.2 `AuditManager` を介して署名処理とAurora PostgreSQLロガーを統合する
+  - [x] 3.2 `AuditManager` を介して署名処理とAurora PostgreSQLロガーを統合する
     - `AwsKmsProvider`／`LocalEcdsaProvider` と `PgSigningLogger` を直接結合せず、`lib/audit-manager.js` の `AuditManager` を仲介させる
     - `AuditManager.signAndRecord()` は署名（KMS または Local）を実行後、`PgSigningLogger.appendEvent()` を `await` し、`eventType: "SIGN"` の `Signing_Event_Record` を記録する。記録が失敗した場合は `AuditLedgerWriteError` をスローし、完了済みの署名結果を保持してリトライ可能にする（署名の再実行・重複KMS課金を回避）
     - `AuditManager.verifyAndRecord()` は検証を実行し、検証失敗時（`tamper_detected`）は常に `eventType: "VERIFY"` と検証結果（`valid: false`）を台帳へ記録する。検証成功時はデフォルトでは記録せず、`recordSuccess` オプション指定時のみ記録する
@@ -71,7 +71,7 @@
     - `AuditManager` のコンストラクターで `signingProvider` と `pgLogger` を外部注入できるようにし、テスト時にモックを差し込めるようにする
     - _要件: 3.1, 3.3, 3.4, 3.5_
 
-  - [ ] 3.3 Aurora PostgreSQL の `signing_events` テーブルDDLを作成する
+  - [x] 3.3 Aurora PostgreSQL の `signing_events` テーブルDDLを作成する
     - `docs/pg-signing-events-schema.sql` に CREATE TABLE 文を記述する
     - `event_id UUID PRIMARY KEY`・`event_type VARCHAR(10) NOT NULL CHECK (event_type IN ('SIGN', 'VERIFY'))`・`digest_hex CHAR(64) NOT NULL`・`created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` を含む
     - `DELETE` 権限を署名ロール・検証ロールから剥奪するコメントを記述し、append-only の運用方針を明記する

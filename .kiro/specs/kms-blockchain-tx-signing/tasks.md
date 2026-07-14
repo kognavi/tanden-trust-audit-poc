@@ -53,17 +53,22 @@
   - 注意: Amazon QLDB は 2025年7月31日にサービス完全終了済み。AWS公式移行推奨先である Amazon Aurora PostgreSQL（append-onlyテーブル設計）で同等の署名イベントログ機能を実装する。
   - [ ] 3.1 `lib/pg-signing-logger.js` を作成する
     - `PgSigningLogger` クラスを定義し、コンストラクターで `pg`（node-postgres）クライアントまたはプールを注入できる設計にする（テスト時にモッククライアントを差し込めるようにする）
-    - `logSigningEvent(eventRecord)` メソッドを実装し、`schemas/signing-event.schema.json` を用いてAJVスキーマ検証を実行する
-    - スキーマ検証失敗時はDB書き込みをスキップし、バリデーションエラーをコンソールログに記録する
-    - `signing_events` テーブルへの `INSERT` を実装する（`event_id`・`event_type`・`evidence_id`・`digest_hex`・`kms_key_id`・`signing_algorithm`・`signed_at`・`signer_role_arn`・`status`・`valid`・`created_at` カラム）
-    - テーブルは append-only 設計とし、`UPDATE`・`DELETE` は行わない（不変性を保証）
-    - DB書き込み失敗時はエラーをコンソールログに記録し、例外を再スローしない（非ブロッキング）
-    - _要件: 3.1, 3.2, 3.3, 3.5, 3.6, 4.3, 4.4_
+    - `appendEvent(eventRecord)` メソッドを実装し、`schemas/signing-event.schema.json` を用いてAJVスキーマ検証を実行する
+    - スキーマ検証失敗時はDB書き込みをスキップし、バリデーションエラーを例外としてスローする
+    - `signing_events` テーブルへの `INSERT` を実装する（`event_id`・`event_type`・`evidence_id`・`digest_hex`・`kms_key_id`・`signing_algorithm`・`signed_at`・`signer_role_arn`・`status`・`valid`・`previous_hash`・`row_hash`・`created_at` カラム）
+    - `previous_hash`／`row_hash` によるハッシュチェーンを実装する（ADR 0004準拠）。`row_hash` は直前の行の `row_hash`（初回は `GENESIS_HASH`）を含めて `canonicalize`（`lib/canonicalize-loader.js` 経由）でシリアライズし、SHA-256で計算する。ただし `BIGSERIAL` の連番自体はハッシュ入力から除外し、トランザクションロールバックによる欠番を改ざんと誤検知しないようにする
+    - 並行する `appendEvent` 呼び出しに対して `pg_advisory_xact_lock()` で直列化し、`previous_hash` が常に直前のコミット済み行を正しく参照するようにする
+    - テーブルは append-only 設計とし、`UPDATE`・`DELETE` は行わない（不変性を保証）。スキーマ作成時に `REVOKE UPDATE, DELETE` を実行し、DB権限レベルでも多重に防御する
+    - DB書き込み失敗時は例外をスローする（呼び出し元の `AuditManager` がハンドリングし、署名結果を保持したリトライを可能にする）
+    - `verifyChainIntegrity()` メソッドを実装し、先頭から `row_hash` を再計算してチェーンの完全性（削除・並び替え・改ざんの検知）を検証する
+    - _要件: 3.1, 3.2, 3.3, 3.6, 4.3, 4.4_（要件3.5はタスク3.2の設計変更に伴い置き換え。ADR 0004参照）
 
-  - [ ] 3.2 `AwsKmsProvider` に Aurora PostgreSQL ロガー呼び出しを統合する
-    - `signEvidence` 正常完了後、`eventType: "SIGN"` の `Signing_Event_Record` を `PgSigningLogger.logSigningEvent` で非同期書き込む（`await` せず `.catch(console.error)` パターンで非ブロッキングにする）
-    - `verifyEvidenceSignature` 完了後、`eventType: "VERIFY"` と検証結果（`valid: true/false`）を含む `Signing_Event_Record` を同様に書き込む
-    - `AwsKmsProvider` コンストラクターでロガーインスタンスも外部注入できるようにし、テスト時にモックを差し込めるようにする
+  - [ ] 3.2 `AuditManager` を介して署名処理とAurora PostgreSQLロガーを統合する
+    - `AwsKmsProvider`／`LocalEcdsaProvider` と `PgSigningLogger` を直接結合せず、`lib/audit-manager.js` の `AuditManager` を仲介させる
+    - `AuditManager.signAndRecord()` は署名（KMS または Local）を実行後、`PgSigningLogger.appendEvent()` を `await` し、`eventType: "SIGN"` の `Signing_Event_Record` を記録する。記録が失敗した場合は `AuditLedgerWriteError` をスローし、完了済みの署名結果を保持してリトライ可能にする（署名の再実行・重複KMS課金を回避）
+    - `AuditManager.verifyAndRecord()` は検証を実行し、検証失敗時（`tamper_detected`）は常に `eventType: "VERIFY"` と検証結果（`valid: false`）を台帳へ記録する。検証成功時はデフォルトでは記録せず、`recordSuccess` オプション指定時のみ記録する
+    - 台帳への記録失敗時は `AuditLedgerWriteError` をスローする（fire-and-forget で例外を握り潰す設計は、監査台帳としての整合性保証に反するため不採用）
+    - `AuditManager` のコンストラクターで `signingProvider` と `pgLogger` を外部注入できるようにし、テスト時にモックを差し込めるようにする
     - _要件: 3.1, 3.3, 3.4, 3.5_
 
   - [ ] 3.3 Aurora PostgreSQL の `signing_events` テーブルDDLを作成する

@@ -49,6 +49,8 @@
 6. IF `KMS_Key_ID` 環境変数が未設定の場合、THEN THE `KMS_Provider` SHALL 初期化時に `Error: KMS_KEY_ID environment variable is required` というメッセージのエラーをスローする
 7. IF AWS KMS API 呼び出しが失敗した場合、THEN THE `KMS_Provider` SHALL 元のAWSエラーをラップし、エラーメッセージにKMSオペレーション名を含む `Error` をスローする
 8. THE `KMS_Provider` SHALL 秘密鍵マテリアルをメモリ上またはディスク上に保持しない
++9. WHEN `KMS_Provider` が初期化される場合、THE `KMS_Provider` SHALL `GetPublicKey` API で取得した `KeySpec` が `ECC_SECG_P256K1` であることを検証する（`_ensureKeySpecVerified`）。IF 異なる `KeySpec` が返された場合、THEN THE `KMS_Provider` SHALL 例外をスローし、誤ったカーブによるサイレントな不正署名生成を防止する（TD-001）
++10. THE `KMS_Provider` SHALL `_ensureKeySpecVerified` の検証結果をインスタンス内でキャッシュし、複数回の署名・検証呼び出しにおいて `GetPublicKey` API を重複して呼び出さない（TD-003）
 
 ---
 

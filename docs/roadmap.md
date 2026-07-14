@@ -181,3 +181,66 @@ The current priority is Phase 3:
 1. Add a documentation index (`docs/README.md`) to organize the growing design document set
 2. Add an ADR documenting the decision to defer S3 Object Lock for the current MVP
 3. Prepare for Phase 4 (AWS KMS signing provider) as the next implementation milestone
+
+---
+
+## Technical Debt Backlog
+
+The following items were identified during Phase 4 implementation and are tracked here for future resolution.
+
+### TD-001: AwsKmsProvider — KeySpec validation on initialization
+
+**Priority:** High
+
+**Status:** ✅ Resolved
+
+**Context:** `decodeDerSignatureToRaw` normalizes r and s values to exactly 32 bytes, which is correct for secp256k1 (P-256K1). If the KMS key is inadvertently configured with a different curve (e.g. P-384, P-521), this fixed-width decoding will silently produce incorrect signatures rather than failing loudly.
+
+**Proposed fix:** In the constructor or a lazy `initialize()` method, call `GetPublicKeyCommand` and assert that `response.KeySpec` equals `ECC_SECG_P256K1`. Throw an error immediately if it does not match (Fail Fast principle).
+
+**Affected file:** `lib/aws-kms-provider.js`
+
+**Resolution:** Implemented as a lazy, cached guard `_ensureKeySpecVerified()`, invoked at the start of `signDigest`, `verifyDigestSignature`, and `getPublicKey`. Throws immediately if `response.KeySpec !== 'ECC_SECG_P256K1'`. Verified in `tests/aws-kms-provider.test.js` (`_ensureKeySpecVerified: throws on unsupported KeySpec (TD-001)`).
+
+---
+
+
+
+### TD-002: AwsKmsProvider — Add `cause` chain to error wrapping
+
+**Priority:** Medium
+
+**Context:** The current `catch` blocks in `signDigest`, `verifyDigestSignature`, and `getPublicKey` create a new `Error` with a descriptive message but discard the original AWS SDK error. This means callers cannot programmatically detect specific error types such as `AccessDeniedException` or `KMSInvalidStateException`.
+
+**Proposed fix:** Replace:
+
+```js
+throw new Error(`KMS Sign operation failed: ${err.message}`);
+```
+
+with:
+
+```js
+throw new Error(`KMS Sign operation failed: ${err.message}`, { cause: err });
+```
+
+in all three KMS operation catch blocks. Requires Node.js ≥ 16.9.0 (already satisfied by the project's `engines` constraint of ≥ 20).
+
+**Affected file:** `lib/aws-kms-provider.js`
+
+---
+
+### TD-003: AwsKmsProvider — Cache `getPublicKey()` result
+
+**Priority:** Low
+
+**Status:** ✅ Resolved
+
+**Context:** The public key for an asymmetric KMS key is immutable for the lifetime of the key. Calling `GetPublicKeyCommand` on every verification incurs an unnecessary KMS API call and associated cost.
+
+**Proposed fix:** Store the result of the first `GetPublicKeyCommand` call in an instance variable (`this._cachedPublicKey`). Return the cached value on subsequent calls without issuing a new API request.
+
+**Affected file:** `lib/aws-kms-provider.js`
+
+**Resolution:** Resolved as a side effect of the TD-001 fix — `_ensureKeySpecVerified()` caches the public key bytes returned alongside `KeySpec` from the same `GetPublicKeyCommand` call, eliminating redundant KMS API calls on repeated `getPublicKey()` invocations. Verified in `tests/aws-kms-provider.test.js` (`_ensureKeySpecVerified: caches result across multiple calls (TD-003)`).
+

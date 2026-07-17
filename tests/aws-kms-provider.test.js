@@ -142,6 +142,15 @@ test('signDigest: propagates KMS errors', async () => {
       () => provider.signDigest(Buffer.alloc(32)),
       /KMS unavailable/
     );
+
+    // ★TD-002: cause chainが正しく保持されているか検証
+    try {
+      await provider.signDigest(Buffer.alloc(32));
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.cause, 'error.cause should be set');
+      assert.equal(err.cause.message, 'KMS unavailable');
+    }
   });
 });
 

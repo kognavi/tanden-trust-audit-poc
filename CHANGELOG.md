@@ -7,6 +7,46 @@ and this project uses [Semantic Versioning](https://semver.org/) for its
 own milestone tags (note: pre-1.0, so minor versions may include breaking
 changes to internal interfaces).
 
+## [0.2.0] - 2026-07-18
+
+### Added
+
+**Phase 4 — AWS KMS-Backed Signing**
+- `AwsKmsProvider` implementing the signature provider interface against AWS KMS asymmetric keys (`sign`, `verify`, `getPublicKey`) (#65)
+- `signDigest` / `verifyDigestSignature` using KMS `SignCommand` / `VerifyCommand`, with local DER-to-raw signature decoding for interoperability with the existing ECDSA verification path (#65)
+- Lazy, cached `_ensureKeySpecVerified()` guard: verifies the KMS key's `KeySpec` on first use and fails fast if it does not match the expected `ECC_SECG_P256K1` (TD-001, #65)
+- Public key caching as a side effect of the KeySpec check, eliminating redundant `GetPublicKeyCommand` calls on repeated invocations (TD-003, #65)
+- Unit tests using a fake KMS client (`FakeKmsClient`), covering key spec validation, caching behavior, and error propagation
+
+**Phase 5 — Signing Event Ledger**
+- `PgSigningLogger` implementing an append-only, hash-chained signing event ledger (`appendEvent`, `verifyChainIntegrity`) modeled after blockchain-style tamper evidence (#65)
+- Genesis hash anchoring (`GENESIS_HASH`) and per-event hash linkage for chain integrity verification
+- `AuditManager` integration layer with fail-fast error propagation (#65)
+- ADR 0004: signing event ledger design rationale
+- Unit tests using an in-memory fake `pg.Pool` client, validating real SQL statement shape without requiring a live PostgreSQL instance
+
+**Cost Guardrail**
+- Terraform-managed AWS Budgets alert: monthly budget threshold with SNS email notifications at 50/80/100% actual and 100% forecasted spend
+
+### Fixed
+
+- **TD-002 (partial)**: `AwsKmsProvider` now preserves the original AWS SDK error as `error.cause` when re-throwing from `GetPublicKey`, `Sign`, and `Verify` operations (#69, PR #70). This allows callers to inspect `error.cause.name` and `error.cause.$metadata` for root-cause diagnosis.
+  - **Not yet done**: error-type classification helpers (`isThrottlingError`, `isAccessDeniedError`) and the equivalent `cause`-preservation fix on the PostgreSQL ledger write path remain open — tracked separately (see Known Limitations).
+
+### Known Limitations (by design, for this MVP)
+
+- **TD-002 remaining scope**: KMS-side error classification helpers (`isThrottlingError`, `isAccessDeniedError`) and PostgreSQL-side `cause` preservation on ledger writes are not yet implemented, despite Issue #69 being closed by PR #70. Root KMS `cause` chaining is fixed; classification and PG parity remain future work.
+- No live AWS KMS or PostgreSQL integration test — KMS and PG providers are currently verified against fake/in-memory clients only; live integration testing remains a future stretch goal
+- No S3 Object Lock enforcement — see ADR 0003
+- No blockchain anchoring — planned for future phase
+- No multi-tenant authorization
+- No production-grade key rotation
+
+### Verification
+
+- 113/113 automated tests passing (`npm test`)
+- Real AWS S3 integration remains manually verified per v0.1.0 (see `docs/aws-s3-integration-test.md`)
+
 ## [0.1.0] - 2026-07-03
 
 ### Added

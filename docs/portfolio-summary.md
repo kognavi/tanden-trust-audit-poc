@@ -50,7 +50,8 @@ This project demonstrates a practical evidence verification workflow:
 8. Map controls to evidence and verification steps.
 9. Model threats and attack scenarios.
 10. Design a production-oriented AWS architecture.
-11. Extend the trust model with AWS KMS asymmetric signing.
+11. Extend the trust model with AWS KMS asymmetric signing, implemented via `AwsKmsProvider` and verified against a fake KMS client.
+12. Record signing events in a PostgreSQL-backed hash-chained ledger via `PgSigningLogger` for signer accountability.
 
 ## Implemented Features
 
@@ -66,6 +67,16 @@ The current MVP includes:
 - positive tests for valid evidence
 - negative tests for tampered evidence, wrong hashes, schema violations, and invalid fields
 - reproducible command-line verification workflow
+
+Phase 2 additions now implemented:
+
+- sidecar metadata schema validation and canonical signing payload generation
+- ECDSA P-256 sidecar metadata signing and verification
+- AWS KMS-backed asymmetric signing (`AwsKmsProvider`), verified against a fake KMS client
+- PostgreSQL-backed hash-chained signing event ledger (`PgSigningLogger`), verified against an in-memory fake `pg.Pool`
+- local and S3-compatible JSON object storage for evidence and metadata
+- Terraform-managed AWS Budgets cost guardrail alert
+- 113 automated tests passing
 
 ## Core Technical Concepts
 
@@ -103,7 +114,7 @@ The AWS reference architecture describes a possible production design using:
 - AWS Lambda for validation, hashing, and orchestration
 - Amazon S3 with Object Lock for immutable evidence storage
 - Amazon DynamoDB for evidence metadata
-- AWS KMS for asymmetric signing and key protection
+- AWS KMS for asymmetric signing and key protection (asymmetric signing implemented via `AwsKmsProvider`; key rotation/protection policy remains a design item)
 - AWS CloudTrail for audit logging
 - Amazon CloudWatch for monitoring and alarms
 - Amazon EventBridge for event-driven workflows
@@ -119,31 +130,35 @@ The design is aligned with the AWS Well-Architected Framework pillars:
 - Cost Optimization
 - Sustainability
 
-## KMS Signing Design Value
+## KMS Signing and Ledger Value
 
 Hash verification can detect whether evidence content has changed.
 
 However, a hash alone does not prove who generated or approved the digest.
 
-The KMS signing design addresses this limitation by introducing AWS KMS asymmetric signing.
+The implemented KMS signing and signing event ledger design addresses this limitation.
 
-A future production workflow could:
+The verified workflow (tested against a fake KMS client and an in-memory fake `pg.Pool`):
 
 1. validate the evidence
 2. canonicalize the evidence
 3. calculate a SHA-256 digest
-4. sign the digest using AWS KMS
-5. store evidence, metadata, digest, signature, key ID, and algorithm
-6. verify the signature during audit review
+4. sign the digest using AWS KMS via `AwsKmsProvider`
+5. record the signing event in a PostgreSQL-backed hash-chained ledger via `PgSigningLogger`
+6. store evidence, metadata, digest, signature, key ID, and algorithm
+7. verify the signature and ledger integrity during audit review
 
 This adds stronger support for:
 
 - evidence authenticity
 - signer accountability
+- hash-chained tamper-evident signing event history
 - least privilege signing workflows
-- CloudTrail-based auditability
+- CloudTrail-based auditability (design)
 - separation of duties
 - long-term verification
+
+Remaining production hardening: real AWS KMS/PostgreSQL integration tests, KMS error classification helpers, and PostgreSQL `cause` parity (tracked in issue #71).
 
 ## Attack Scenario Coverage
 
@@ -295,7 +310,9 @@ The project currently includes:
 - reproducible verification workflow
 - security and audit documentation
 - AWS production reference design
-- KMS signing design
+- AWS KMS-backed signing implementation (`AwsKmsProvider`)
+- PostgreSQL-backed signing event ledger implementation (`PgSigningLogger`)
+- 113 automated tests passing
 - attack scenario analysis
 - portfolio-oriented summary
 
@@ -303,16 +320,15 @@ The project currently includes:
 
 Possible future improvements include:
 
-1. Add GitHub Actions CI.
-2. Add a verification runbook.
-3. Add architecture diagrams.
-4. Implement a local signature verification mock.
-5. Add AWS CDK or Terraform infrastructure design.
-6. Add DynamoDB metadata schema examples.
-7. Add S3 Object Lock configuration examples.
-8. Add KMS signing and verification sample code.
-9. Add API Gateway and Lambda ingestion prototype.
-10. Explore optional blockchain anchoring or timestamping.
+1. Add a verification runbook.
+2. Add architecture diagrams.
+3. Extend AWS CDK or Terraform infrastructure design (Terraform-managed AWS Budgets guardrail already implemented).
+4. Add DynamoDB metadata schema examples.
+5. Add S3 Object Lock configuration examples.
+6. Add real AWS KMS and PostgreSQL integration tests (current tests use fake/in-memory clients).
+7. Add KMS error classification helpers and PostgreSQL `cause` parity (#71).
+8. Add API Gateway and Lambda ingestion prototype.
+9. Explore optional blockchain anchoring or timestamping.
 
 ## Limitations
 

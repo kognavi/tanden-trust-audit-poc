@@ -14,11 +14,11 @@ This project demonstrates how structured audit evidence can be validated, hashed
 
 The local proof of concept currently supports schema validation, RFC 8785 JCS-compatible canonicalization, SHA-256 tamper detection, local ECDSA P-256 signature verification, automated tests, and GitHub Actions CI.
 
-Phase 2 AWS-backed MVP work is now partially implemented. The project includes sidecar metadata schema validation, canonical metadata signing payloads, ECDSA P-256 sidecar metadata signing and verification, full evidence + sidecar metadata verification, local JSON object storage, and S3-compatible JSON object storage.
+Phase 2 AWS-backed MVP work is now substantially implemented. The project includes sidecar metadata schema validation, canonical metadata signing payloads, ECDSA P-256 sidecar metadata signing and verification, full evidence + sidecar metadata verification, local JSON object storage, S3-compatible JSON object storage, AWS KMS-backed asymmetric signing, and a PostgreSQL-backed hash-chained signing event ledger.
 
 The default test suite verifies both local and S3 sidecar storage flows without requiring AWS credentials or real S3 buckets. S3 behavior is tested through an injected in-memory fake S3 client so that tests remain fast, deterministic, and suitable for CI.
 
-The current Phase 2 metadata storage decisions are documented in ADR 0001 and ADR 0002. Expected digest metadata initially uses sidecar metadata objects, and S3 JSON object storage is implemented as a pluggable backend. DynamoDB, AWS KMS-backed signing, immutable storage, richer metadata indexing, and operational monitoring remain future production hardening options rather than deployed production features.
+The current Phase 2 metadata storage decisions are documented in ADR 0001, ADR 0002, and ADR 0004 (signing event ledger). Expected digest metadata initially uses sidecar metadata objects, and S3 JSON object storage is implemented as a pluggable backend. DynamoDB, immutable storage, richer metadata indexing, and operational monitoring remain future production hardening options rather than deployed production features. AWS KMS-backed signing and the signing event ledger are implemented and verified against fake/in-memory clients, with real AWS/PostgreSQL integration testing remaining a future step.
 
 ---
 
@@ -323,8 +323,11 @@ Current Phase 2 implementation includes:
 - S3-compatible JSON object storage through `S3JsonObjectStore`
 - local sidecar storage E2E tests
 - S3 sidecar storage E2E tests using an in-memory fake S3 client
+- AWS KMS-backed asymmetric signing through `AwsKmsProvider` (verified against a fake KMS client)
+- PostgreSQL-backed hash-chained signing event ledger through `PgSigningLogger` (verified against an in-memory fake `pg.Pool`)
+- Terraform-managed AWS Budgets cost guardrail alert
 
-The default test suite does not require AWS credentials or real S3 buckets.
+The default test suite does not require AWS credentials, real S3 buckets, or a live AWS KMS/PostgreSQL connection.
 
 ```bash
 npm test
@@ -333,17 +336,17 @@ npm test
 Current status:
 
 ```text
-79 tests passing
+113 tests passing
 ```
 
 Production hardening still pending:
 
-- real AWS S3 integration tests
+- real AWS S3, KMS, and PostgreSQL integration tests
 - S3 Versioning
 - S3 Object Lock
 - SSE-S3 or SSE-KMS
-- AWS KMS-backed signing
 - IAM least-privilege examples
+- KMS error classification helpers and PostgreSQL `cause` parity for TD-002 (#71)
 - lifecycle and retention policy documentation
 
 ---
@@ -502,6 +505,8 @@ The test suite covers:
 - S3-compatible JSON object storage
 - Local sidecar storage E2E flows
 - S3 sidecar storage E2E flows using an in-memory fake S3 client
+- AWS KMS-backed signing and verification using a fake KMS client
+- PostgreSQL-backed signing event ledger integrity using an in-memory fake `pg.Pool`
 - Tampered evidence detection
 - Tampered metadata detection
 - Missing object handling
@@ -509,7 +514,7 @@ The test suite covers:
 Current expected result:
 
 ```text
-79 tests passing
+113 tests passing
 ```
 
 ---
@@ -643,13 +648,15 @@ Implemented Phase 2 capabilities:
 - Evidence + metadata verification
 - Local JSON object storage
 - S3-compatible JSON object storage
-- In-memory fake S3 client testing
+- AWS KMS asymmetric signing (`AwsKmsProvider`)
+- PostgreSQL-backed hash-chained signing event ledger (`PgSigningLogger`)
+- Terraform-managed AWS Budgets cost guardrail
+- In-memory fake S3/KMS/PG client testing
 - Local and S3 sidecar E2E tests
 
 Potential future production hardening includes:
 
-- Real AWS S3 integration tests
-- AWS KMS asymmetric signing implementation
+- Real AWS S3, KMS, and PostgreSQL integration tests
 - S3 Object Lock based immutable evidence storage
 - S3 Versioning
 - SSE-S3 or SSE-KMS encryption
@@ -658,6 +665,7 @@ Potential future production hardening includes:
 - IAM least-privilege execution roles
 - Key rotation and verification policy documentation
 - Lifecycle and retention policy documentation
+- KMS error classification helpers and PostgreSQL `cause` parity (#71)
 
 ### Phase 3: Productization and external verification
 

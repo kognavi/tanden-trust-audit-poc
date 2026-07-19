@@ -106,7 +106,9 @@ Deliverables:
 
 ## Phase 4: AWS KMS Signing & Key Management
 
-Status: Planned
+Status: Completed (implemented and verified against fake/in-memory
+AWS SDK and PostgreSQL clients; real AWS KMS and real PostgreSQL
+integration testing tracked in #71)
 
 Goals:
 
@@ -114,11 +116,28 @@ Goals:
 - Keep the existing signature provider interface unchanged for callers
 - Define least-privilege IAM policies for signing operations
 - Record KMS key usage via AWS CloudTrail
+- Implement a PostgreSQL-backed hash-chained signing event ledger
+  (`PgSigningLogger`) to record signing operations independently of
+  the KMS provider itself
 
 Reference Designs:
 
 - docs/kms-signing-design.md
 - docs/aws-kms-key-management-design.md
+- ADR 0004 (signing event ledger)
+
+Deliverables:
+
+- lib/aws-kms-provider.js
+- lib/pg-signing-logger.js
+- tests/aws-kms-provider.test.js (fake KMS client, including
+  TD-001/TD-003 KeySpec guard and public key caching)
+- tests/pg-signing-logger.test.js (fake pg.Pool client, hash-chain
+  verification)
+
+Note: This implementation is verified against fake/in-memory AWS SDK
+and PostgreSQL clients. Real AWS KMS and real PostgreSQL integration
+testing remain future work, tracked in #71.
 
 ## Phase 5: Tamper-Resistance Enhancement
 
@@ -176,11 +195,16 @@ Possible Technologies:
 
 ## Current Priority
 
-The current priority is Phase 3:
+Phases 0-4 are complete (verified against fake/in-memory AWS SDK and
+PostgreSQL clients). The current priority is closing out remaining
+Phase 4 hardening work before moving to Phase 5:
 
-1. Add a documentation index (`docs/README.md`) to organize the growing design document set
-2. Add an ADR documenting the decision to defer S3 Object Lock for the current MVP
-3. Prepare for Phase 4 (AWS KMS signing provider) as the next implementation milestone
+1. Real AWS KMS and real PostgreSQL integration tests (#71)
+2. KMS error classification helpers built on the TD-002 `cause` chain
+3. PostgreSQL-side `cause` chain parity with `AwsKmsProvider` (#71)
+4. Verification runbook (`docs/verification-runbook.md`)
+5. Architecture diagrams
+6. Begin Phase 5 (S3 Object Lock, SSE-KMS, versioning) design work
 
 ---
 
@@ -210,6 +234,8 @@ The following items were identified during Phase 4 implementation and are tracke
 
 **Priority:** Medium
 
+**Status:** [x] Resolved
+
 **Context:** The current `catch` blocks in `signDigest`, `verifyDigestSignature`, and `getPublicKey` create a new `Error` with a descriptive message but discard the original AWS SDK error. This means callers cannot programmatically detect specific error types such as `AccessDeniedException` or `KMSInvalidStateException`.
 
 **Proposed fix:** Replace:
@@ -227,6 +253,11 @@ throw new Error(`KMS Sign operation failed: ${err.message}`, { cause: err });
 in all three KMS operation catch blocks. Requires Node.js ≥ 16.9.0 (already satisfied by the project's `engines` constraint of ≥ 20).
 
 **Affected file:** `lib/aws-kms-provider.js`
+
+**Resolution:** Implemented in PR #70 (`fix(kms): preserve error cause
+chain in KMS operations`). All three KMS operation catch blocks
+(`signDigest`, `verifyDigestSignature`, `getPublicKey`) now attach the
+original AWS SDK error via `{ cause: err }`.
 
 ---
 

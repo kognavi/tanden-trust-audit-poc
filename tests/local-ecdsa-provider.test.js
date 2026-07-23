@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+const crypto = require('node:crypto');
 const {
   LocalEcdsaProvider,
 } = require('../lib/local-ecdsa-provider');
@@ -105,3 +106,15 @@ test('LocalEcdsaProvider returns invalid when verified with a different public k
   assert.equal(verified.digestHex, signed.digestHex);
   assert.equal(verified.valid, false);
 });
+
+test('LocalEcdsaProvider.verifyDigestSignature returns false (not throw) for wrong-length signature buffer', () => {
+  const provider = new LocalEcdsaProvider();
+  const { publicKey } = provider.generateEcKeyPair();
+  const digest = crypto.createHash('sha256').update('test').digest();
+
+  const malformedSignature = Buffer.from('too-short-sig');
+  const result = provider.verifyDigestSignature(digest, malformedSignature, publicKey);
+
+  assert.equal(result, false);
+});
+

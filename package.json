@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1085.0",
-    "@aws-sdk/client-s3": "^3.1077.0",
+    "@aws-sdk/client-s3": "^3.1093.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "canonicalize": "^3.0.0",

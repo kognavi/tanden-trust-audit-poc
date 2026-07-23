@@ -154,18 +154,51 @@ test('signDigest: propagates KMS errors', async () => {
   });
 });
 
-test('getPublicKey: returns public key bytes', async () => {
+test('verifyDigestSignature: returns false when KMS reports invalid signature', async () => {
   await withKmsKeyId('test-key', async () => {
+    const invalidSigError = new Error('Signature verification failed');
+    invalidSigError.name = 'KMSInvalidSignatureException';
+
     const fakeClient = new FakeKmsClient({
-      GetPublicKeyCommand: validKeySpecHandler(Buffer.alloc(65, 0x04)), // ★変更: KeySpecフィールド追加
+      GetPublicKeyCommand: validKeySpecHandler(),
+      VerifyCommand: () => { throw invalidSigError; },
     });
     const provider = new AwsKmsProvider({ kmsClient: fakeClient });
-    const pub = await provider.getPublicKey();
-    assert.equal(pub.length, 65);
+
+    const valid = await provider.verifyDigestSignature(Buffer.alloc(32), Buffer.alloc(64));
+    assert.equal(valid, false);
   });
 });
 
-// ★新規: TD-001 — 想定外のKeySpecなら即座にthrowすることを検証
+test('verifyDigestSignature: propagates genuine KMS service errors', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      VerifyCommand: () => { throw new Error('KMS unavailable'); },
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    await assert.rejects(
+      () => provider.verifyDigestSignature(Buffer.alloc(32), Buffer.alloc(64)),
+      /KMS Verify operation failed/
+    );
+  });
+});
+
+test('verifyDigestSignature: returns true for a valid signature', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      VerifyCommand: () => ({ SignatureValid: true }),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const valid = await provider.verifyDigestSignature(Buffer.alloc(32), Buffer.alloc(64));
+    assert.equal(valid, true);
+  });
+});
+
+// ★TD-001 — 想定外のKeySpecなら即座にthrowすることを検証
 test('_ensureKeySpecVerified: throws on unsupported KeySpec (TD-001)', async () => {
   await withKmsKeyId('test-key', async () => {
     const fakeClient = new FakeKmsClient({
@@ -179,6 +212,17 @@ test('_ensureKeySpecVerified: throws on unsupported KeySpec (TD-001)', async () 
       () => provider.getPublicKey(),
       /Unsupported KMS KeySpec: ECC_NIST_P384/
     );
+  });
+});
+
+test('getPublicKey: returns public key bytes', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(Buffer.alloc(65, 0x04)),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+    const pub = await provider.getPublicKey();
+    assert.equal(pub.length, 65);
   });
 });
 

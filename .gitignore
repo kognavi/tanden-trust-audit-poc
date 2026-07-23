@@ -173,3 +173,5 @@ tmp/
 *.tfstate.*
 .terraform.lock.hcl
 *.tfvars
+ruleset.json
+ruleset_update.json

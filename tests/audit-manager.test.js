@@ -213,3 +213,96 @@ test('verifyAndRecord throws AuditLedgerWriteError when ledger write fails after
     }
   );
 });
+test('verifyAndRecord records evidence.verification_error when provider throws unexpectedly', async () => {
+  const provider = makeFakeLocalProvider({
+    verifyImpl: async () => { throw new Error('malformed DER signature'); },
+  });
+  const pgLogger = makeFakePgLogger();
+  const manager = new AuditManager({ signingProvider: provider, pgLogger });
+
+  const evidence = { evidenceId: 'ev-008' };
+  const { verifyResult, ledgerRow } = await manager.verifyAndRecord(
+    evidence,
+    Buffer.from('malformed-sig'),
+    { publicKeyPem: 'FAKE_PUB_PEM' }
+  );
+
+  assert.equal(verifyResult.valid, false);
+  assert.equal(ledgerRow.eventType, 'evidence.verification_error');
+  assert.equal(ledgerRow.payload.error, 'malformed DER signature');
+  assert.equal(pgLogger.appended.length, 1);
+});
+
+test('verifyAndRecord throws AuditLedgerWriteError when provider throws AND ledger write also fails', async () => {
+  const provider = makeFakeLocalProvider({
+    verifyImpl: async () => { throw new Error('malformed DER signature'); },
+  });
+  const pgLogger = makeFakePgLogger({
+    appendImpl: async () => { throw new Error('db timeout'); },
+  });
+  const manager = new AuditManager({ signingProvider: provider, pgLogger });
+
+  const evidence = { evidenceId: 'ev-009' };
+
+  await assert.rejects(
+    manager.verifyAndRecord(evidence, Buffer.from('sig'), { publicKeyPem: 'FAKE_PUB_PEM' }),
+    (err) => {
+      assert.ok(err instanceof AuditLedgerWriteError);
+      assert.equal(err.cause.message, 'db timeout');
+      return true;
+    }
+  );
+});
+
+test('INTEGRATION: verifyAndRecord with REAL LocalEcdsaProvider records evidence.verification_error on malformed public key PEM', async () => {
+  const { LocalEcdsaProvider } = require('../lib/local-ecdsa-provider');
+
+  const realProvider = new LocalEcdsaProvider();
+  const pgLogger = makeFakePgLogger();
+  const manager = new AuditManager({ signingProvider: realProvider, pgLogger });
+
+  const { privateKey } = realProvider.generateEcKeyPair();
+  const evidence = { evidenceId: 'ev-010-integration' };
+
+  const signed = await realProvider.signEvidence(evidence, privateKey);
+
+  const garbagePem =
+    '-----BEGIN PUBLIC KEY-----\nNOT_A_REAL_KEY\n-----END PUBLIC KEY-----';
+
+  const { verifyResult, ledgerRow } = await manager.verifyAndRecord(
+    evidence,
+    signed.signature,
+    { publicKeyPem: garbagePem }
+  );
+
+  assert.equal(verifyResult.valid, false);
+  assert.equal(ledgerRow.eventType, 'evidence.verification_error');
+  assert.ok(
+    ledgerRow.payload.error.includes('DECODER'),
+    `Expected error message to mention DECODER, got: ${ledgerRow.payload.error}`
+  );
+  assert.equal(pgLogger.appended.length, 1);
+});
+
+test('INTEGRATION: verifyAndRecord with REAL LocalEcdsaProvider returns valid=false (no throw) on wrong-length signature buffer', async () => {
+  const { LocalEcdsaProvider } = require('../lib/local-ecdsa-provider');
+
+  const realProvider = new LocalEcdsaProvider();
+  const pgLogger = makeFakePgLogger();
+  const manager = new AuditManager({ signingProvider: realProvider, pgLogger });
+
+  const { publicKey } = realProvider.generateEcKeyPair();
+  const evidence = { evidenceId: 'ev-011-integration' };
+
+  const malformedSignature = Buffer.from('too-short-sig');
+
+  const { verifyResult, ledgerRow } = await manager.verifyAndRecord(
+    evidence,
+    malformedSignature,
+    { publicKeyPem: publicKey }
+  );
+
+  assert.equal(verifyResult.valid, false);
+  assert.equal(ledgerRow.eventType, 'evidence.tamper_detected');
+  assert.equal(pgLogger.appended.length, 1);
+});

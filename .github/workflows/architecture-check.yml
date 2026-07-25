@@ -1,0 +1,51 @@
+name: Architecture Check (Circular Dependency)
+
+# --- 優れた運用効率：関係あるファイルが変わった時だけ動かす ---
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/architecture-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch: {}  # 手動実行もできるように
+
+# --- セキュリティ：最小権限の原則。読み取り専用で十分 ---
+permissions:
+  contents: read
+
+# --- コスト最適化/持続可能性：同じブランチの古い実行はキャンセル ---
+concurrency:
+  group: architecture-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-circular-dependency:
+    name: madge circular dependency scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # ハングして課金され続ける事故を防ぐ
+
+    steps:
+      # --- 信頼性：Actionのバージョンをピン留め ---
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # --- パフォーマンス効率：npmキャッシュで高速化 ---
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run circular dependency check
+        run: npm run check:circular

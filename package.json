@@ -15,8 +15,10 @@
     "demo:restore": "git checkout -- samples/evidence-consent.json",
     "demo": "npm run validate:evidence && npm run hash && npm run verify",
     "test": "node --test tests/*.test.js",
-    "test:aws:s3": "node --test tests/*.integration.js"
+    "test:aws:s3": "node --test tests/*.integration.js",
+    "check:circular": "madge --circular --extensions js lib/"
   },
+
   "keywords": [
     "audit-trail",
     "tamper-evident",
@@ -40,5 +42,9 @@
     "ajv-formats": "3.0.1",
     "canonicalize": "^3.0.0",
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "dependency-cruiser": "^17.4.3",
+    "madge": "^8.0.0"
   }
 }

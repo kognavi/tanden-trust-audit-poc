@@ -1,6 +1,6 @@
 # Tanden Trust Audit PoC
 
-[![Verify Evidence Integrity](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml/badge.svg)](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/verify.yml)
+[![CI](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/ci.yml/badge.svg)](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/ci.yml)
 
 A tamper-evident audit trail prototype for consent history, activity records, and trust events using JSON Schema validation, SHA-256 hash verification, local signature verification, and sidecar metadata verification.
 
@@ -227,50 +227,74 @@ The project does not aim to provide a production SaaS, legal compliance certific
 .
 ├── .github/
 │   └── workflows/
-│       └── verify.yml
+│       ├── architecture-check.yml
+│       ├── ci.yml
+│       ├── codeql.yml
+│       └── semgrep.yml
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-digest-metadata-storage.md
-│   │   └── 0002-s3-json-object-store.md
+│   │   ├── 0002-s3-json-object-store.md
+│   │   ├── 0003-s3-object-lock-consideration.md
+│   │   └── 0004-signing-event-ledger.md
 │   ├── phase-2-aws/
 │   │   ├── acceptance-criteria.md
 │   │   ├── design.md
 │   │   ├── non-goals.md
 │   │   ├── requirements.md
 │   │   └── tasks.md
+│   ├── README.md
 │   └── framework-selection.md
 ├── lib/
+│   ├── audit-manager.js
 │   ├── audit.js
+│   ├── aws-kms-provider.js
+│   ├── canonicalize-loader.js
 │   ├── json-object-store.js
-│   ├── metadata-signing-payload.js
+│   ├── local-ecdsa-provider.js
+│   ├── metadata-signature.js
+│   ├── metadata-signing.js
+│   ├── metadata.js
+│   ├── pg-signing-logger.js
 │   ├── s3-json-object-store.js
 │   ├── schema-validation.js
-│   ├── sidecar-metadata-schema.js
-│   ├── sidecar-metadata-signature.js
-│   ├── sidecar-verification.js
+│   ├── sidecar-verifier.js
+│   ├── signature-digest.js
 │   └── signature.js
 ├── samples/
+│   ├── evidence-consent.expected.sha256
 │   └── evidence-consent.json
 ├── schemas/
-│   └── evidence.schema.json
+│   ├── evidence.schema.json
+│   └── signing-event.schema.json
 ├── scripts/
 │   ├── generate-local-keys.js
 │   ├── hash-evidence.js
 │   ├── sign-evidence.js
+│   ├── tamper-evidence.js
 │   ├── validate-evidence.js
 │   ├── verify-evidence.js
 │   └── verify-signature.js
+├── terraform/
+│   ├── budget_alert.tf
+│   ├── provider.tf
+│   └── terraform.tfvars.example
 ├── tests/
+│   ├── audit-manager.test.js
 │   ├── audit.test.js
+│   ├── aws-kms-provider.test.js
 │   ├── json-object-store.test.js
+│   ├── local-ecdsa-provider.test.js
 │   ├── local-sidecar-e2e.test.js
-│   ├── metadata-signing-payload.test.js
+│   ├── metadata-signature.test.js
+│   ├── metadata-signing.test.js
+│   ├── metadata.test.js
+│   ├── pg-signing-logger.test.js
+│   ├── s3-json-object-store.integration.js
 │   ├── s3-json-object-store.test.js
 │   ├── s3-sidecar-e2e.test.js
 │   ├── schema-validation.test.js
-│   ├── sidecar-metadata-schema.test.js
-│   ├── sidecar-metadata-signature.test.js
-│   ├── sidecar-verification.test.js
+│   ├── sidecar-verifier.test.js
 │   └── signature.test.js
 ├── package.json
 └── README.md
@@ -308,10 +332,14 @@ Architecture Decision Records:
 
 - [ADR 0001: Digest Metadata Storage](docs/adr/0001-digest-metadata-storage.md)
 - [ADR 0002: S3 JSON Object Store](docs/adr/0002-s3-json-object-store.md)
+- [ADR 0003: S3 Object Lock Consideration](docs/adr/0003-s3-object-lock-consideration.md)
+- [ADR 0004: Signing Event Ledger](docs/adr/0004-signing-event-ledger.md)
 
 ---
 
 ## Phase 2 Implementation Status
+
+> This section covers the AWS-backed Phase 2 work referenced in [Current Status](#current-status) above and detailed further in [Future Roadmap](#future-roadmap) below. Phase 1 corresponds to the v0.1.0 MVP scope (the local proof of concept); Phase 2 adds AWS-backed authenticity and immutability on top of it.
 
 Current Phase 2 implementation includes:
 
@@ -336,7 +364,7 @@ npm test
 Current status:
 
 ```text
-113 tests passing
+121 tests passing
 ```
 
 Production hardening still pending:
@@ -514,7 +542,7 @@ The test suite covers:
 Current expected result:
 
 ```text
-113 tests passing
+121 tests passing
 ```
 
 ---
@@ -535,7 +563,7 @@ The workflow performs:
 Workflow file:
 
 ```text
-.github/workflows/verify.yml
+.github/workflows/ci.yml
 ```
 
 ---

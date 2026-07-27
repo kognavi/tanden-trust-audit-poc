@@ -175,3 +175,5 @@ tmp/
 *.tfvars
 ruleset.json
 ruleset_update.json
+.semgrep_cache/
+repo-digest.txt

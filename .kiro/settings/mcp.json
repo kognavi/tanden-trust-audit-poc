@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "semgrep": {
+      "command": "/Users/kamaikenichirou/.local/bin/uvx",
+      "args": [
+        "semgrep-mcp",
+        "--semgrep-path",
+        "/opt/homebrew/bin/semgrep"
+      ],
+      "disabled": false,
+      "autoApprove": ["semgrep_scan", "semgrep_scan_with_custom_rule", "security_check"]
+    }
+  }
+}

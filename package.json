@@ -17,6 +17,9 @@
     "test": "node --test tests/*.test.js",
     "test:aws:s3": "node --test tests/*.integration.js",
     "check:circular": "madge --circular --extensions js lib/",
+    "check:depcruise": "depcruise --config .dependency-cruiser.js lib",
+"check:structure": "npm run check:depcruise && npm run check:circular && npm test",
+
     "digest": "npx repomix --output repo-digest.txt",
     "prepare": "husky"
   },

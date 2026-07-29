@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+coverage
+repo-digest.txt
+docs/callgraph.svg
+*.sig

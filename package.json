@@ -17,7 +17,8 @@
     "test": "node --test tests/*.test.js",
     "test:aws:s3": "node --test tests/*.integration.js",
     "check:circular": "madge --circular --extensions js lib/",
-    "digest": "npx repomix --output repo-digest.txt"
+    "check:depcruise": "depcruise --config .dependency-cruiser.js lib",
+    "check:structure": "npm run check:depcruise && npm run check:circular && npm test"
   },
   "keywords": [
     "audit-trail",
@@ -44,7 +45,18 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "dependency-cruiser": "^17.4.3",
-    "madge": "^8.0.0"
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^4.0.1",
+    "globals": "^17.8.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "madge": "^8.0.0",
+    "prettier": "^3.9.6"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix"
   }
 }

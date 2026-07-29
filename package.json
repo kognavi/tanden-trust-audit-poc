@@ -4,7 +4,7 @@
   "description": "A tamper-evident audit trail prototype for consent history, activity records, and trust events using AWS, AI, and Web3-compatible verification.",
   "type": "commonjs",
   "private": true,
-  "scripts": {
+ "scripts": {
     "hash": "node scripts/hash-evidence.js samples/evidence-consent.json",
     "verify": "node scripts/verify-evidence.js samples/evidence-consent.json samples/evidence-consent.expected.sha256",
     "validate:evidence": "node scripts/validate-evidence.js samples/evidence-consent.json schemas/evidence.schema.json",
@@ -18,11 +18,11 @@
     "test:aws:s3": "node --test tests/*.integration.js",
     "check:circular": "madge --circular --extensions js lib/",
     "check:depcruise": "depcruise --config .dependency-cruiser.js lib",
-"check:structure": "npm run check:depcruise && npm run check:circular && npm test",
-
+    "check:structure": "npm run check:depcruise && npm run check:circular && npm test",
     "digest": "npx repomix --output repo-digest.txt",
     "prepare": "husky"
   },
+
   "keywords": [
     "audit-trail",
     "tamper-evident",

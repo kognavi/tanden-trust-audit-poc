@@ -242,3 +242,66 @@ test('_ensureKeySpecVerified: caches result across multiple calls (TD-003)', asy
     assert.equal(callCount, 1, 'GetPublicKeyCommand should only be called once (cached)');
   });
 });
+
+// ★Critical#1 回帰テスト: verifyDigestSignatureがVerifyCommandに
+// DER形式のSignatureを渡していることを検証する。
+// これが無いと「Rawをそのまま渡す」バグが再発しても気づけない。
+test('verifyDigestSignature: sends DER-encoded Signature to KMS VerifyCommand (Critical#1 regression)', async () => {
+  await withKmsKeyId('test-key', async () => {
+    let capturedSignature = null;
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      VerifyCommand: (command) => {
+        capturedSignature = command.input.Signature;
+        return { SignatureValid: true };
+      },
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const rawSignature = Buffer.alloc(64, 0x01);
+    await provider.verifyDigestSignature(Buffer.alloc(32), rawSignature);
+
+    // DER SEQUENCEは必ず0x30から始まり、64バイトのRawとは異なる長さになる
+    assert.equal(capturedSignature[0], 0x30, 'Signature must be DER-encoded (start with SEQUENCE tag 0x30)');
+    assert.notEqual(capturedSignature.length, 64, 'DER-encoded signature must not be exactly 64 bytes (that would mean Raw was passed unencoded)');
+  });
+});
+
+// ★エンドツーエンドのラウンドトリップテスト: 本物のcryptoでKMSの
+// Sign/Verify動作を模倣し、signDigestの出力をverifyDigestSignatureに
+// そのまま通しても検証が成功することを確認する。
+test('signDigest -> verifyDigestSignature: full round-trip with real ECDSA crypto', async () => {
+  const crypto = require('node:crypto');
+
+  await withKmsKeyId('test-key', async () => {
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' });
+    const digest = crypto.randomBytes(32);
+
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      // 本物のsecp256k1で署名し、KMSと同じくDERを返す
+      SignCommand: (command) => {
+        const signer = crypto.createSign('sha256');
+        signer.update(command.input.Message);
+        const derSignature = signer.sign(privateKey);
+        return { Signature: derSignature };
+      },
+      // 渡されたSignature(DERのはず)を実際にcrypto.verifyで検証する
+      VerifyCommand: (command) => {
+        const verifier = crypto.createVerify('sha256');
+        verifier.update(command.input.Message);
+        const isValid = verifier.verify(publicKey, command.input.Signature);
+        return { SignatureValid: isValid };
+      },
+    });
+
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const rawSignature = await provider.signDigest(digest);
+    assert.equal(rawSignature.length, 64, 'signDigest should return 64-byte Raw signature');
+
+    const isValid = await provider.verifyDigestSignature(digest, rawSignature);
+    assert.equal(isValid, true, 'round-trip sign->verify must succeed with real crypto (this is the Critical#1 regression guard)');
+  });
+});
+

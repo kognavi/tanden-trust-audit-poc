@@ -305,3 +305,81 @@ test('signDigest -> verifyDigestSignature: full round-trip with real ECDSA crypt
   });
 });
 
+
+// ★Critical#2 回帰テスト: signDigestがKMSに MessageType: 'RAW' を
+// 送っていることを直接検証する。
+//
+// なぜ直接アサートが必要か: FakeKmsClientのSignCommand/VerifyCommand
+// ハンドラは crypto.createSign('sha256')/createVerify('sha256') を使う。
+// これは「渡されたMessageを常に1回だけハッシュする」動きしかできず
+// (Node.jsにはEC鍵向けの「ハッシュ済み値をそのまま署名する」APIが無い
+// ため)、コードが誤って MessageType:'DIGEST' + 事前計算digest を渡して
+// いても、モックは同じ結果を返してしまい既存のラウンドトリップテストは
+// 偽陽性でpassする。この死角を塞ぐため、実際に送信された
+// MessageType/Messageの中身を直接検証する。
+test('signDigest: sends MessageType RAW to KMS SignCommand (Critical#2 regression - double-hash guard)', async () => {
+  await withKmsKeyId('test-key', async () => {
+    let capturedInput = null;
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      SignCommand: (command) => {
+        capturedInput = command.input;
+        return { Signature: derSig(Buffer.alloc(32, 0x01), Buffer.alloc(32, 0x02)) };
+      },
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const message = Buffer.from('{"evidenceId":"evd-001"}', 'utf8');
+    await provider.signDigest(message);
+
+    assert.equal(
+      capturedInput.MessageType,
+      'RAW',
+      'MessageType must be RAW so KMS hashes the message exactly once ' +
+      '(matching LocalEcdsaProvider single-hash semantics).'
+    );
+    assert.deepEqual(
+      capturedInput.Message,
+      message,
+      'Message sent to KMS must be the raw canonicalJson bytes, not a pre-computed digest'
+    );
+  });
+});
+
+test('verifyDigestSignature: sends MessageType RAW to KMS VerifyCommand (Critical#2 regression)', async () => {
+  await withKmsKeyId('test-key', async () => {
+    let capturedInput = null;
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      VerifyCommand: (command) => {
+        capturedInput = command.input;
+        return { SignatureValid: true };
+      },
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const message = Buffer.from('{"evidenceId":"evd-001"}', 'utf8');
+    await provider.verifyDigestSignature(message, Buffer.alloc(64));
+
+    assert.equal(capturedInput.MessageType, 'RAW');
+    assert.deepEqual(capturedInput.Message, message);
+  });
+});
+
+// ★Critical#2 サイズガード検証: 4096バイト超過時にKMS APIへ到達する
+// 前にFail Fastすることを確認する。
+test('signDigest: throws before calling KMS when message exceeds RAW size limit', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      SignCommand: () => { throw new Error('should not be called'); },
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const oversized = Buffer.alloc(4097, 0x41);
+    await assert.rejects(
+      () => provider.signDigest(oversized),
+      /exceeds KMS MessageType:'RAW' limit/
+    );
+  });
+});

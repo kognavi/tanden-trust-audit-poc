@@ -85,6 +85,7 @@ test("S3JsonObjectStore putJsonObject sends PutObjectCommand", async () => {
     Key: "evidence/evidence-001.json",
     Body: JSON.stringify({ ok: true }, null, 2) + "\n",
     ContentType: "application/json",
+    IfNoneMatch: "*",
   });
 });
 
@@ -108,6 +109,7 @@ test("S3JsonObjectStore getJsonObject sends GetObjectCommand and parses JSON", a
     Key: "evidence/evidence-001.json",
   });
 });
+
 
 test("S3JsonObjectStore rejects unsafe key on put", async () => {
   const client = new FakeS3Client(async () => ({}));
@@ -178,5 +180,57 @@ test("S3JsonObjectStore maps invalid JSON to INVALID_JSON_OBJECT", async () => {
       assert.equal(error.code, "INVALID_JSON_OBJECT");
       return true;
     }
+  );
+});
+
+test("putJsonObject sends IfNoneMatch to enforce WORM semantics on write", async () => {
+  let capturedInput;
+  const fakeClient = {
+    send: async (command) => {
+      capturedInput = command.input;
+      return {};
+    },
+  };
+
+  const store = new S3JsonObjectStore({ bucket: "test-bucket", client: fakeClient });
+  await store.putJsonObject("evidence/sample.json", { hello: "world" });
+
+  assert.equal(capturedInput.IfNoneMatch, "*");
+});
+
+test("putJsonObject converts PreconditionFailed (412) into OBJECT_ALREADY_EXISTS", async () => {
+  const fakeClient = {
+    send: async () => {
+      const err = new Error("At least one of the pre-conditions you specified did not hold");
+      err.name = "PreconditionFailed";
+      err.$metadata = { httpStatusCode: 412 };
+      throw err;
+    },
+  };
+
+  const store = new S3JsonObjectStore({ bucket: "test-bucket", client: fakeClient });
+
+  await assert.rejects(
+    () => store.putJsonObject("evidence/sample.json", { hello: "world" }),
+    (err) => {
+      assert.equal(err.code, "OBJECT_ALREADY_EXISTS");
+      assert.match(err.message, /cannot be overwritten/);
+      return true;
+    }
+  );
+});
+
+test("putJsonObject rethrows non-precondition errors unchanged", async () => {
+  const fakeClient = {
+    send: async () => {
+      throw new Error("Some unrelated network error");
+    },
+  };
+
+  const store = new S3JsonObjectStore({ bucket: "test-bucket", client: fakeClient });
+
+  await assert.rejects(
+    () => store.putJsonObject("evidence/sample.json", { hello: "world" }),
+    /Some unrelated network error/
   );
 });

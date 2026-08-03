@@ -171,9 +171,13 @@ tmp/
 .terraform/
 *.tfstate
 *.tfstate.*
-.terraform.lock.hcl
 *.tfvars
 ruleset.json
 ruleset_update.json
 .semgrep_cache/
 repo-digest.txt
+
+# Terraform state - contains AWS account/resource metadata, never commit
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform/

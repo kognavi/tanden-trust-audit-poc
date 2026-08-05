@@ -1,0 +1,4 @@
+evidence.txt
+plan_output.tfplan
+*.tfstate
+*.tfstate.backup

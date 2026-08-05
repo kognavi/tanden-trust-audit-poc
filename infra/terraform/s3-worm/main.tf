@@ -77,9 +77,9 @@ resource "aws_s3_bucket" "audit_trail" {
   object_lock_enabled = true
 
   tags = {
-    Project     = "tanden-trust-audit-poc"
-    Purpose     = "tamper-evident-audit-trail"
-    ManagedBy   = "terraform"
+    Project   = "tanden-trust-audit-poc"
+    Purpose   = "tamper-evident-audit-trail"
+    ManagedBy = "terraform"
   }
 }
 
@@ -111,18 +111,22 @@ resource "aws_s3_bucket_object_lock_configuration" "audit_trail" {
 }
 
 # -----------------------------------------------------------------
-# デフォルト暗号化 (SSE-S3: AES256、KMS CMKは月額$1発生するため回避)
+# デフォルト暗号化 (SSE-KMS: AWS管理キー alias/aws/s3 を使用)
+# CMK(カスタマー管理キー)は月額$1発生するため使わず、
+# AWS管理キーで無料枠内でKMS暗号化の要件を満たす
 # -----------------------------------------------------------------
 resource "aws_s3_bucket_server_side_encryption_configuration" "audit_trail" {
   bucket = aws_s3_bucket.audit_trail.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = "alias/aws/s3"
     }
     bucket_key_enabled = true
   }
 }
+
 
 # -----------------------------------------------------------------
 # パブリックアクセスの完全ブロック (Well-Architected: セキュリティの柱)
@@ -146,16 +150,29 @@ resource "aws_s3_bucket_policy" "deny_delete" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "DenyDeleteExceptBreakGlass"
+        Sid       = "DenyDeleteObjectsExceptBreakGlass"
         Effect    = "Deny"
         Principal = "*"
         Action = [
           "s3:DeleteObject",
-          "s3:DeleteObjectVersion",
+          "s3:DeleteObjectVersion"
+        ]
+        Resource = "${aws_s3_bucket.audit_trail.arn}/*"
+        Condition = {
+          StringNotEquals = {
+            "aws:PrincipalArn" = var.break_glass_role_arn != "" ? var.break_glass_role_arn : "arn:aws:iam::000000000000:role/never-matches"
+          }
+        }
+      },
+      {
+        Sid       = "DenyBucketConfigChangeExceptBreakGlass"
+        Effect    = "Deny"
+        Principal = "*"
+        Action = [
           "s3:PutBucketObjectLockConfiguration",
           "s3:PutLifecycleConfiguration"
         ]
-        Resource = "${aws_s3_bucket.audit_trail.arn}/*"
+        Resource = aws_s3_bucket.audit_trail.arn
         Condition = {
           StringNotEquals = {
             "aws:PrincipalArn" = var.break_glass_role_arn != "" ? var.break_glass_role_arn : "arn:aws:iam::000000000000:role/never-matches"
@@ -184,6 +201,92 @@ resource "aws_s3_bucket_lifecycle_configuration" "audit_trail" {
   }
 }
 
+# =====================================================================
+# アクセスログ保管用バケット (audit_trailへの操作履歴を記録)
+# 2022年以降のベストプラクティス: ACLではなくバケットポリシーで
+# S3ログ配信サービスに権限を付与する方式を採用
+# =====================================================================
+data "aws_caller_identity" "current" {}
+
+resource "aws_s3_bucket" "audit_trail_logs" {
+  bucket = "${var.bucket_name}-access-logs"
+
+  tags = {
+    Project   = "tanden-trust-audit-poc"
+    Purpose   = "access-log-storage"
+    ManagedBy = "terraform"
+  }
+}
+resource "aws_s3_bucket_server_side_encryption_configuration" "audit_trail_logs" {
+  bucket = aws_s3_bucket.audit_trail_logs.id
+
+  rule {
+    bucket_key_enabled = true
+
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = "alias/aws/s3"
+    }
+  }
+}
+
+
+resource "aws_s3_bucket_public_access_block" "audit_trail_logs" {
+  bucket = aws_s3_bucket.audit_trail_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_policy" "audit_trail_logs" {
+  bucket = aws_s3_bucket.audit_trail_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "S3ServerAccessLogsPolicy"
+        Effect    = "Allow"
+        Principal = { Service = "logging.s3.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.audit_trail_logs.arn}/access-logs/*"
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = aws_s3_bucket.audit_trail.arn
+          }
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "audit_trail_logs" {
+  bucket = aws_s3_bucket.audit_trail_logs.id
+
+  rule {
+    id     = "expire-old-access-logs"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 90
+    }
+  }
+}
+
+resource "aws_s3_bucket_logging" "audit_trail" {
+  bucket        = aws_s3_bucket.audit_trail.id
+  target_bucket = aws_s3_bucket.audit_trail_logs.id
+  target_prefix = "access-logs/"
+
+  depends_on = [aws_s3_bucket_policy.audit_trail_logs]
+}
 
 # -----------------------------------------------------------------
 # Outputs

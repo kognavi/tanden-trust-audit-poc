@@ -50,3 +50,9 @@ We have decided **not to implement S3 Object Lock in the current MVP (Phase 1–
 - `docs/threat-model.md` — lists S3 Object Lock enforcement as explicitly out of scope for the current MVP
 - `docs/aws-s3-integration-test.md` — describes the gated real S3 test whose teardown logic motivated this decision
 - `docs/security.md` — earlier draft that first raised S3 Object Lock as a future consideration (superseded by `threat-model.md`)
+
+## 検証結果 (2026年8月)
+本ADRで懸念されていた「削除不可による自動テストの競合」に対し、実環境での検証を実施。
+- Complianceモードの挙動を確認し、ポリシーのステートメント分割（オブジェクトARN/バケットARN）により正しく制御可能であることを実証済み。
+- terraform plan結果: 13 resources to add, 0 to change, 0 to destroy（破壊的変更なし）。
+- 詳細は `infra/terraform/s3-worm/README.md` および `plan_output.txt` を参照。

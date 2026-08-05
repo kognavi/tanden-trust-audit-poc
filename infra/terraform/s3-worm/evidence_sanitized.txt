@@ -1,0 +1,110 @@
+===== 1. Bucket Policy =====
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "DenyDeleteObjectsExceptBreakGlass",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": [
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion"
+            ],
+            "Resource": "arn:aws:s3:::tanden-trust-audit-trail-123456789012/*",
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:PrincipalArn": "arn:aws:iam::000000000000:role/never-matches"
+                }
+            }
+        },
+        {
+            "Sid": "DenyBucketConfigChangeExceptBreakGlass",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": [
+                "s3:PutBucketObjectLockConfiguration",
+                "s3:PutLifecycleConfiguration"
+            ],
+            "Resource": "arn:aws:s3:::tanden-trust-audit-trail-123456789012",
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:PrincipalArn": "arn:aws:iam::000000000000:role/never-matches"
+                }
+            }
+        }
+    ]
+}
+
+===== 2. Server-Side Encryption =====
+{
+    "ServerSideEncryptionConfiguration": {
+        "Rules": [
+            {
+                "ApplyServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "aws:kms",
+                    "KMSMasterKeyID": "alias/aws/s3"
+                },
+                "BucketKeyEnabled": true,
+                "BlockedEncryptionTypes": {
+                    "EncryptionType": [
+                        "SSE-C"
+                    ]
+                }
+            }
+        ]
+    }
+}
+
+===== 3. Object Lock Configuration =====
+{
+    "ObjectLockConfiguration": {
+        "ObjectLockEnabled": "Enabled",
+        "Rule": {
+            "DefaultRetention": {
+                "Mode": "COMPLIANCE",
+                "Days": 1
+            }
+        }
+    }
+}
+
+===== 4. Versioning =====
+{
+    "Status": "Enabled",
+    "MFADelete": "Disabled"
+}
+
+===== 5. Public Access Block =====
+{
+    "PublicAccessBlockConfiguration": {
+        "BlockPublicAcls": true,
+        "IgnorePublicAcls": true,
+        "BlockPublicPolicy": true,
+        "RestrictPublicBuckets": true
+    }
+}
+
+===== 6. Lifecycle Configuration =====
+{
+    "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",
+    "Rules": [
+        {
+            "ID": "abort-incomplete-multipart-upload",
+            "Filter": {
+                "Prefix": ""
+            },
+            "Status": "Enabled",
+            "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 1
+            }
+        }
+    ]
+}
+
+===== 7. Logging Configuration =====
+{
+    "LoggingEnabled": {
+        "TargetBucket": "tanden-trust-audit-trail-123456789012-access-logs",
+        "TargetPrefix": "access-logs/"
+    }
+}

@@ -52,7 +52,8 @@ test('LocalEcdsaProvider signs and verifies evidence', async () => {
   assert.equal(signed.canonicalization, 'RFC 8785 JSON Canonicalization Scheme (JCS)');
   assert.equal(signed.hashAlgorithm, 'SHA-256');
   assert.equal(signed.signatureAlgorithm, 'ECDSA_SHA_256');
-  assert.equal(typeof signed.canonicalJson, 'string');
+  // canonicalJson は H5 データ最小化により戻り値から除外されている
+  assert.equal(signed.canonicalJson, undefined, 'canonicalJson must NOT be exposed in signEvidence() return value');
   assert.equal(typeof signed.digestHex, 'string');
   assert.equal(signed.digestHex.length, 64);
   assert.ok(Buffer.isBuffer(signed.signature));

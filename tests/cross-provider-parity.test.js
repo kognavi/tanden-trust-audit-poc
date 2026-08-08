@@ -89,3 +89,61 @@ test('Cross-provider contract parity: Local and KMS providers hash the identical
     else process.env.KMS_KEY_ID = original;
   }
 });
+
+test('Cross-provider signEvidence() return shape parity: both providers must NOT expose canonicalJson (H5 data minimization)', async () => {
+  const original = process.env.KMS_KEY_ID;
+  process.env.KMS_KEY_ID = 'test-key';
+  try {
+    const { privateKey: kmsPriv, publicKey: kmsPub } =
+      crypto.generateKeyPairSync('ec', { namedCurve: 'secp256k1' });
+    const kmsProvider = new AwsKmsProvider({ kmsClient: new SpyKmsClient(kmsPriv, kmsPub) });
+
+    const localProvider = new LocalEcdsaProvider();
+    const { privateKey: localPriv } = localProvider.generateEcKeyPair();
+
+    const kmsSigned   = await kmsProvider.signEvidence(sampleEvidence);
+    const localSigned = await localProvider.signEvidence(sampleEvidence, localPriv);
+
+    // ── 共通フィールドの存在確認 ──────────────────────────────────
+    const REQUIRED_FIELDS = [
+      'canonicalization',
+      'hashAlgorithm',
+      'signatureAlgorithm',
+      'digestHex',
+      'signature',
+      'signatureBase64',
+    ];
+    for (const field of REQUIRED_FIELDS) {
+      assert.ok(
+        Object.prototype.hasOwnProperty.call(localSigned, field),
+        `LocalEcdsaProvider.signEvidence() must include field: ${field}`
+      );
+      assert.ok(
+        Object.prototype.hasOwnProperty.call(kmsSigned, field),
+        `AwsKmsProvider.signEvidence() must include field: ${field}`
+      );
+    }
+
+    // ── H5 データ最小化: canonicalJson が戻り値に含まれていないこと ──
+    assert.equal(
+      localSigned.canonicalJson,
+      undefined,
+      'LocalEcdsaProvider.signEvidence() must NOT expose canonicalJson in its return value'
+    );
+    assert.equal(
+      kmsSigned.canonicalJson,
+      undefined,
+      'AwsKmsProvider.signEvidence() must NOT expose canonicalJson in its return value'
+    );
+
+    // ── 共通フィールドの値が一致すること ──────────────────────────
+    assert.equal(kmsSigned.canonicalization,   localSigned.canonicalization,   'canonicalization must match');
+    assert.equal(kmsSigned.hashAlgorithm,      localSigned.hashAlgorithm,      'hashAlgorithm must match');
+    assert.equal(kmsSigned.signatureAlgorithm, localSigned.signatureAlgorithm, 'signatureAlgorithm must match');
+    assert.equal(kmsSigned.digestHex,          localSigned.digestHex,          'digestHex must match (same evidence → same digest)');
+
+  } finally {
+    if (original === undefined) delete process.env.KMS_KEY_ID;
+    else process.env.KMS_KEY_ID = original;
+  }
+});

@@ -181,3 +181,4 @@ repo-digest.txt
 **/*.tfstate
 **/*.tfstate.backup
 **/.terraform/
+!.env.example

@@ -16,13 +16,14 @@ Evidence → Schema (validate) → Sign → Store → Ledger (record)
 | lib/metadata-signing.js | omitSignature, createMetadataSigningPayload | Schema | 署名前のメタデータペイロード整形 | tests/metadata-signing.test.js |
 | lib/canonicalize-loader.js | loadCanonicalizeFunction, canonicalizeValue | Util | JCS正規化関数の動的ローダー | (テストなし・各テスト経由で間接カバー) |
 | lib/local-ecdsa-provider.js | LocalEcdsaProvider, SIGNATURE_ALGORITHM | Sign | ローカル鍵によるECDSA署名プロバイダ | tests/local-ecdsa-provider.test.js |
-| lib/aws-kms-provider.js | AwsKmsProvider, decodeDerSignatureToRaw | Sign | AWS KMSによるECDSA署名プロバイダ | tests/aws-kms-provider.test.js |
+| lib/aws-kms-provider.js | AwsKmsProvider, decodeDerSignatureToRaw | Sign | AWS KMSによるECDSA署名プロバイダ。物理鍵ARNをレスポンスから解決し呼び出し元に返却（鍵ローテーション対応・TD-004/H3-a） | tests/aws-kms-provider.test.js |
 | lib/metadata-signature.js | signSidecarMetadata, verifySidecarMetadataSignature | Sign | サイドカーメタデータの署名生成・検証 | tests/metadata-signature.test.js |
-| lib/signature.js | signEvidence, verifyEvidenceSignature, generateEcKeyPair, signDigest, verifyDigestSignature, LocalEcdsaProvider(再export) | Sign | Evidence署名処理の統合エントリポイント ⚠️signature-digest.jsを内部再export | tests/signature.test.js |
+| lib/signature.js | signEvidence, verifyEvidenceSignature, generateEcKeyPair, signDigest, verifyDigestSignature, LocalEcdsaProvider(再export), defaultSignatureProvider | Sign | Evidence署名処理の統合エントリポイント ⚠️signature-digest.jsを内部再export。KMS_KEY_ID 環境変数により AwsKmsProvider / LocalEcdsaProvider を動的に切り替え（Strategyパターン） | tests/signature.test.js |
 | lib/json-object-store.js | LocalJsonObjectStore, assertValidObjectKey | Store | ローカルファイルシステムのJSONオブジェクトストア | tests/json-object-store.test.js |
 | lib/s3-json-object-store.js | S3JsonObjectStore, assertValidBucket, streamToString, isNotFoundError | Store | AWS S3ベースのJSONオブジェクトストア | tests/s3-json-object-store.test.js, tests/s3-json-object-store.integration.js |
 | lib/pg-signing-logger.js | PgSigningLogger, GENESIS_HASH | Ledger | Postgresによる改ざん検知チェーン記録 | tests/pg-signing-logger.test.js |
-| lib/audit-manager.js | AuditManager, AuditLedgerWriteError | Ledger | Evidence→Schema→Sign→Store→Ledgerの全体オーケストレーション | tests/audit-manager.test.js |
+| lib/pg-evidence-store.js | PgEvidenceStore, assertValidObjectKey | Store | PostgreSQL ベースの Evidence オブジェクト格納（upsert/get/delete/list） | (テストなし・scripts/test-kms-pg-integration.js でスモーク確認) |
+| lib/audit-manager.js | AuditManager, AuditLedgerWriteError | Ledger | Evidence→Schema→Sign→Store→Ledgerの全体オーケストレーション。verifyAndRecordはkmsKeyId（物理ARN／alias fallback）をpayloadに記録（TD-004/H3-e,f） | tests/audit-manager.test.js |
 
 ## E2E Tests (Cross-layer)
 - tests/local-sidecar-e2e.test.js — ローカル環境でのフルフロー検証

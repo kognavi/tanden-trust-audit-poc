@@ -130,6 +130,9 @@ Deliverables:
 
 - lib/aws-kms-provider.js
 - lib/pg-signing-logger.js
+- lib/pg-evidence-store.js (completed: 2026-08-07)
+- lib/signature.js — KMS_KEY_ID 環境変数による Strategyパターン切り替え追加 (completed: 2026-08-07)
+- scripts/test-kms-pg-integration.js — KMS＋PG統合テストスクリプト (completed: 2026-08-07)
 - tests/aws-kms-provider.test.js (fake KMS client, including
   TD-001/TD-003 KeySpec guard and public key caching)
 - tests/pg-signing-logger.test.js (fake pg.Pool client, hash-chain
@@ -202,9 +205,10 @@ Phase 4 hardening work before moving to Phase 5:
 1. Real AWS KMS and real PostgreSQL integration tests (#71)
 2. KMS error classification helpers built on the TD-002 `cause` chain
 3. PostgreSQL-side `cause` chain parity with `AwsKmsProvider` (#71)
-4. Verification runbook (`docs/verification-runbook.md`)
-5. Architecture diagrams
-6. Begin Phase 5 (S3 Object Lock, SSE-KMS, versioning) design work
+4. TD-004 (H3-b, H3-c): key rotation cache TTL and kms_key_id column design
+5. Verification runbook (`docs/verification-runbook.md`)
+6. Architecture diagrams
+7. Begin Phase 5 (S3 Object Lock, SSE-KMS, versioning) design work
 
 ---
 
@@ -275,3 +279,51 @@ original AWS SDK error via `{ cause: err }`.
 
 **Resolution:** Resolved as a side effect of the TD-001 fix — `_ensureKeySpecVerified()` caches the public key bytes returned alongside `KeySpec` from the same `GetPublicKeyCommand` call, eliminating redundant KMS API calls on repeated `getPublicKey()` invocations. Verified in `tests/aws-kms-provider.test.js` (`_ensureKeySpecVerified: caches result across multiple calls (TD-003)`).
 
+### TD-004: AwsKmsProvider / AuditManager — Physical Key ARN tracking for key rotation (H3 series)
+
+**Priority:** High
+
+**Status:** Partially Resolved (H3-a, H3-e, H3-f resolved; H3-b, H3-c pending)
+
+**Context:** `KMS_KEY_ID` is typically configured as an alias
+(e.g. `alias/tanden-trust-audit-signing`). Aliases can be repointed to a
+new physical key during rotation without any code change, which means
+an alias alone is insufficient for forensic/audit purposes — the
+audit ledger must record which *physical* key ARN actually performed
+each signing or verification operation, distinct from the alias used
+to invoke it.
+
+**Sub-items:**
+
+- **H3-a** (✅ Resolved): `signEvidence` / `verifyEvidenceSignature`
+  resolve and return the physical key ARN (`kmsKeyId`) from the
+  KMS `SignCommand` / `VerifyCommand` response, not the configured
+  alias. Verified in `tests/aws-kms-provider.test.js`.
+- **H3-e** (✅ Resolved, 2026-08-09): `AuditManager.verifyAndRecord`
+  now persists the resolved `kmsKeyId` into the ledger `payload` for
+  `evidence.verified` / `evidence.tamper_detected` /
+  `evidence.verification_error` events. Safely defaults to `null`
+  when the provider result has no `kmsKeyId` field (e.g.
+  `LocalEcdsaProvider`). Verified in `tests/audit-manager.test.js`.
+- **H3-f** (✅ Documented as accepted limitation, 2026-08-09): On
+  verification failure (`KMSInvalidSignatureException`), KMS's
+  `VerifyCommand` response omits `KeyId`, so `resolvedKeyId` falls
+  back to the configured alias. Calling `DescribeKey` to force
+  physical-ARN resolution on every failed verification was evaluated
+  and explicitly rejected (cost/latency not justified). See
+  `docs/kms-signing-design.md`.
+- **H3-b** (Pending, Low priority): Review `_cachedPublicKey` /
+  `_ensureKeySpecVerified` cache design — no TTL or invalidation
+  path exists if a key is rotated at the *same* alias without an
+  application restart.
+- **H3-c** (Pending, Medium priority): Evaluate promoting `kmsKeyId`
+  from a JSONB `payload` field to a dedicated, indexed
+  `kms_key_id` column on the ledger table, to support efficient
+  querying ("show all events signed by key X before rotation Y").
+
+**Affected files:** `lib/aws-kms-provider.js`, `lib/audit-manager.js`,
+`docs/kms-signing-design.md`
+
+**Resolution (partial):** H3-a/e/f completed and verified (137/137
+tests passing as of 2026-08-09, commit `99994d8`). H3-b/c remain open
+and are tracked for the Phase 4 hardening close-out alongside item #71.

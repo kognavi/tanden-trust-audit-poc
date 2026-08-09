@@ -31,7 +31,7 @@ function makeFakeLocalProvider({ signImpl, verifyImpl } = {}) {
   };
 }
 
-function makeFakeKmsProvider({ signImpl } = {}) {
+function makeFakeKmsProvider({ signImpl, verifyImpl } = {}) {
   return {
     async signEvidence(evidence) {
       if (signImpl) return signImpl(evidence);
@@ -47,8 +47,20 @@ function makeFakeKmsProvider({ signImpl } = {}) {
         signedAt: new Date().toISOString(),
       };
     },
+    async verifyEvidenceSignature(evidence, signature) {
+      if (verifyImpl) return verifyImpl(evidence, signature);
+      return {
+        canonicalization: 'RFC8785',
+        hashAlgorithm: 'SHA-256',
+        signatureAlgorithm: 'ECDSA_SHA_256',
+        digestHex: 'cafebabe',
+        valid: true,
+        kmsKeyId: 'arn:aws:kms:ap-northeast-1:123456789012:key/abc-123',
+      };
+    },
   };
 }
+
 
 function makeFakePgLogger({ appendImpl } = {}) {
   const appended = [];
@@ -303,4 +315,73 @@ test('INTEGRATION: verifyAndRecord with REAL LocalEcdsaProvider returns valid=fa
   assert.equal(verifyResult.valid, false);
   assert.equal(ledgerRow.eventType, 'evidence.tamper_detected');
   assert.equal(pgLogger.appended.length, 1);
+});
+
+
+test('verifyAndRecord (KMS provider) includes physical-ARN kmsKeyId in the ledger payload on successful verification (H3-e)', async () => {
+  const provider = makeFakeKmsProvider();
+  const pgLogger = makeFakePgLogger();
+  const manager = new AuditManager({ signingProvider: provider, pgLogger });
+
+  const evidence = { evidenceId: 'ev-h3e-001' };
+  const { ledgerRow } = await manager.verifyAndRecord(
+    evidence,
+    Buffer.from('kms-sig'),
+    { recordSuccess: true }
+  );
+
+  assert.equal(ledgerRow.eventType, 'evidence.verified');
+  assert.equal(
+    ledgerRow.payload.kmsKeyId,
+    'arn:aws:kms:ap-northeast-1:123456789012:key/abc-123',
+    'kmsKeyId in the ledger must be the physical key ARN, not the alias'
+  );
+});
+
+test('verifyAndRecord (KMS provider) records kmsKeyId on tamper_detected, including alias fallback per H3-f (accepted limitation)', async () => {
+  const provider = makeFakeKmsProvider({
+    verifyImpl: async () => ({
+      canonicalization: 'RFC8785',
+      hashAlgorithm: 'SHA-256',
+      signatureAlgorithm: 'ECDSA_SHA_256',
+      digestHex: 'tampered-digest',
+      valid: false,
+      // H3-f: on verification failure, KMS's VerifyCommand response omits
+      // KeyId, so the provider falls back to the configured alias here.
+      kmsKeyId: 'alias/tanden-trust-audit-signing',
+    }),
+  });
+  const pgLogger = makeFakePgLogger();
+  const manager = new AuditManager({ signingProvider: provider, pgLogger });
+
+  const evidence = { evidenceId: 'ev-h3e-002' };
+  const { ledgerRow } = await manager.verifyAndRecord(evidence, Buffer.from('bad-sig'));
+
+  assert.equal(ledgerRow.eventType, 'evidence.tamper_detected');
+  assert.equal(ledgerRow.payload.kmsKeyId, 'alias/tanden-trust-audit-signing');
+});
+
+test('verifyAndRecord payload.kmsKeyId is null when the provider result has no kmsKeyId field (H3-e safety net)', async () => {
+  const provider = makeFakeLocalProvider({
+    verifyImpl: async () => ({
+      canonicalization: 'RFC8785',
+      hashAlgorithm: 'SHA-256',
+      signatureAlgorithm: 'ECDSA_SHA_256',
+      digestHex: 'deadbeef',
+      valid: false,
+      // Note: no kmsKeyId field at all, as with LocalEcdsaProvider.
+    }),
+  });
+  const pgLogger = makeFakePgLogger();
+  const manager = new AuditManager({ signingProvider: provider, pgLogger });
+
+  const evidence = { evidenceId: 'ev-h3e-003' };
+  const { ledgerRow } = await manager.verifyAndRecord(
+    evidence,
+    Buffer.from('sig'),
+    { publicKeyPem: 'FAKE_PUB_PEM' }
+  );
+
+  assert.equal(ledgerRow.eventType, 'evidence.tamper_detected');
+  assert.equal(ledgerRow.payload.kmsKeyId, null);
 });

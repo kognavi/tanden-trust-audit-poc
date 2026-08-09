@@ -439,3 +439,39 @@ This document is a conceptual design.
 It does not represent a deployed KMS implementation, formal cryptographic review, compliance certification, legal conclusion, or production security approval.
 
 Before production use, the design should be reviewed by qualified AWS architects, security engineers, cryptography specialists, compliance professionals, legal professionals, and auditors.
+
+## H3-f: resolvedKeyId on verification failure (accepted limitation)
+
+When signature verification fails via a caught `KMSInvalidSignatureException`,
+the AWS KMS `VerifyCommand` response does NOT include the physical key ARN
+(`KeyId`) — this is a KMS API characteristic, not a bug in this provider.
+
+In this path, `resolvedKeyId` falls back to the configured alias
+(`this._keyId`), which is then recorded as `kmsKeyId` in the
+`evidence.tamper_detected` ledger event.
+
+**Decision (2026-08-09):** Do NOT call `DescribeKey` to resolve the physical
+ARN on every failed verification. The added API cost/latency on every tamper
+event is not justified, and the alias itself is sufficient audit context
+(it identifies which key configuration was used to attempt verification).
+If physical-ARN traceability on failure ever becomes a hard compliance
+requirement, revisit with a cached `DescribeKey` lookup (aliases resolve to
+a stable physical key until explicitly rotated).
+
+## H3-f: resolvedKeyId on verification failure (accepted limitation)
+
+When signature verification fails via a caught `KMSInvalidSignatureException`,
+the AWS KMS `VerifyCommand` response does NOT include the physical key ARN
+(`KeyId`) — this is a KMS API characteristic, not a bug in this provider.
+
+In this path, `resolvedKeyId` falls back to the configured alias
+(`this._keyId`), which is then recorded as `kmsKeyId` in the
+`evidence.tamper_detected` ledger event.
+
+**Decision (2026-08-09):** Do NOT call `DescribeKey` to resolve the physical
+ARN on every failed verification. The added API cost/latency on every tamper
+event is not justified, and the alias itself is sufficient audit context
+(it identifies which key configuration was used to attempt verification).
+If physical-ARN traceability on failure ever becomes a hard compliance
+requirement, revisit with a cached `DescribeKey` lookup (aliases resolve to
+a stable physical key until explicitly rotated).

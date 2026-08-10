@@ -181,3 +181,9 @@ repo-digest.txt
 **/*.tfstate
 **/*.tfstate.backup
 **/.terraform/
+
+# Terraform plan outputs (may contain sensitive account info)
+plan_output.txt
+plan_output.tfplan
+*.tfplan
+evidence.txt

@@ -187,3 +187,20 @@ plan_output.txt
 plan_output.tfplan
 *.tfplan
 evidence.txt
+
+# Hardhat build artifacts
+artifacts/
+cache/
+
+# Terraform state & sensitive vars
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+plan_output.tfplan
+.DS_Store
+
+# Hardhat flattened output
+flattened.sol

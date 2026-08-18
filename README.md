@@ -20,6 +20,8 @@ The default test suite verifies both local and S3 sidecar storage flows without 
 
 The current Phase 2 metadata storage decisions are documented in ADR 0001, ADR 0002, and ADR 0004 (signing event ledger). Expected digest metadata initially uses sidecar metadata objects, and S3 JSON object storage is implemented as a pluggable backend. DynamoDB, immutable storage, richer metadata indexing, and operational monitoring remain future production hardening options rather than deployed production features. AWS KMS-backed signing and the signing event ledger are implemented and verified against fake/in-memory clients, with real AWS/PostgreSQL integration testing remaining a future step.
 
+On-chain evidence anchoring on Ethereum Sepolia testnet (`TrustAnchor.sol`) and an S3 Object Lock (Compliance mode) WORM Terraform module (`infra/modules/s3-worm`) have also been added as prototypes; see [On-Chain Evidence Anchoring](#on-chain-evidence-anchoring-blockchain-testnet-prototype) and [Phase 2 Implementation Status](#phase-2-implementation-status) below.
+
 ---
 
 ## Overview
@@ -28,10 +30,10 @@ Modern digital trust systems require more than simply storing records.
 
 For audit evidence to be useful, it should satisfy at least two technical requirements:
 
-1. **Structural validity**  
+1. **Structural validity**
    The evidence record should follow an expected schema.
 
-2. **Integrity verification**  
+2. **Integrity verification**
    The evidence record should be detectable if modified after creation.
 
 This PoC combines:
@@ -130,8 +132,97 @@ This design separates:
 | Signature verification | Confirms that metadata was signed by the expected key |
 | Digest verification | Confirms that loaded evidence matches the signed metadata |
 
-The storage layer is intentionally not treated as the cryptographic trust boundary.  
+The storage layer is intentionally not treated as the cryptographic trust boundary.
 Even when evidence and metadata are loaded from local storage or S3-compatible storage, the verification layer must still validate the evidence digest and sidecar metadata signature.
+
+---
+
+## On-Chain Evidence Anchoring (Blockchain, Testnet Prototype)
+
+In addition to AWS KMS-backed signing, this project includes a prototype
+for anchoring evidence digests on a public blockchain (Ethereum Sepolia
+testnet) via a minimal smart contract.
+
+### Design goals
+
+- Anchor only the SHA-256 digest on-chain — never the raw evidence content
+  (privacy preservation and gas efficiency)
+- Enforce idempotency both client-side (pre-check) and on-chain (`require`)
+  to avoid wasting gas on duplicate anchoring attempts
+- Self-verify the anchored state immediately after transaction confirmation
+
+### Flow
+
+```text
+Evidence JSON
+  ↓
+RFC 8785 JCS-compatible canonicalization
+  ↓
+SHA-256 digest calculation
+  ↓
+Idempotency check (read-only call to anchoredAt())
+  ↓
+On-chain anchor() transaction (Sepolia testnet)
+  ↓
+Transaction confirmation
+  ↓
+Self-verification (re-read anchoredAt())
+  ↓
+VALID / INVALID result
+```
+
+### Contract
+
+`contracts/TrustAnchor.sol` is intentionally minimal:
+
+```solidity
+mapping(bytes32 => uint256) public anchoredAt;
+
+function anchor(bytes32 hash) external {
+    require(anchoredAt[hash] == 0, "Already anchored");
+    anchoredAt[hash] = block.timestamp;
+    emit Anchored(hash, block.timestamp);
+}
+```
+
+### Current limitations (by design, testnet prototype)
+
+- `anchor()` has no access control — anyone can call it. This is an
+  intentional "permissionless anchoring" design choice similar to
+  OpenTimestamps-style approaches, not an oversight. Access control
+  would be reconsidered before any production/mainnet use.
+- A single externally-owned account (`ANCHOR_PRIVATE_KEY`, stored via
+  `.env` and never committed) currently holds anchoring authority. This
+  is a single point of failure that production hardening would address
+  — for example, by using AWS KMS asymmetric signing keys directly for
+  Ethereum transaction signing, since AWS KMS's `ECC_SECG_P256K1` key
+  spec is the same curve Ethereum uses (secp256k1). This project already
+  uses AWS KMS for evidence signing (see `AwsKmsProvider`), so extending
+  KMS-backed signing to on-chain anchoring is a natural, still-unimplemented
+  next step rather than a new technology introduction.
+- Deployed only to Sepolia testnet. No third-party smart contract audit
+  has been performed. Not intended for mainnet use in its current form.
+
+### Usage
+
+```bash
+# 1. Deploy the contract to Sepolia (requires SEPOLIA_RPC_URL, ANCHOR_PRIVATE_KEY)
+npx hardhat run scripts/deploy-anchor.js --network sepolia
+
+# 2. Anchor evidence (requires TRUST_ANCHOR_ADDRESS)
+EVIDENCE_FILE=samples/evidence-consent.json \
+TRUST_ANCHOR_ADDRESS=0x... \
+npx hardhat run scripts/anchor-evidence.js --network sepolia
+```
+
+Required environment variables (via `.env`, never committed):
+
+```text
+SEPOLIA_RPC_URL=
+ANCHOR_PRIVATE_KEY=
+ETHERSCAN_API_KEY=
+TRUST_ANCHOR_ADDRESS=
+```
 
 ---
 
@@ -183,14 +274,15 @@ In short:
 | Sidecar metadata authenticity | Local ECDSA P-256 metadata signature | KMS-backed metadata signature |
 | Non-repudiation support | Limited | KMS signing, IAM controls, and CloudTrail |
 | Trusted expected hash | Signed sidecar metadata in current PoC | Signed digest and controlled metadata storage |
-| Immutable storage | Not included locally | S3 Object Lock |
+| Immutable storage | S3 Object Lock (Compliance mode) implemented as a Terraform module (`infra/modules/s3-worm`); not yet wired into a deployed environment | S3 Object Lock, deployed via `infra/environments/poc` |
+| On-chain digest anchoring | Sepolia testnet prototype (`TrustAnchor.sol`), permissionless by design, single-EOA key | KMS-backed transaction signing (secp256k1), access-controlled anchoring, audited contract |
 | Sequence/completeness checks | Not included locally | Hash chain or Merkle tree roadmap |
 | Trusted timestamping | Not included locally | Ingestion time, CloudTrail, and optional external timestamping |
 | Operational auditability | Local logs and tests | CloudTrail, CloudWatch, EventBridge, and runbooks |
 
 This distinction is intentional.
 
-The local MVP is designed to be reproducible and easy to review.  
+The local MVP is designed to be reproducible and easy to review.
 The AWS production-oriented design describes how the same evidence workflow can be hardened for stronger authenticity, immutability, auditability, and operational control.
 
 ---
@@ -231,6 +323,8 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │       ├── ci.yml
 │       ├── codeql.yml
 │       └── semgrep.yml
+├── contracts/
+│   └── TrustAnchor.sol           # On-chain evidence anchoring contract (Sepolia)
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-digest-metadata-storage.md
@@ -245,6 +339,13 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   │   └── tasks.md
 │   ├── README.md
 │   └── framework-selection.md
+├── infra/
+│   ├── environments/
+│   │   └── poc/                 # Environment-level Terraform composition
+│   ├── modules/
+│   │   ├── kms-signing/          # Reusable KMS asymmetric signing key module
+│   │   └── s3-worm/              # S3 Object Lock (Compliance mode) WORM module
+│   └── terraform-github-oidc-s3.tf  # GitHub Actions OIDC → AWS S3 CI integration
 ├── lib/
 │   ├── audit-manager.js
 │   ├── audit.js
@@ -268,6 +369,10 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   ├── evidence.schema.json
 │   └── signing-event.schema.json
 ├── scripts/
+│   ├── anchor-evidence.js        # On-chain anchoring with idempotency + self-verification
+│   ├── anchor-test.js
+│   ├── deploy-anchor.js          # TrustAnchor contract deployment (Sepolia)
+│   ├── generateWallet.js         # ⚠️ Local-only dev wallet generator (never commit output)
 │   ├── generate-local-keys.js
 │   ├── hash-evidence.js
 │   ├── sign-evidence.js
@@ -296,6 +401,7 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   ├── schema-validation.test.js
 │   ├── sidecar-verifier.test.js
 │   └── signature.test.js
+├── hardhat.config.js
 ├── package.json
 └── README.md
 ```
@@ -354,6 +460,8 @@ Current Phase 2 implementation includes:
 - AWS KMS-backed asymmetric signing through `AwsKmsProvider` (verified against a fake KMS client)
 - PostgreSQL-backed hash-chained signing event ledger through `PgSigningLogger` (verified against an in-memory fake `pg.Pool`)
 - Terraform-managed AWS Budgets cost guardrail alert
+- S3 Object Lock (Compliance mode) WORM Terraform module (`infra/modules/s3-worm`; not yet wired into a deployed environment)
+- On-chain evidence digest anchoring prototype on Ethereum Sepolia testnet (`TrustAnchor.sol`, `anchor-evidence.js`)
 
 The default test suite does not require AWS credentials, real S3 buckets, or a live AWS KMS/PostgreSQL connection.
 
@@ -364,7 +472,7 @@ npm test
 Current status:
 
 ```text
-121 tests passing
+130 tests passing
 ```
 
 Production hardening still pending:
@@ -477,7 +585,7 @@ Verification result: INVALID
 Verification result: VALID
 ```
 
-The second verification result becomes `INVALID` because the evidence content is modified after signing.  
+The second verification result becomes `INVALID` because the evidence content is modified after signing.
 After restoring the evidence content, the same signature verifies as `VALID` again.
 
 Local private keys and generated signatures are intentionally ignored by Git:
@@ -488,7 +596,7 @@ signatures/
 *.sig
 ```
 
-> Note: This local signing workflow is for demonstration only.  
+> Note: This local signing workflow is for demonstration only.
 > In production, private keys should be managed by AWS KMS or CloudHSM, evidence should be stored with immutability controls such as S3 Object Lock, and verification metadata should be persisted in an auditable store.
 
 ---
@@ -542,7 +650,7 @@ The test suite covers:
 Current expected result:
 
 ```text
-121 tests passing
+130 tests passing
 ```
 
 ---
@@ -631,7 +739,8 @@ It does not provide:
 - Production-grade key management
 - Non-repudiation guarantees
 - Production-grade immutable storage by default
-- Blockchain anchoring by default
+- Blockchain anchoring by default (a Sepolia testnet anchoring prototype
+  exists but is not wired into the default `npm test` / `npm run demo` flow)
 - A deployed production AWS environment
 
 Actual audit, compliance, legal, and security requirements should be reviewed with qualified professionals.
@@ -681,6 +790,11 @@ Implemented Phase 2 capabilities:
 - Terraform-managed AWS Budgets cost guardrail
 - In-memory fake S3/KMS/PG client testing
 - Local and S3 sidecar E2E tests
+- S3 Object Lock (Compliance mode) WORM module (`infra/modules/s3-worm`,
+  Terraform-defined; not yet wired into a deployed environment)
+- On-chain evidence digest anchoring prototype on Ethereum Sepolia
+  testnet (`TrustAnchor.sol`, `anchor-evidence.js`), with client-side
+  and on-chain idempotency checks and post-transaction self-verification
 
 Potential future production hardening includes:
 
@@ -706,7 +820,6 @@ Potential future enhancements include:
 - Exception handling flags
 - UUID-based evidence identifiers
 - Hash chain or Merkle tree based completeness verification
-- Blockchain anchoring
 - Multi-tenant SaaS architecture
 
 ### Out of Scope for v0.1.0
@@ -794,17 +907,17 @@ This PoC focuses on structural validation and tamper detection. It does not prov
 
 This project is part of an ongoing exploration of AI × Web3 digital proof, audit evidence, and verifiable trust.
 
-- AI×Web3で「見えない信頼」を証明する  
+- AI×Web3で「見えない信頼」を証明する
   https://note.com/fair_beetle339/n/nbc14f4e803b7
 
-- 「見えない信頼」をどう作るか：AI×Web3デジタル証明の実装編  
+- 「見えない信頼」をどう作るか：AI×Web3デジタル証明の実装編
   https://note.com/fair_beetle339/n/n22ef0c27423a
 
-- 「見えない信頼」は誰が買うのか：AI×Web3デジタル証明の事業編  
+- 「見えない信頼」は誰が買うのか：AI×Web3デジタル証明の事業編
   https://note.com/fair_beetle339/n/nffa803738f55
 
-- Tanden Trust Audit PoC：AI×Web3デジタル証明の土台をGitHubで実装する  
+- Tanden Trust Audit PoC：AI×Web3デジタル証明の土台をGitHubで実装する
   https://note.com/fair_beetle339/n/n432d57838031
 
-- Tanden Trust Audit PoC：ハッシュ検証から電子署名による真正性確認へ  
+- Tanden Trust Audit PoC：ハッシュ検証から電子署名による真正性確認へ
   https://note.com/fair_beetle339/n/ne53bc5b3d170

@@ -9,14 +9,13 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
+# nosemgrep: terraform.aws.security.aws-kms-no-rotation.aws-kms-no-rotation
+# 根拠: このキーは非対称鍵(ECC_SECG_P256K1 / SIGN_VERIFY)であり、
+# AWS KMSの自動ローテーション機能は非対称鍵をサポートしていない。
+# (enable_key_rotation=true を設定すると terraform apply が
+#  AWS API の ValidationException で失敗する)
+# 参考: https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html
 resource "aws_kms_key" "signing_key" {
-
-  # nosemgrep: terraform.aws.security.aws-kms-no-rotation.aws-kms-no-rotation
-  # 根拠: このキーは非対称鍵(ECC_SECG_P256K1 / SIGN_VERIFY)であり、
-  # AWS KMSの自動ローテーション機能は非対称鍵をサポートしていない。
-  # (enable_key_rotation=true を設定すると terraform apply が
-  #  AWS API の ValidationException で失敗する)
-  # 参考: https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html
   description              = var.description
   customer_master_key_spec = var.key_spec
   key_usage                = var.key_usage

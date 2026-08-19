@@ -16,6 +16,11 @@
 #   - Compliance modeで retention_days を長期(例:365)にしたまま
 #     オブジェクトをPUTすると、保持期間終了までバケットを削除できない。
 #     ポートフォリオ検証時は retention_days を短く(例:1)設定すること。
+#
+# 設計ノート(2026-08-19):
+#   本モジュールは呼び出し元(infra/environments/poc等)からproviderが
+#   供給されることを前提とする。再利用可能モジュール内でprovider
+#   ブロックを直接宣言しない(kms-signingモジュールと同じ規約)。
 
 terraform {
   required_version = ">= 1.5.0"
@@ -28,47 +33,6 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = var.aws_region
-}
-
-# -----------------------------------------------------------------
-# Variables
-# -----------------------------------------------------------------
-variable "aws_region" {
-  description = "デプロイ先リージョン"
-  type        = string
-  default     = "ap-northeast-1"
-}
-
-variable "bucket_name" {
-  description = "監査証跡を保存するS3バケット名(グローバルで一意である必要あり)"
-  type        = string
-}
-
-variable "retention_mode" {
-  description = "Object Lockの保持モード。COMPLIANCEはrootでも削除不可、GOVERNANCEは特権IAMなら削除可"
-  type        = string
-  default     = "COMPLIANCE"
-
-  validation {
-    condition     = contains(["COMPLIANCE", "GOVERNANCE"], var.retention_mode)
-    error_message = "retention_mode must be COMPLIANCE or GOVERNANCE."
-  }
-}
-
-variable "retention_days" {
-  description = "保持日数。本番は365*7(7年)等を想定。検証時は1などの短期値を推奨"
-  type        = number
-  default     = 1
-}
-
-variable "break_glass_role_arn" {
-  description = "緊急時のみ削除操作を許可するIAMロールARN(通常運用では未使用)"
-  type        = string
-  default     = ""
-}
-
 # -----------------------------------------------------------------
 # S3 Bucket (Object Lock対応バケットは作成時のみ有効化可能)
 # -----------------------------------------------------------------
@@ -77,9 +41,9 @@ resource "aws_s3_bucket" "audit_trail" {
   object_lock_enabled = true
 
   tags = {
-    Project     = "tanden-trust-audit-poc"
-    Purpose     = "tamper-evident-audit-trail"
-    ManagedBy   = "terraform"
+    Project   = "tanden-trust-audit-poc"
+    Purpose   = "tamper-evident-audit-trail"
+    ManagedBy = "terraform"
   }
 }
 
@@ -182,20 +146,4 @@ resource "aws_s3_bucket_lifecycle_configuration" "audit_trail" {
       days_after_initiation = 1
     }
   }
-}
-
-
-# -----------------------------------------------------------------
-# Outputs
-# -----------------------------------------------------------------
-output "bucket_name" {
-  value = aws_s3_bucket.audit_trail.id
-}
-
-output "bucket_arn" {
-  value = aws_s3_bucket.audit_trail.arn
-}
-
-output "object_lock_mode" {
-  value = var.retention_mode
 }

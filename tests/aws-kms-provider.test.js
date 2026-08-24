@@ -383,3 +383,99 @@ test('signDigest: throws before calling KMS when message exceeds RAW size limit'
     );
   });
 });
+
+// ── H3: kmsKeyId alias vs physical ARN resolution ──────────────────────────
+//
+// When KMS_KEY_ID is set to an alias (e.g. 'alias/my-signing-key'), the KMS
+// API always resolves it to the physical key ARN and returns that ARN in
+// response.KeyId. signEvidence / verifyEvidenceSignature must record the
+// resolved physical ARN — not the alias — so the audit ledger can identify
+// exactly which key material signed each piece of evidence after rotation.
+
+const ALIAS_KEY_ID  = 'alias/tanden-trust-audit-signing';          // KMS_KEY_ID 環境変数に設定するエイリアス
+const PHYSICAL_KEY_ARN = 'arn:aws:kms:ap-northeast-1:123456789012:key/aaaabbbb-1111-2222-3333-ccccddddeeee'; // モックが返す解決済み物理ARN
+
+test('signEvidence: kmsKeyId is resolved physical key ARN from SignCommand response, not the alias set in KMS_KEY_ID (H3)', async () => {
+  await withKmsKeyId(ALIAS_KEY_ID, async () => {
+    const r = Buffer.alloc(32, 0x01);
+    const s = Buffer.alloc(32, 0x02);
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      // KMS は常に物理キー ARN を response.KeyId に返す
+      SignCommand: () => ({ Signature: derSig(r, s), KeyId: PHYSICAL_KEY_ARN }),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const result = await provider.signEvidence({ evidenceId: 'ev-h3-sign' });
+
+    // エイリアスと物理ARNは別の文字列であることを前提としている
+    assert.notEqual(ALIAS_KEY_ID, PHYSICAL_KEY_ARN,
+      'Test precondition: alias and physical ARN must be different strings');
+
+    assert.equal(
+      result.kmsKeyId,
+      PHYSICAL_KEY_ARN,
+      'kmsKeyId must be the physical key ARN resolved by KMS, not the alias from KMS_KEY_ID'
+    );
+    assert.notEqual(
+      result.kmsKeyId,
+      ALIAS_KEY_ID,
+      'kmsKeyId must NOT be the alias string from KMS_KEY_ID env var'
+    );
+  });
+});
+
+test('verifyEvidenceSignature: kmsKeyId is resolved physical key ARN from VerifyCommand response (H3)', async () => {
+  await withKmsKeyId(ALIAS_KEY_ID, async () => {
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      // KMS は常に物理キー ARN を response.KeyId に返す
+      VerifyCommand: () => ({ SignatureValid: true, KeyId: PHYSICAL_KEY_ARN }),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const result = await provider.verifyEvidenceSignature(
+      { evidenceId: 'ev-h3-verify' },
+      Buffer.alloc(64, 0x01)
+    );
+
+    assert.equal(
+      result.kmsKeyId,
+      PHYSICAL_KEY_ARN,
+      'kmsKeyId must be the physical key ARN resolved by KMS, not the alias'
+    );
+    assert.notEqual(
+      result.kmsKeyId,
+      ALIAS_KEY_ID,
+      'kmsKeyId must NOT be the alias string from KMS_KEY_ID env var'
+    );
+  });
+});
+
+test('signDigest / verifyDigestSignature: backward-compatible return types after H3 wrapper refactor', async () => {
+  // signDigest は Buffer のみ、verifyDigestSignature は boolean のみを返すこと
+  // （resolvedKeyId が漏れ出ていないこと）を確認する回帰テスト。
+  await withKmsKeyId('test-key', async () => {
+    const r = Buffer.alloc(32, 0xab);
+    const s = Buffer.alloc(32, 0xcd);
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      SignCommand: () => ({ Signature: derSig(r, s), KeyId: PHYSICAL_KEY_ARN }),
+      VerifyCommand: () => ({ SignatureValid: true, KeyId: PHYSICAL_KEY_ARN }),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    const signResult = await provider.signDigest(Buffer.alloc(32));
+    assert.ok(Buffer.isBuffer(signResult),
+      'signDigest must return a Buffer (backward compatible)');
+    assert.equal(signResult.length, 64,
+      'signDigest must return a 64-byte Buffer');
+    assert.equal('resolvedKeyId' in signResult, false,
+      'signDigest must NOT expose resolvedKeyId in its return value');
+
+    const verifyResult = await provider.verifyDigestSignature(Buffer.alloc(32), Buffer.alloc(64));
+    assert.equal(typeof verifyResult, 'boolean',
+      'verifyDigestSignature must return a boolean (backward compatible)');
+    assert.equal(verifyResult, true);
+  });
+});

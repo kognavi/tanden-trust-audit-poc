@@ -32,7 +32,7 @@ async function createSignedMetadataForEvidence(
   const evidenceDigestDetails = await getEvidenceDigestDetails(evidenceValue);
 
   const metadata = {
-    schemaVersion: "tanden.trust.metadata.v1",
+    schemaVersion: "tanden.trust.metadata.v2",
     evidenceId: evidenceValue.evidenceId,
     evidenceKey: `evidence/${evidenceValue.evidenceId}.json`,
     evidenceVersionId: "test-version-id",
@@ -40,7 +40,8 @@ async function createSignedMetadataForEvidence(
     digestAlgorithm: "SHA-256",
     digestEncoding: "hex",
     digest: evidenceDigestDetails.digestHex,
-    signatureAlgorithm: "ECDSA_P256_SHA256",
+    signatureAlgorithm: "ECDSA_SHA_256",
+    signatureCurve: "secp256k1",
     signatureEncoding: "base64url",
     signature: "placeholder-signature",
     keyId: "local-dev-key-001",

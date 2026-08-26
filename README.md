@@ -14,7 +14,7 @@ This project demonstrates how structured audit evidence can be validated, hashed
 
 The local proof of concept currently supports schema validation, RFC 8785 JCS-compatible canonicalization, SHA-256 tamper detection, local ECDSA P-256 signature verification, automated tests, and GitHub Actions CI.
 
-Phase 2 AWS-backed MVP work is now substantially implemented. The project includes sidecar metadata schema validation, canonical metadata signing payloads, ECDSA P-256 sidecar metadata signing and verification, full evidence + sidecar metadata verification, local JSON object storage, S3-compatible JSON object storage, AWS KMS-backed asymmetric signing, and a PostgreSQL-backed hash-chained signing event ledger.
+Phase 2 AWS-backed MVP work is now substantially implemented. The project includes sidecar metadata schema validation, canonical metadata signing payloads, ECDSA SHA-256 sidecar metadata signing and verification with secp256k1 keys, full evidence + sidecar metadata verification, local JSON object storage, S3-compatible JSON object storage, AWS KMS-backed asymmetric signing, and a PostgreSQL-backed hash-chained signing event ledger.
 
 The default test suite verifies both local and S3 sidecar storage flows without requiring AWS credentials or real S3 buckets. S3 behavior is tested through an injected in-memory fake S3 client so that tests remain fast, deterministic, and suitable for CI.
 
@@ -58,7 +58,7 @@ This PoC combines:
 - Verify whether evidence has been modified
 - Sign and verify evidence using local ECDSA P-256 keys for demonstration
 - Detect tampering with public-key signature verification
-- Validate v1 sidecar metadata for stored evidence
+- Validate v2 sidecar metadata for stored evidence
 - Generate canonical sidecar metadata signing payloads
 - Sign and verify sidecar metadata with local ECDSA P-256 keys
 - Verify evidence together with signed sidecar metadata
@@ -100,6 +100,16 @@ This separates two important concerns:
 ## Sidecar Metadata Verification Flow
 
 Phase 2 extends the basic evidence verification flow with signed sidecar metadata.
+
+The corrected Sidecar contract uses schema `tanden.trust.metadata.v2`, with
+`signatureAlgorithm: ECDSA_SHA_256` and `signatureCurve: secp256k1`. Signatures
+cover the RFC 8785/JCS canonical metadata bytes directly; the provider performs
+the single SHA-256 operation required by its RAW-message contract. The separate
+`digestHex` remains an informational SHA-256 fingerprint of those bytes.
+
+This PoC intentionally does not accept historical v1 Sidecars. Version 1
+combined accidental double hashing with a misleading P-256 algorithm label,
+and the repository contains no durable v1 artifacts requiring compatibility.
 
 ```text
 Evidence JSON
@@ -449,7 +459,7 @@ Architecture Decision Records:
 
 Current Phase 2 implementation includes:
 
-- v1 sidecar metadata schema validation
+- v2 sidecar metadata schema validation
 - canonical sidecar metadata signing payload generation
 - ECDSA P-256 sidecar metadata signing and verification
 - full evidence + sidecar metadata verification

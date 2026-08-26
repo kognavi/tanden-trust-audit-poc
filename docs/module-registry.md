@@ -12,7 +12,7 @@ Evidence → Schema (validate) → Sign → Store → Ledger (record)
 | lib/signature-digest.js | canonicalizeEvidence, calculateDigestFromCanonicalJson, calculateDigestHexFromCanonicalJson, loadEvidenceFromFile, getEvidenceDigestDetails | Evidence | Evidenceの正規化とダイジェスト計算 ⚠️audit.jsと機能重複疑い、専用テストなし | (テストなし・signature.test.js経由のみ) |
 | lib/sidecar-verifier.js | verifyEvidenceWithSidecarMetadata | Evidence | Evidenceとサイドカーメタデータの統合検証 | tests/sidecar-verifier.test.js |
 | lib/schema-validation.js | readJsonFile, validateEvidenceAgainstSchema, validateEvidenceFile | Schema | Evidence JSONのSchema検証(ajv) | tests/schema-validation.test.js |
-| lib/metadata.js | validateSidecarMetadataV1, METADATA_SCHEMA_VERSION, 各定数 | Schema | サイドカーメタデータのSchema検証・定数定義 | tests/metadata.test.js |
+| lib/metadata.js | validateSidecarMetadataV2, METADATA_SCHEMA_VERSION, 各定数 | Schema | サイドカーメタデータのSchema検証・定数定義 | tests/metadata.test.js |
 | lib/metadata-signing.js | omitSignature, createMetadataSigningPayload | Schema | 署名前のメタデータペイロード整形 | tests/metadata-signing.test.js |
 | lib/canonicalize-loader.js | loadCanonicalizeFunction, canonicalizeValue | Util | JCS正規化関数の動的ローダー | (テストなし・各テスト経由で間接カバー) |
 | lib/local-ecdsa-provider.js | LocalEcdsaProvider, SIGNATURE_ALGORITHM | Sign | ローカル鍵によるECDSA署名プロバイダ | tests/local-ecdsa-provider.test.js |

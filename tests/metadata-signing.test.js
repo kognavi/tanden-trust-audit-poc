@@ -9,7 +9,7 @@ const {
 } = require("../lib/metadata-signing");
 
 const validMetadata = {
-  schemaVersion: "tanden.trust.metadata.v1",
+  schemaVersion: "tanden.trust.metadata.v2",
   evidenceId: "evidence-001",
   evidenceKey: "evidence/evidence-001.json",
   evidenceVersionId: "test-version-id",
@@ -17,7 +17,8 @@ const validMetadata = {
   digestAlgorithm: "SHA-256",
   digestEncoding: "hex",
   digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  signatureAlgorithm: "ECDSA_P256_SHA256",
+  signatureAlgorithm: "ECDSA_SHA_256",
+  signatureCurve: "secp256k1",
   signatureEncoding: "base64url",
   signature: "test-signature",
   keyId: "local-dev-key-001",
@@ -57,6 +58,7 @@ test("createMetadataSigningPayload is stable regardless of input key order", asy
     signature: validMetadata.signature,
     signatureEncoding: validMetadata.signatureEncoding,
     signatureAlgorithm: validMetadata.signatureAlgorithm,
+    signatureCurve: validMetadata.signatureCurve,
     digest: validMetadata.digest,
     digestEncoding: validMetadata.digestEncoding,
     digestAlgorithm: validMetadata.digestAlgorithm,

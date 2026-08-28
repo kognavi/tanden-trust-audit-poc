@@ -1,133 +1,39 @@
 # AWS KMS Signing Design
 
-> **Note:** This is an early draft. See [`docs/kms-signing-design.md`](./kms-signing-design.md)
-> for the current, more complete KMS signing design.
+> 現行実装の詳細は`lib/aws-kms-provider.js`と`tests/aws-kms-provider.test.js`を優先し、production policyは本書のTarget節として扱います。
 
----
+## Current AwsKmsProvider Implementation
 
-## Overview
+`AwsKmsProvider`は実装済みです。
 
-This document describes a future design for adding AWS KMS-based digital signatures to the tamper-evident audit trail PoC.
+- `KMS_KEY_ID`をkey ID、ARN、またはaliasとして受け取る
+- `GetPublicKey`で`ECC_SECG_P256K1`をfail-fast確認し、public keyをcacheする
+- RFC 8785 JCS canonical EvidenceのUTF-8 bytesを`MessageType: RAW`、`ECDSA_SHA_256`でSign/Verifyする
+- AWS KMSが返すDER signatureとprovider共通の64-byte raw `r || s`形式を相互変換する
+- KMS responseのphysical key ARNを`kmsKeyId`として返し、key rotation時のtraceabilityを支援する
+- AWS KMS RAW messageの4,096-byte上限を事前検査する
 
-The current PoC focuses on deterministic hashing and integrity verification. A production-grade audit trail also needs authenticity: the ability to prove which trusted system or key signed a given evidence digest.
+Local providerはECDSA P-256、AWS providerはsecp256k1であり、curveは異なります。共通なのはEvidence-level provider interfaceとSHA-256 signing semanticsです。
 
-## Current PoC
+## Current Test Coverage
 
-The current implementation performs the following steps:
+`tests/aws-kms-provider.test.js`はinjected mock KMS clientで、Sign/Verify、KeySpec拒否、DER/raw変換、public key cache、error、message size、physical key ARN等を検証します。`tests/cross-provider-parity.test.js`はprovider間の振る舞いを確認します。通常のautomated testは実AWS KMS、実IAM policy、CloudTrail deliveryを検証しません。実機確認用scriptはありますがdefault test suite外です。
 
-1. Validate the evidence JSON with JSON Schema.
-2. Canonicalize the evidence JSON using RFC 8785 JSON Canonicalization Scheme (JCS).
-3. Generate a SHA-256 hash from the canonical JSON.
-4. Compare the calculated hash with an expected hash.
+## Target Production Design
 
-This provides deterministic integrity verification, but it does not yet prove who authorized or signed the evidence.
+- asymmetric `SIGN_VERIFY` keyを使用し、private key materialをAWS KMS外へ出さない
+- signing roleを特定keyの`kms:Sign`と必要最小限のactionへ制限する
+- verification roleとkey administratorを分離し、administratorへsigning permissionを自動付与しない
+- aliasを利用する場合もphysical key ARNをEvidence metadata/Ledgerへ記録する
+- CloudTrailのKMS events、IAM principal、Evidence ID、Ledger eventを相関し、retentionとalertを設定する
+- key disable/deletion、policy/alias変更、rotation、incident時のverification continuityをrunbook化する
 
-## Target Architecture
+## Planned / Not Yet Implemented
 
-The target design adds an AWS KMS asymmetric signing key to sign the evidence digest.
+- production KMS key、key policy、IAM role、multi-account boundaryのIaC
+- CloudTrail log retention、correlation、alarmとseparation-of-dutiesのdeployment検証
+- production key lifecycle/rotation/recovery runbook
+- Schema validationからStore/Ledgerまでを単一application flowで強制すること
+- S3 Object LockまたはDynamoDBとのproduction deployment integration
 
-```text
-Evidence JSON
-  |
-  v
-JSON Schema Validation
-  |
-  v
-RFC 8785 JCS Canonicalization
-  |
-  v
-SHA-256 Digest
-  |
-  v
-AWS KMS Sign
-  |
-  v
-Evidence Hash + Signature + KMS Key ID
-```
-
-The signature can later be verified using AWS KMS Verify or the public key associated with the asymmetric KMS key.
-
-## Signing Flow
-
-1. Receive or generate an evidence JSON document.
-2. Validate the evidence against the JSON Schema.
-3. Canonicalize the evidence using RFC 8785 JCS.
-4. Generate a SHA-256 digest from the canonical JSON.
-5. Sign the digest using an AWS KMS asymmetric key.
-6. Store the following values:
-   - evidence ID
-   - schema version
-   - hash algorithm
-   - canonicalization method
-   - SHA-256 digest
-   - KMS key ID or key ARN
-   - signature
-   - signing timestamp
-
-## Verification Flow
-
-1. Load the evidence JSON.
-2. Validate the evidence against the expected JSON Schema.
-3. Canonicalize the evidence using RFC 8785 JCS.
-4. Recalculate the SHA-256 digest.
-5. Verify the signature using AWS KMS Verify or the public key.
-6. Return `VALID` only if both the digest and signature verification succeed.
-
-```text
-Evidence JSON
-  |
-  v
-JSON Schema Validation
-  |
-  v
-RFC 8785 JCS Canonicalization
-  |
-  v
-SHA-256 Digest
-  |
-  v
-AWS KMS Verify
-  |
-  v
-VALID / INVALID
-```
-
-## AWS Components
-
-Potential AWS components include:
-
-- AWS KMS asymmetric key for signing and verification
-- IAM policies for least-privilege signing access
-- CloudTrail for auditing KMS Sign and Verify API calls
-- Amazon S3 with Object Lock for immutable evidence storage
-- DynamoDB for evidence metadata and lookup indexes
-- AWS Lambda for serverless signing and verification workflows
-- Amazon EventBridge for event-driven evidence processing
-
-## Security Considerations
-
-- Use an asymmetric KMS key so verification can be performed without granting signing permission.
-- Restrict `kms:Sign` to trusted workloads only.
-- Separate signing permissions from verification permissions.
-- Enable CloudTrail logging for KMS API activity.
-- Store signatures separately from mutable application data when possible.
-- Include schema version and canonicalization method in signed metadata.
-- Rotate keys according to compliance and operational requirements.
-- Consider key deletion protection and recovery windows for audit-critical keys.
-
-## Operational Considerations
-
-- KMS API latency and request quotas should be considered for high-volume workloads.
-- Signing should be idempotent for the same canonical evidence payload.
-- Evidence verification should fail closed when the key, signature, or schema version is unknown.
-- Monitoring should be added for signing failures, verification failures, and unexpected KMS access.
-- Disaster recovery plans should define how evidence remains verifiable across regions and accounts.
-
-## Future Enhancements
-
-- Implement `scripts/sign-evidence-kms.js` using AWS SDK for JavaScript v3.
-- Implement `scripts/verify-evidence-kms.js`.
-- Add sample signed evidence metadata.
-- Add GitHub Actions checks using mocked KMS responses.
-- Add architecture diagrams for AWS deployment.
-- Evaluate S3 Object Lock and DynamoDB Streams for production audit trails.
+`AwsKmsProvider`の存在だけでproduction-ready、non-repudiation、regulatory complianceを主張してはいけません。

@@ -26,6 +26,7 @@ Evidence → Schema → Sign → Store → Ledger
 | lib/pg-evidence-store.js | PgEvidenceStore, EvidenceStoreError, assertValidEvidenceId, assertValidVersion, assertValidDigestHex | Store | 署名、digest、KMS key IDを含むversioned EvidenceをPostgreSQLへappend/read | tests/pg-evidence-store.test.js |
 | lib/pg-signing-logger.js | PgSigningLogger, GENESIS_HASH | Ledger | PostgreSQLのappend-only signing event hash chainを記録・検証 | tests/pg-signing-logger.test.js |
 | lib/audit-manager.js | AuditManager, AuditLedgerWriteError | Ledger | signing providerとPgSigningLoggerを協調し、署名・検証eventをLedgerへ記録 | tests/audit-manager.test.js |
+| lib/evidence-processing-service.js | EvidenceProcessingService, EvidenceValidationError, EvidenceStoreWriteError, EvidenceLedgerWriteError | Application | 既存Schema validator、signing provider、PgEvidenceStore互換Store、PgSigningLogger互換Ledgerをcomposeし、`Schema → Sign → Store → Ledger`の順序とpartial failure semanticsを単一APIで強制 | tests/evidence-processing-service.test.js |
 
 ## Cross-layer Tests
 
@@ -36,7 +37,7 @@ Evidence → Schema → Sign → Store → Ledger
 
 1. `audit.js`と`signature-digest.js`にはcanonicalizationとdigest責務の重複がある。Phase 2では変更しない。
 2. `signature-digest.js`と`canonicalize-loader.js`には専用test fileがなく、他moduleのtestから間接的にcoverされる。
-3. `AuditManager`はSchema validationやEvidence Storeを呼ばないため、Repository全体の`Evidence → Schema → Sign → Store → Ledger`を技術的に強制する完全なorchestratorではない。Phase 2では挙動を変更しない。
+3. `AuditManager`はSchema validationやEvidence Storeを呼ばず、providerとLedgerの協調責務を維持する。production-orientedな取り込み処理では`EvidenceProcessingService`をentry pointとして使用する必要があり、低レベルmoduleの個別呼び出し自体は禁止していない。
 
 ## Update Rule
 

@@ -17,6 +17,12 @@ The current MVP provides:
 - deterministic JSON canonicalization
 - SHA-256 hash generation
 - hash verification
+- local ECDSA P-256 signing and sidecar signature verification
+- `AwsKmsProvider` for AWS KMS `ECC_SECG_P256K1` / `ECDSA_SHA_256` signing and verification
+- local and Amazon S3 JSON object-store adapters
+- `PgEvidenceStore` for versioned signed Evidence
+- `PgSigningLogger` PostgreSQL hash-chain Ledger and `AuditManager` coordination
+- a Web3 PoC that directly anchors an Evidence digest without proving it was signed or verified
 - automated tests
 - audit procedure documentation
 - control mapping documentation
@@ -25,13 +31,15 @@ The current MVP provides:
 
 The MVP currently does not provide:
 
-- production IAM
-- immutable storage
-- digital signatures
-- centralized audit logging
-- managed key protection
-- retention enforcement
+- deployed production IAM/KMS policies or separation-of-duties enforcement
+- S3 Object Lock or retention enforcement
+- centralized CloudTrail correlation and operational monitoring
+- DynamoDB metadata implementation; DynamoDB below is target/alternative architecture
+- production RDS/Aurora provisioning, hardened DB roles, backup, or HA
 - multi-account security boundaries
+- an anchoring flow restricted to signed and verified digests
+
+Current AWS/PostgreSQL modules are PoC adapters tested mainly with injected fakes. They do not make the reference architecture below a deployed production system.
 
 ## Target Architecture Goals
 
@@ -466,7 +474,7 @@ Future versions may add:
 - additional deployment-level diagrams for multi-account and multi-region designs
 - Terraform or AWS CDK reference implementation
 - API Gateway and Lambda ingestion prototype
-- KMS signing and verification script
+- production KMS/IAM/CloudTrail deployment and verification workflow
 - S3 Object Lock sample configuration
 - DynamoDB metadata schema
 - EventBridge lifecycle event examples

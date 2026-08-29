@@ -1,67 +1,76 @@
-const hre = require("hardhat");
 const fs = require("node:fs");
+const path = require("node:path");
+const hre = require("hardhat");
 const {
-  getEvidenceDigestDetails,
-  loadEvidenceFromFile,
-} = require("../lib/signature-digest");
+  readJsonFile,
+} = require("../lib/schema-validation");
+const {
+  VerifiedAnchorService,
+  TrustedKeyResolver,
+} = require("../lib/verified-anchor-service");
 
 async function main() {
-  const evidenceFilePath = process.env.EVIDENCE_FILE || "samples/evidence-consent.json";
-  const contractAddress = process.env.TRUST_ANCHOR_ADDRESS;
+  const evidenceFilePath = requireEnvironment("EVIDENCE_FILE");
+  const metadataFilePath = requireEnvironment("EVIDENCE_METADATA_FILE");
+  const trustedKeyringFilePath = requireEnvironment("TRUSTED_KEYRING_FILE");
+  const contractAddress = requireEnvironment("TRUST_ANCHOR_ADDRESS");
 
-  if (!contractAddress) {
-    console.error("❌ TRUST_ANCHOR_ADDRESS environment variable is not set.");
-    process.exitCode = 1;
-    return;
+  const evidence = readJsonFile(evidenceFilePath);
+  const metadata = readJsonFile(metadataFilePath);
+  const trustedKeyResolver = loadTrustedKeyResolver(trustedKeyringFilePath);
+
+  const contract = await hre.ethers.getContractAt("TrustAnchor", contractAddress);
+  const anchorClient = {
+    getAnchoredAt: (digestBytes32) => contract.anchoredAt(digestBytes32),
+    async anchorDigest(digestBytes32) {
+      const transaction = await contract.anchor(digestBytes32);
+      const receipt = await transaction.wait();
+      return {
+        transactionHash: transaction.hash,
+        blockNumber: receipt.blockNumber,
+      };
+    },
+  };
+
+  const result = await new VerifiedAnchorService({
+    anchorClient,
+    trustedKeyResolver,
+  }).anchorVerifiedEvidence({ evidence, metadata });
+
+  console.log(`Verified digest anchored: ${result.digestBytes32}`);
+  console.log(`Transaction: ${result.transactionResult.transactionHash}`);
+  console.log(`Block: ${result.transactionResult.blockNumber}`);
+  console.log(
+    "The recorded block timestamp is ordering evidence, not a trusted timestamp authority."
+  );
+}
+
+function loadTrustedKeyResolver(keyringFilePath) {
+  const keyring = readJsonFile(keyringFilePath);
+  if (!keyring || typeof keyring !== "object" || Array.isArray(keyring)) {
+    throw new Error("TRUSTED_KEYRING_FILE must contain a JSON object.");
   }
+  const baseDirectory = path.dirname(path.resolve(keyringFilePath));
+  const entries = Object.entries(keyring).map(([keyId, publicKeyFile]) => {
+    if (typeof publicKeyFile !== "string" || publicKeyFile.length === 0) {
+      throw new Error(`Trusted key ${keyId} must reference a public key file.`);
+    }
+    const publicKeyPath = path.resolve(baseDirectory, publicKeyFile);
+    return [keyId, fs.readFileSync(publicKeyPath, "utf8")];
+  });
+  return new TrustedKeyResolver(new Map(entries));
+}
 
-  if (!fs.existsSync(evidenceFilePath)) {
-    console.error(`❌ Evidence file not found: ${evidenceFilePath}`);
-    process.exitCode = 1;
-    return;
+function requireEnvironment(name) {
+  // eslint-disable-next-line security/detect-object-injection -- `name` is always a developer-defined literal at this local CLI boundary.
+  const value = process.env[name];
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`${name} environment variable is required.`);
   }
-
-  console.log(`📄 Evidence file: ${evidenceFilePath}`);
-
-  const evidence = loadEvidenceFromFile(evidenceFilePath);
-  const digestDetails = await getEvidenceDigestDetails(evidence);
-  const digestBytes32 = `0x${digestDetails.digestHex}`;
-
-  console.log(`📐 Canonicalization: ${digestDetails.canonicalization}`);
-  console.log(`🔑 Digest (SHA-256, bytes32): ${digestBytes32}`);
-
-  const TrustAnchor = await hre.ethers.getContractAt("TrustAnchor", contractAddress);
-
-  // --- べき等性チェック ---
-  const existing = await TrustAnchor.anchoredAt(digestBytes32);
-  if (existing.toString() !== "0") {
-    console.log("⚠️  This evidence has already been anchored.");
-    console.log(`⏰ Previously anchored at (unix timestamp): ${existing.toString()}`);
-    console.log(`🔗 https://sepolia.etherscan.io/address/${contractAddress}`);
-    return;
-  }
-
-  // --- オンチェーン刻印 ---
-  console.log("🚀 Anchoring evidence on-chain...");
-  const tx = await TrustAnchor.anchor(digestBytes32);
-  console.log(`⏳ Transaction sent: ${tx.hash}`);
-
-  const receipt = await tx.wait();
-  console.log(`✅ Transaction confirmed in block: ${receipt.blockNumber}`);
-
-  // --- 自己検証（信頼のループ）---
-  const timestamp = await TrustAnchor.anchoredAt(digestBytes32);
-  if (timestamp.toString() === "0") {
-    throw new Error("Self-verification failed: anchoredAt() returned 0 after anchoring.");
-  }
-
-  console.log("🔍 Self-verification passed.");
-  console.log(`⏰ Recorded timestamp: ${timestamp.toString()}`);
-  console.log(`🔗 https://sepolia.etherscan.io/tx/${tx.hash}`);
-  console.log("🎉 Evidence successfully anchored on-chain!");
+  return value;
 }
 
 main().catch((error) => {
-  console.error("❌ Anchoring failed:", error);
+  console.error(`Anchoring failed [${error.code ?? error.name}]: ${error.message}`);
   process.exitCode = 1;
 });

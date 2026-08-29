@@ -176,11 +176,11 @@ Important Principles:
 
 ## Phase 7: Web3-Compatible Verification
 
-Status: Planned
+Status: In Progress (verified digest application gate implemented; production relayer controls remain planned)
 
 Goals:
 
-- Add blockchain-compatible evidence anchoring
+- Harden blockchain-compatible evidence anchoring for production operations
 - Explore Verifiable Credentials
 - Explore selective disclosure
 - Avoid storing personal data on-chain

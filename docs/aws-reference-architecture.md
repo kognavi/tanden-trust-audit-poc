@@ -22,7 +22,7 @@ The current MVP provides:
 - local and Amazon S3 JSON object-store adapters
 - `PgEvidenceStore` for versioned signed Evidence
 - `PgSigningLogger` PostgreSQL hash-chain Ledger and `AuditManager` coordination
-- a Web3 PoC that directly anchors an Evidence digest without proving it was signed or verified
+- an official Web3 application path that binds signed `keyId` to trusted key configuration and sends only a successfully verified Evidence digest
 - automated tests
 - audit procedure documentation
 - control mapping documentation
@@ -37,7 +37,7 @@ The MVP currently does not provide:
 - DynamoDB metadata implementation; DynamoDB below is target/alternative architecture
 - production RDS/Aurora provisioning, hardened DB roles, backup, or HA
 - multi-account security boundaries
-- an anchoring flow restricted to signed and verified digests
+- production relayer authorization, monitoring, and operational key controls for anchoring
 
 Current AWS/PostgreSQL modules are PoC adapters tested mainly with injected fakes. They do not make the reference architecture below a deployed production system.
 

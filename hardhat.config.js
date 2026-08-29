@@ -1,4 +1,4 @@
-require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-ethers");
 require("dotenv").config({ quiet: true });
 
 const { SEPOLIA_RPC_URL, ANCHOR_PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;

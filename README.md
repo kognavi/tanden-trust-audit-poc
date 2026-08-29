@@ -157,28 +157,28 @@ testnet) via a minimal smart contract.
 
 - Anchor only the SHA-256 digest on-chain — never the raw evidence content
   (privacy preservation and gas efficiency)
+- Require successful off-chain Evidence digest and signed sidecar metadata
+  verification before the application sends a transaction
 - Enforce idempotency both client-side (pre-check) and on-chain (`require`)
   to avoid wasting gas on duplicate anchoring attempts
-- Self-verify the anchored state immediately after transaction confirmation
+- Keep signature verification and Evidence content outside the contract
 
 ### Flow
 
 ```text
 Evidence JSON
   ↓
-RFC 8785 JCS-compatible canonicalization
+Signed sidecar metadata
   ↓
-SHA-256 digest calculation
+Resolve metadata.keyId from deployment trusted keyring
+  ↓
+VerifiedAnchorService off-chain digest and signature verification
   ↓
 Idempotency check (read-only call to anchoredAt())
   ↓
-On-chain anchor() transaction (Sepolia testnet)
+bytes32 digest-only anchor() transaction (Sepolia testnet)
   ↓
 Transaction confirmation
-  ↓
-Self-verification (re-read anchoredAt())
-  ↓
-VALID / INVALID result
 ```
 
 ### Contract
@@ -189,6 +189,7 @@ VALID / INVALID result
 mapping(bytes32 => uint256) public anchoredAt;
 
 function anchor(bytes32 hash) external {
+    require(hash != bytes32(0), "Zero digest");
     require(anchoredAt[hash] == 0, "Already anchored");
     anchoredAt[hash] = block.timestamp;
     emit Anchored(hash, block.timestamp);
@@ -212,6 +213,12 @@ function anchor(bytes32 hash) external {
   next step rather than a new technology introduction.
 - Deployed only to Sepolia testnet. No third-party smart contract audit
   has been performed. Not intended for mainnet use in its current form.
+- The official CLI path uses the signed metadata `keyId` to resolve a public
+  key from an operator-configured trusted keyring. `VerifiedAnchorService`
+  performs the actual off-chain verification before sending only the digest.
+  The permissionless contract itself does not prove that an arbitrary caller's
+  digest was verified.
+- `block.timestamp` is block ordering evidence, not a strict trusted timestamp.
 
 ### Usage
 
@@ -219,10 +226,22 @@ function anchor(bytes32 hash) external {
 # 1. Deploy the contract to Sepolia (requires SEPOLIA_RPC_URL, ANCHOR_PRIVATE_KEY)
 npx hardhat run scripts/deploy-anchor.js --network sepolia
 
-# 2. Anchor evidence (requires TRUST_ANCHOR_ADDRESS)
+# 2. Anchor verified evidence (requires signed metadata and a deployment keyring)
 EVIDENCE_FILE=samples/evidence-consent.json \
+EVIDENCE_METADATA_FILE=/path/to/signed-metadata.json \
+TRUSTED_KEYRING_FILE=/path/to/trusted-keyring.json \
 TRUST_ANCHOR_ADDRESS=0x... \
 npx hardhat run scripts/anchor-evidence.js --network sepolia
+```
+
+The keyring is deployment trust configuration, not Evidence input. Its JSON
+keys are signed metadata `keyId` values and its values are public-key file
+paths relative to the keyring file, for example:
+
+```json
+{
+  "local-dev-key-001": "./local-dev-public-key.pem"
+}
 ```
 
 Required environment variables (via `.env`, never committed):
@@ -232,6 +251,9 @@ SEPOLIA_RPC_URL=
 ANCHOR_PRIVATE_KEY=
 ETHERSCAN_API_KEY=
 TRUST_ANCHOR_ADDRESS=
+EVIDENCE_FILE=
+EVIDENCE_METADATA_FILE=
+TRUSTED_KEYRING_FILE=
 ```
 
 ---
@@ -285,7 +307,7 @@ In short:
 | Non-repudiation support | Limited | KMS signing, IAM controls, and CloudTrail |
 | Trusted expected hash | Signed sidecar metadata in current PoC | Signed digest and controlled metadata storage |
 | Immutable storage | S3 Object Lock (Compliance mode) implemented as a Terraform module (`infra/modules/s3-worm`); not yet wired into a deployed environment | S3 Object Lock, deployed via `infra/environments/poc` |
-| On-chain digest anchoring | Sepolia testnet prototype (`TrustAnchor.sol`), permissionless by design, single-EOA key | KMS-backed transaction signing (secp256k1), access-controlled anchoring, audited contract |
+| On-chain digest anchoring | Off-chain verified digest gate + permissionless Sepolia contract, single-EOA transaction key | Authorized relayer policy, hardened key operations, audited contract |
 | Sequence/completeness checks | Not included locally | Hash chain or Merkle tree roadmap |
 | Trusted timestamping | Not included locally | Ingestion time, CloudTrail, and optional external timestamping |
 | Operational auditability | Local logs and tests | CloudTrail, CloudWatch, EventBridge, and runbooks |
@@ -379,8 +401,8 @@ The project does not aim to provide a production SaaS, legal compliance certific
 │   ├── evidence.schema.json
 │   └── signing-event.schema.json
 ├── scripts/
-│   ├── anchor-evidence.js        # On-chain anchoring with idempotency + self-verification
-│   ├── anchor-test.js
+│   ├── anchor-evidence.js        # Off-chain verified digest anchoring path
+│   ├── anchor-test.js            # Explicitly gated unsafe contract smoke test only
 │   ├── deploy-anchor.js          # TrustAnchor contract deployment (Sepolia)
 │   ├── generateWallet.js         # ⚠️ Local-only dev wallet generator (never commit output)
 │   ├── generate-local-keys.js
@@ -802,9 +824,9 @@ Implemented Phase 2 capabilities:
 - Local and S3 sidecar E2E tests
 - S3 Object Lock (Compliance mode) WORM module (`infra/modules/s3-worm`,
   Terraform-defined; not yet wired into a deployed environment)
-- On-chain evidence digest anchoring prototype on Ethereum Sepolia
-  testnet (`TrustAnchor.sol`, `anchor-evidence.js`), with client-side
-  and on-chain idempotency checks and post-transaction self-verification
+- On-chain verified Evidence digest anchoring prototype on Ethereum Sepolia
+  testnet (`VerifiedAnchorService`, `TrustAnchor.sol`, `anchor-evidence.js`),
+  with fail-closed off-chain verification and client/on-chain duplicate checks
 
 Potential future production hardening includes:
 

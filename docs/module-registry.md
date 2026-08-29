@@ -27,6 +27,7 @@ Evidence → Schema → Sign → Store → Ledger
 | lib/pg-signing-logger.js | PgSigningLogger, GENESIS_HASH | Ledger | PostgreSQLのappend-only signing event hash chainを記録・検証 | tests/pg-signing-logger.test.js |
 | lib/audit-manager.js | AuditManager, AuditLedgerWriteError | Ledger | signing providerとPgSigningLoggerを協調し、署名・検証eventをLedgerへ記録 | tests/audit-manager.test.js |
 | lib/evidence-processing-service.js | EvidenceProcessingService, EvidenceValidationError, EvidenceStoreWriteError, EvidenceLedgerWriteError | Application | 既存Schema validator、signing provider、PgEvidenceStore互換Store、PgSigningLogger互換Ledgerをcomposeし、`Schema → Sign → Store → Ledger`の順序とpartial failure semanticsを単一APIで強制 | tests/evidence-processing-service.test.js |
+| lib/verified-anchor-service.js | VerifiedAnchorService, TrustedKeyResolver, VerificationGateError, AlreadyAnchoredError, AnchorTransactionError | External Proof / Application | signed metadataのkeyIdをdeployment trusted keyringへbindし、既存sidecar verifierを内部実行して、Evidenceから再計算したverified bytes32 digestだけをWeb3 clientへ渡す | tests/verified-anchor-service.test.js |
 
 ## Cross-layer Tests
 

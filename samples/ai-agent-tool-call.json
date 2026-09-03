@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "1.0.0",
+  "hashAlgorithm": "SHA-256",
+  "evidenceId": "evd-2026-000101",
+  "eventType": "AGENT_TOOL_CALL",
+  "occurredAt": "2026-09-04T00:15:00Z",
+  "sourceSystem": "tanden-trust-audit-poc",
+  "actor": {
+    "type": "human",
+    "id": "user-demo-001",
+    "principalRef": "synthetic:iam-role/demo-agent-user"
+  },
+  "agent": {
+    "agentId": "agent-demo-001",
+    "agentVersion": "0.3.0",
+    "framework": "aws-oriented-demo",
+    "promptConfigDigestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "model": {
+    "provider": "aws-bedrock",
+    "modelId": "synthetic-model-id",
+    "modelVersion": "demo"
+  },
+  "execution": {
+    "traceId": "trace-demo-0001",
+    "sessionId": "session-demo-0001",
+    "taskId": "task-demo-0001"
+  },
+  "policy": {
+    "policyId": "customer-write-policy",
+    "policyVersion": "2026-09-01",
+    "decision": "allow",
+    "reasonCode": "APPROVED_SCOPE"
+  },
+  "action": {
+    "toolName": "crm.updateCustomerPreference",
+    "operation": "WRITE",
+    "target": "synthetic://crm/customer/123"
+  },
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "approverId": "reviewer-demo-001",
+    "decidedAt": "2026-09-04T00:14:50Z"
+  },
+  "sideEffect": {
+    "category": "EXTERNAL_WRITE",
+    "resource": "synthetic://crm/customer/123",
+    "outcome": "SUCCESS"
+  },
+  "contextReferences": [
+    {
+      "type": "POLICY",
+      "reference": "synthetic://policy/customer-write-policy/2026-09-01",
+      "digestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "type": "RAG_DOCUMENT",
+      "reference": "synthetic://knowledge/customer-preferences-v3",
+      "digestSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "artifacts": [
+    {
+      "type": "CHANGESET",
+      "reference": "synthetic://crm/change/789",
+      "digestSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "metadata": {
+    "environment": "demo",
+    "containsPersonalData": false,
+    "containsSecrets": false,
+    "retentionClass": "demo-30d",
+    "notes": "Synthetic AI agent audit evidence. Raw prompts, secrets, and customer payloads are intentionally excluded."
+  }
+}

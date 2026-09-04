@@ -1,58 +1,83 @@
 # Architecture Diagram
 
+## Product View
+
+~~~mermaid
+flowchart LR
+    AR[AI Agent / SaaS Runtime] --> RC[Runtime Collector / Adapter<br/>planned]
+    RC --> AE[AI Agent Evidence Profile]
+    AE --> PS[EvidenceProcessingService]
+    PS --> SC[JSON Schema validation]
+    SC --> SG[Signing Provider]
+    SG --> ES[Versioned Evidence Store]
+    ES --> LG[Hash-chained Signing Ledger]
+    LG --> VR[Independent Verification]
+    ES --> IM[Immutable Retention<br/>target]
+    VR --> XA[External Trust Anchor<br/>optional]
+~~~
+
+主役はAI Agentから生成されるEvidenceです。
+
+External anchorはoptional boundaryであり、Blockchainをproduct coreとはしません。
+
 ## Current Implementation
 
-```mermaid
+~~~mermaid
 flowchart LR
     E[Evidence JSON] --> PS[EvidenceProcessingService]
     PS --> V[JSON Schema validation]
     V --> C[RFC 8785 JCS + SHA-256]
-    C --> LS[Local ECDSA P-256]
-    C --> KS[AwsKmsProvider<br/>ECC_SECG_P256K1]
-    LS --> ST[Local / S3 JSON store]
+    C --> LS[Local ECDSA Provider]
+    C --> KS[AwsKmsProvider]
+    LS --> ST[Store abstraction]
     KS --> ST
-    KS --> PG[PgEvidenceStore]
-    PG --> PL
-    LS --> AM[AuditManager]
-    KS --> AM
-    AM --> PL[PgSigningLogger hash chain]
-    PL --> VA[VerifiedAnchorService]
-    TK[Deployment trusted keyring] --> KR[TrustedKeyResolver]
-    KR --> VA
-    VA --> VF[Sidecar digest + signature verification]
-    VF --> VD[Verified SHA-256 digest]
-    VD -->|bytes32 digest only| WA[TrustAnchor.sol]
-```
+    ST --> PG[PgEvidenceStore]
+    PG --> PL[PgSigningLogger hash chain]
+    PL --> VF[Verification]
+    VF --> VA[VerifiedAnchorService<br/>optional]
+    VA --> WA[TrustAnchor.sol<br/>Sepolia prototype]
+~~~
 
-実線は実装済みmoduleの責務を示しますが、deploy済みという意味ではありません。`EvidenceProcessingService`はSchema、signing provider、`PgEvidenceStore`互換Store、`PgSigningLogger`互換Ledgerを順番に呼ぶapplication APIです。`AuditManager`は従来どおりproviderと`PgSigningLogger`のみを接続します。Official Web3 pathでは`VerifiedAnchorService`がsigned `keyId`をtrusted keyringへbindしてverificationを内部実行し、ContractへEvidence本文、PII、raw signature、public/private keyを送りません。
+実線は実装済みmoduleの責務を示しますが、production deploy済みという意味ではありません。
 
-`TrustAnchor.sol`は外部proof boundaryとしてdigest、anchor済みstate、block timestampだけを保持します。Blockchain自身はEvidenceの真実性や署名を検証せず、`block.timestamp`もstrict trusted timestampではありません。
+AI Agent-specific runtime collectorはまだ未実装です。新しい `schemas/ai-agent-evidence.schema.json` はEvidence envelopeを定義し、既存のEvidenceProcessingServiceへ接続する前段のprofileです。
 
-S3 unit/E2E testはfake clientを使い、実AWS S3 integration testはcredentialsと環境変数を必要とする別suiteです。AWS KMS unit testもinjected mock clientを使います。PostgreSQL moduleのunit testはfake pool/clientを使います。
+## Trust Boundary
 
-## Target / Reference Architecture
+~~~text
+Evidence → Schema → Sign → Store → Ledger
+~~~
 
-```mermaid
+この順序はrepository invariantです。
+
+Web3 anchoringはcore flow完了後のexternal proof boundaryです。
+
+## Target AWS Architecture
+
+~~~mermaid
 flowchart LR
-    P[Producer] --> API[API Gateway / Lambda]
-    API --> SC[Schema]
-    SC --> KMS[AWS KMS signing]
+    A[AI Agent Runtime] --> C[Collector / Adapter]
+    C --> API[Ingestion API]
+    API --> VAL[Schema + policy checks]
+    VAL --> KMS[AWS KMS signing]
     KMS --> S3[S3 Versioning / Object Lock]
-    S3 --> DB[DynamoDB metadata or hardened PostgreSQL]
-    DB --> CT[CloudTrail / CloudWatch]
-    DB --> VF[Off-chain verification]
-    VF --> AN[External anchor<br/>verified digest only]
-```
+    S3 --> DB[Hardened PostgreSQL / metadata index]
+    DB --> CT[CloudTrail / CloudWatch correlation]
+    DB --> AUD[Auditor / Compliance / IR]
+    AUD --> VER[Independent verifier]
+    VER --> EXT[External anchor<br/>optional]
+~~~
 
-この図はproduction-oriented targetであり未deployです。DynamoDBはtarget/alternative metadata architectureであり、S3 Object Lock、IAM/KMS policy、CloudTrail correlation、API/Lambda/EventBridge、authorized relayer運用はplannedです。verified digest application gate自体はcurrent PoCに実装済みです。
+Targetはproduction-orientedであり、未deploy部分を含みます。
 
 ## Security Property Comparison
 
-| Property | Current PoC | Target / Reference |
+| Property | Current PoC | Target |
 |---|---|---|
-| Structural validation | `EvidenceProcessingService`では署名前にfail-closedで強制。既存低レベルentry pointは個別利用可能 | ingestion serviceでfail-closedに強制 |
-| Authenticity | local providerとAwsKmsProvider実装済み | least-privilege IAM、key policy、separation of duties込み |
-| Storage | local/S3 adapter、PostgreSQL store実装済み | S3 Object Lock、retention、HA/backup |
-| Ledger | PostgreSQL hash chain実装済み | hardened DB rolesとexternal chain-head anchoring |
-| AWS audit | SDK callsは実装済み。CloudTrail構成はRepository外 | CloudTrail retention、correlation、alarm |
-| Web3 | official pathはtrusted-key-bound off-chain verification後のdigestだけを送信。Contractはpermissionless | authorized relayer、監視、運用key管理を含むproduction control |
+| AI Agent context | schema/profile added | live runtime collectors |
+| Structural validation | implemented | ingestionでfail-closed |
+| Authenticity | local + AwsKmsProvider | least-privilege IAM / key policy / separation of duties |
+| Storage | local/S3 adapter + PgEvidenceStore | WORM retention + HA/backup |
+| Ledger | PostgreSQL hash chain | hardened roles + reconciliation + completeness checks |
+| AWS audit | SDK path implemented | CloudTrail retention/correlation/alarms |
+| Web3 | verified digest testnet prototype | optional external trust proof only |

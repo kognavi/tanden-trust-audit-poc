@@ -1,67 +1,187 @@
 # Architecture
 
-## Trust Boundary
+## Purpose
 
-```text
+Tanden Trust Audit PoC is now positioned as an AWS-oriented **AI Agent Evidence Layer**.
+
+The product problem is not merely "store logs safely." The goal is to preserve enough security-relevant context about an AI agent action that a reviewer can later reconstruct the control path and verify that the evidence was not altered after creation.
+
+## Repository Trust Boundary
+
+~~~text
 Evidence → Schema → Sign → Store → Ledger
-```
+~~~
 
-これはRepositoryの設計invariantです。`EvidenceProcessingService`はproduction-orientedな取り込み用application APIとしてこの順序を技術的に強制します。低レベルmoduleは既存の検証・運用用途のため個別に呼び出せます。
+This is the repository invariant.
+
+`EvidenceProcessingService` enforces this sequence for the production-oriented application path.
+
+External anchoring is outside the core boundary and is optional.
+
+## AI Agent Evidence Boundary
+
+The AI Agent-specific profile is defined by:
+
+- `schemas/ai-agent-evidence.schema.json`
+- `docs/ai-agent-evidence-profile.md`
+
+The intended flow is:
+
+~~~text
+AI Agent Runtime
+      ↓
+Collector / Adapter                planned
+      ↓
+AI Agent Evidence Profile
+      ↓
+EvidenceProcessingService
+      ↓
+Schema → Sign → Store → Ledger
+      ↓
+Independent Verification
+      ↓
+Immutable Retention               target
+      ↓
+External Trust Anchor             optional
+~~~
+
+The collector must not bypass schema validation or store raw secrets by default.
 
 ## Current Implementation
 
-現在のNode.js PoCには次が実装されています。
+The Node.js PoC currently implements:
 
-- Evidence JSONのJSON Schema validation
-- RFC 8785 JCS canonicalizationとSHA-256 digest
-- local ECDSA P-256署名・検証とsidecar metadata署名・検証
-- `AwsKmsProvider`によるAWS KMS `ECC_SECG_P256K1` / `ECDSA_SHA_256`署名・検証
-- local filesystemおよびAmazon S3用JSON object store adapter。通常testはfake/in-memory S3 clientを使用し、実AWS testは別integration test
-- `PgEvidenceStore`による署名済みversioned EvidenceのPostgreSQL保存・取得
-- `PgSigningLogger`によるPostgreSQL signing event hash chainと、`AuditManager`によるsigning providerからLedgerへの記録
-- `EvidenceProcessingService`によるSchema validation、署名、versioned Evidence保存、Ledger event appendの順序強制と、Store後のLedger障害に対するreconciliation情報
-- `VerifiedAnchorService`と`TrustAnchor.sol`によるverified digest anchoring PoC
+- JSON Schema validation
+- RFC 8785 JCS canonicalization
+- SHA-256 evidence digest generation
+- local ECDSA P-256 signing and verification
+- sidecar metadata signing and verification
+- `AwsKmsProvider` using AWS KMS `ECC_SECG_P256K1` / `ECDSA_SHA_256`
+- local and S3-compatible JSON object stores
+- `PgEvidenceStore` for versioned PostgreSQL evidence persistence
+- `PgSigningLogger` for a PostgreSQL signing-event hash chain
+- `EvidenceProcessingService` for ordered processing and partial-failure reconciliation
+- `VerifiedAnchorService` and `TrustAnchor.sol` for optional verified-digest anchoring
+- Terraform modules for KMS signing and S3 Object Lock-oriented infrastructure
 
-これらはlibrary、script、automated testとして存在します。production AWS環境やPostgreSQL環境が自動deployされること、IAM/KMS policy、retention、CloudTrail相関が構成済みであることを意味しません。
+The repository also includes:
 
-### Current Web3 Anchoring
+- threat modeling
+- attack scenarios
+- ADRs
+- control mapping
+- verification runbook
+- CodeQL
+- Semgrep
+- Dependabot
+- dependency-boundary validation
 
-Official application pathでは、`scripts/anchor-evidence.js`がEvidence、署名済みsidecar metadata、deployment trusted keyringを読みます。`VerifiedAnchorService`はvalidated metadata内のsigned `keyId`から`TrustedKeyResolver`を使ってpublic keyを解決し、既存`verifyEvidenceWithSidecarMetadata`を内部実行します。caller-supplied verification resultやpublic key overrideは受け付けません。anchor対象はverifierがEvidenceから再計算したSHA-256 digestであり、verification failure、unknown keyId、invalid/zero digestではWeb3 clientを呼びません。
+These are implementation and portfolio artifacts. They do not imply that a production AWS environment, PostgreSQL cluster, CloudTrail correlation pipeline, or retention policy is already deployed.
 
-このflowは既存の`Evidence → Schema → Sign → Store → Ledger`完了後に行う外部proof boundaryです。Web3 anchoring failureはStore/Ledgerをrollbackせず、独立した失敗として扱います。Contractはpermissionlessかつminimalで、zero digestとduplicateを拒否し、digestとblock timestamp相当の値だけを保持します。事前のduplicate checkはoperator feedback用であり、race conditionに対する最終判定はContract revertです。
+## Observability vs Evidence
 
-Official application pathはunverified digestをtransactionへ送りません。一方、permissionless Contractは第三者の直接callを拒否せず、nonzero digestの初回anchorだけを保証します。Blockchainが示すのは、あるdigestが遅くとも特定blockまでにanchorされたことです。`block.timestamp`はvalidatorにより限定的に操作され得るため、厳密なtrusted timestamp authorityではありません。Contract自身はEvidence本文の真実性、署名検証、authorized signer、元Evidenceの正しさ、application approvalを保証しません。
+The design separates:
 
-### Access Control Decision
+- **runtime observability**: what an agent/runtime emits
+- **audit evidence**: what a reviewer must preserve, correlate, and verify for a control objective
 
-- A. permissionless anchoringはdecentralizationとPoC simplicityに優れる一方、arbitrary digest anchoringとfront-runningを防がない。
-- B. owner/authorized roleはunauthorized anchoringをContractで防げる一方、operational key compromise、rotation、availability、administrationという新しいtrustを導入する。
-- C. trusted-key-bound application verification + permissionless Contractはofficial application pathからunverified digestを送信しないが、第三者によるContract直接callとfront-running自体は防がない。
+A runtime trace may become a source for evidence, but the system does not assume every log line belongs in the evidence record.
 
-Phase 3-BではCを採用する。Contract上のanchor存在を「approved」と解釈せず、approvalはtrusted key configurationを使うoff-chain cryptographic verificationとapplication policyで判定する脅威モデルだからである。front-runningは同じdigestを先に登録してapplication transactionをduplicateにできるが、digestやEvidenceを偽造したことにはならない。運用妨害として監視・reconciliation対象にする。mainnet productionでauthorized publisher identity自体をon-chain propertyにする要件が生じた場合に限り、単純なauthorized relayerまたはowner modelを別途設計し、複雑なRBACは現段階で導入しない。
+For AI Agent evidence, the profile prioritizes:
 
-### Contract Security Review
+- actor
+- agent version
+- model identity
+- execution correlation
+- policy decision
+- tool/action
+- approval
+- side effect
+- context references
+- artifact references
+- privacy/retention metadata
 
-`TrustAnchor.sol`はzero digestとduplicateをrejectし、eventのdigest/timestampをstorage writeと同じ値からemitする。外部call、Ether transfer、loopがないためreentrancy attack surfaceはなく、1 anchorあたりのgasは定数的である。mappingはanchorごとに増え続けるがunbounded iterationはなく、storage growth costはcallerが負担する。permissionless spamによるchain全体の通常のstate growthと、front-runningによるdigest単位のDoSはresidual riskである。orderingやbusiness logicは`block.timestamp`の精密性に依存しない。Proxy/upgradeabilityは導入せず、upgrade administratorやstorage layout riskを追加しない。
+## Data Minimization
 
-## Target / Reference Architecture
+The default AI Agent profile avoids raw:
 
-production-orientedなreference architectureでは、API Gateway/Lambda等のingestion、AWS KMS key policyとseparation of duties、CloudTrail/CloudWatch、S3 Versioning/Object Lock、DynamoDB metadata index、EventBridge、external anchoringを組み合わせます。DynamoDBは現在のPostgreSQL実装を置き換えた現行componentではなく、targetまたはalternative production architectureです。
+- prompts
+- responses
+- credentials
+- secrets
+- unnecessary customer payloads
 
-Target Web3 flowでは、off-chainのTrust Boundaryを完了し、署名・検証済みであることを確認したdigestまたはcompact verification dataだけをanchorします。
+Where possible, it stores:
+
+- references
+- versions
+- digests
+- correlation identifiers
+
+This is a security design default, not a universal legal conclusion.
+
+## External Anchor
+
+The current Web3 prototype is downstream of the core trust boundary.
+
+~~~text
+Signed + Stored Evidence
+        ↓
+Off-chain verification
+        ↓
+Verified SHA-256 digest
+        ↓
+TrustAnchor.sol
+~~~
+
+The contract does not prove:
+
+- that the source event was true
+- that an agent was authorized
+- that human approval was valid
+- that the source system was uncompromised
+- that all expected events are present
+
+It only contributes an external proof about a digest.
+
+For that reason, blockchain is treated as an optional trust mechanism rather than the product core.
+
+## Target AWS Architecture
+
+A production-oriented target would add:
+
+- agent runtime collector / adapter
+- ingestion API
+- least-privilege IAM
+- KMS key policy and separation of duties
+- S3 Versioning / Object Lock
+- hardened PostgreSQL or metadata index
+- CloudTrail / CloudWatch correlation
+- event reconciliation
+- retention operations
+- backup / HA
+- incident response
+- independent verification tooling
+- optional external trust anchoring
 
 ## Planned / Not Yet Implemented
 
-- API Gateway/Lambda/EventBridgeを含むAWS deploymentとIaC
-- production IAM/KMS key policy、CloudTrail相関、monitoring/alarm
-- S3 Object Lock/retention enforcement（S3 adapter自体は実装済み）
-- DynamoDB metadata store
-- production PostgreSQL provisioning、role separation、backup/HA
-- 既存scriptを含む全entry pointの`EvidenceProcessingService`への移行
+- live AI Agent runtime collector
+- production API/Lambda/EventBridge deployment
+- production IAM/KMS policy enforcement
+- production PostgreSQL provisioning and role separation
+- deployed S3 Object Lock retention enforcement
+- CloudTrail / CloudWatch evidence correlation
+- completeness/gap proofs
+- multi-tenant SaaS isolation
+- formal compliance control certification
 
 ## Security Principles
 
-- Evidence本文、PII、secrets、private key materialをon-chainへ保存しない
-- Schema validationをskipせず、Sign/Store/Ledgerの責務を混在させない
-- IAM least privilege、AWS KMS separation of duties、CloudTrail auditabilityをproduction designで維持する
-- storageはcryptographic trust boundaryではなく、取得後にdigestとsignatureを検証する
+- fail closed on schema or verification failure
+- do not treat storage as the cryptographic trust boundary
+- do not claim that integrity proves truthfulness
+- preserve least privilege and separation of duties
+- keep raw PII/secrets/private key material out of external anchors
+- keep blockchain optional
+- make current vs target implementation status explicit

@@ -2,96 +2,88 @@
 
 ## Purpose
 
-This document maps assumed control objectives to evidence fields, verification activities, and future implementation considerations for the Tanden Trust Audit PoC.
+This document maps candidate control objectives to the **AI Agent Evidence Profile** and the current evidence-verification implementation.
 
-The purpose is to make the relationship between business controls and technical evidence explicit.
+It is intended for design, practitioner interviews, and portfolio review.
 
-This PoC does not provide formal audit assurance. The mappings below are intended for design, demonstration, and portfolio purposes.
+It is **not** a formal SOC 2, J-SOX, ISO 27001, regulatory, or audit attestation.
 
 ## Scope
 
-The control mapping focuses on tamper-evident evidence records used for consent, activity recording, approval, document acknowledgement, and related trust events.
+Primary profile:
 
-The current MVP supports JSON Schema validation, deterministic canonicalization, SHA-256 hash generation, hash verification, and automated tests.
+- `schemas/ai-agent-evidence.schema.json`
+- `samples/ai-agent-tool-call.json`
 
-## Control Mapping Table
+Legacy/general-purpose evidence samples remain in the repository for regression coverage.
 
-| Control Area | Control Objective | Evidence Fields | Current Verification | Future Enhancement |
+## Candidate Control Mapping
+
+| Control Area | Control Objective | AI Agent Evidence Fields | Current Verification | Remaining Gap |
 |---|---|---|---|---|
-| Consent Management | Confirm that consent was granted before processing or recording relevant activity. | `eventType`, `subjectId`, `actorId`, `consent.status`, `consent.scope`, `occurredAt` | Validate evidence schema and inspect sample consent evidence. | Add lifecycle identifiers such as `case_id` and consent revocation samples. |
-| Evidence Integrity | Detect unauthorized modification of evidence records. | Full canonicalized JSON payload, `hashAlgorithm`, calculated digest | Recalculate SHA-256 hash and compare it with the expected digest. | Add AWS KMS signing and signature verification metadata. |
-| Schema Compliance | Ensure evidence records follow the expected structure and required fields. | `schemaVersion`, required top-level fields, nested consent fields | Run JSON Schema validation against sample evidence. | Add schema version migration policy and compatibility tests. |
-| Audit Reperformance | Enable a reviewer to independently reproduce validation and verification. | Sample evidence files, schema files, scripts, package scripts | Run `npm test`, `npm run validate:evidence`, `npm run hash`, and `npm run verify`. | Add reproducible verification reports and signed verification results. |
-| Event Traceability | Support tracing a business event from occurrence to evidence verification. | `evidenceId`, `eventType`, `subjectId`, `actorId`, `occurredAt`, `sourceSystem` | Inspect evidence identifiers and event metadata. | Add `case_id`, correlation IDs, and event lifecycle state transitions. |
-| Exception Review | Identify invalid, rejected, revoked, rollback, or tampered evidence scenarios. | Invalid fields, modified payloads, failed validation output, hash mismatch | Use negative tests for schema violations and tampered evidence. | Add dedicated exception evidence samples and attack scenario tests. |
-| Access Accountability | Show who or what generated or acted on the evidence. | `actorId`, `sourceSystem`, future role or service identity metadata | Inspect actor and source system fields. | Add IAM principal metadata, CloudTrail references, and service role identifiers. |
-| Data Minimization | Limit sensitive or personal data contained in evidence records. | `metadata.containsPersonalData`, subject identifiers, purpose field | Inspect sample evidence and metadata flags. | Add privacy classification, retention metadata, and redaction policy. |
-| Retention and Immutability | Preserve evidence records for the required period and protect them from deletion or overwrite. | Future retention metadata, evidence timestamp, digest value | Documented as a current limitation. | Add S3 Object Lock, retention policy, legal hold design, and lifecycle rules. |
-| Operational Monitoring | Detect abnormal verification failures or operational issues. | Verification result, validation output, CI results | Use automated tests and GitHub Actions checks. | Add CloudWatch metrics, alarms, dashboards, and incident response workflow. |
-
-## Verification Activities
-
-The following activities currently support the control mapping:
-
-- JSON Schema validation
-- deterministic RFC 8785 JCS-compatible canonicalization
-- SHA-256 digest calculation
-- hash verification
-- automated unit tests
-- GitHub Actions-based verification
+| Actor Accountability | Identify the human/service/agent that initiated an action. | `actor.type`, `actor.id`, `actor.principalRef` | Schema validation and evidence inspection | Bind to production identity/IAM/CloudTrail |
+| Agent Configuration Traceability | Identify which agent configuration executed the action. | `agent.agentId`, `agent.agentVersion`, `agent.promptConfigDigestSha256` | Structured evidence + digest protection | Runtime collector and config registry |
+| Model Traceability | Identify model provider and model identity. | `model.provider`, `model.modelId`, `model.modelVersion` | Structured evidence + integrity checks | Runtime-sourced model metadata |
+| Execution Correlation | Link evidence to an agent execution/session/task. | `execution.traceId`, `sessionId`, `taskId` | Schema validation | Cross-system trace correlation |
+| Policy Decision Traceability | Record what policy decision governed the action. | `policy.policyId`, `policy.policyVersion`, `policy.decision`, `reasonCode` | Structured evidence | Bind to policy engine decision artifacts |
+| Tool / Action Accountability | Record what operation was attempted and where. | `action.toolName`, `operation`, `target` | Structured evidence | Runtime collector and target-system correlation |
+| Human Oversight | Record whether approval was required and who approved it. | `approval.required`, `status`, `approverId`, `decidedAt` | Conditional schema requirements for approved/rejected states | Strong approver identity and approval-system evidence |
+| Side-Effect Traceability | Record what external effect actually occurred. | `sideEffect.category`, `resource`, `outcome` | Structured evidence | Independent target-system telemetry |
+| Evidence Lineage | Preserve references to source context without copying sensitive payloads. | `contextReferences[]` | Reference/digest schema constraints | Resolver and availability guarantees |
+| Artifact Traceability | Link evidence to resulting reports/messages/changesets. | `artifacts[]` | Reference/digest schema constraints | Artifact registry and retention |
+| Evidence Integrity | Detect unauthorized changes to evidence. | Entire canonicalized evidence object | RFC 8785 JCS + SHA-256 + signatures | Production key/identity hardening |
+| Evidence Authenticity | Associate evidence with a signing key. | Signed evidence metadata | Local provider / AwsKmsProvider | Production KMS key policy and signer authorization |
+| Audit Reperformance | Allow a reviewer to repeat verification. | Evidence + signature/store/ledger references | Tests, scripts, verification runbook | Auditor-facing evidence bundle |
+| Retention / Immutability | Preserve evidence for required duration. | `metadata.retentionClass` | S3 Object Lock module exists | Deployed retention policy and legal hold operations |
+| Data Minimization | Avoid unnecessary sensitive content in evidence. | `metadata.containsPersonalData`, `containsSecrets` plus reference/digest design | Profile excludes raw prompt fields by default | Runtime redaction/classification |
+| Completeness | Detect missing or reordered expected evidence. | execution/correlation fields | Limited | sequence/gap proofs, checkpoints, reconciliation |
+| Operational Monitoring | Detect failed verification or evidence-processing errors. | processing/ledger outcomes | automated tests and partial-failure semantics | CloudWatch alarms, SLOs, IR workflow |
 
 ## Example Review Flow
 
-A reviewer can perform the following flow:
+For one security-relevant agent action:
 
-1. Select a sample evidence record.
-2. Validate the evidence record against the JSON Schema.
-3. Canonicalize the evidence record.
-4. Calculate the SHA-256 digest.
-5. Compare the calculated digest with the expected digest.
-6. Inspect event metadata such as evidence ID, actor ID, subject ID, event type, and timestamp.
-7. Review whether the evidence supports the relevant control objective.
+1. identify the evidence record
+2. validate it against the AI Agent Evidence schema
+3. inspect actor / agent / model / policy / tool / approval / side-effect context
+4. canonicalize and recalculate the digest
+5. verify the signature
+6. inspect the versioned store reference
+7. inspect the signing-ledger event
+8. resolve referenced source/policy/artifact objects where authorized
+9. determine whether the record supports the relevant control objective
+10. document gaps or exceptions
 
-## Current MVP Coverage
+## Important Boundary
 
-The current MVP provides strong coverage for:
+Cryptographic integrity does not prove that the original observation was true.
 
-- schema compliance
-- deterministic hashing
-- tamper detection
-- basic audit reperformance
-- simple event traceability
+Examples:
 
-The current MVP provides partial or future coverage for:
+- a compromised collector can sign incorrect data
+- a policy engine can emit the wrong decision
+- an approver identity can be compromised
+- a target system can report an incorrect result
 
-- external trusted timestamping
-- AWS KMS signing
-- immutable storage
-- retention enforcement
-- detailed access accountability
-- privacy classification
-- full exception lifecycle handling
-- production-grade operational monitoring
+Evidence integrity must therefore be combined with trusted producer identity, independent telemetry, least privilege, monitoring, and review.
+
+## Current Validation Priorities
+
+Before adding formal framework references, validate the control model with practitioners in:
+
+- AI Agent / SaaS
+- internal audit
+- compliance
+- security engineering
+- cloud governance
+- regulated SaaS / FinTech
+
+Key question:
+
+> Which evidence fields are actually required to approve, investigate, or audit a real agent action?
 
 ## Limitations
 
 This mapping is conceptual and implementation-oriented.
 
 It does not represent a formal audit opinion, certification, compliance attestation, or legal conclusion.
-
-The mappings should be validated by qualified audit, compliance, security, and legal professionals before production use.
-
-## Future Enhancements
-
-Future versions may add:
-
-- detailed J-SOX or SOC 2 style control references
-- evidence lifecycle model
-- `case_id` and correlation ID fields
-- exception event samples
-- attack scenario tests
-- AWS KMS signature verification
-- S3 Object Lock retention model
-- CloudTrail-based access accountability
-- privacy and retention classification
-- automated control coverage report

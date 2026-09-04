@@ -1,13 +1,14 @@
 {
   "name": "tanden-trust-audit-poc",
   "version": "0.1.0",
-  "description": "A tamper-evident audit trail prototype for consent history, activity records, and trust events using AWS, AI, and Web3-compatible verification.",
+  "description": "An AWS-oriented audit evidence layer PoC for security-relevant AI agent actions with tamper-evident verification.",
   "type": "commonjs",
   "private": true,
   "scripts": {
     "hash": "node scripts/hash-evidence.js samples/evidence-consent.json",
     "verify": "node scripts/verify-evidence.js samples/evidence-consent.json samples/evidence-consent.expected.sha256",
     "validate:evidence": "node scripts/validate-evidence.js samples/evidence-consent.json schemas/evidence.schema.json",
+    "validate:agent-evidence": "node scripts/validate-evidence.js samples/ai-agent-tool-call.json schemas/ai-agent-evidence.schema.json",
     "generate:keys": "node scripts/generate-local-keys.js",
     "sign": "node scripts/sign-evidence.js samples/evidence-consent.json",
     "verify:signature": "node scripts/verify-signature.js samples/evidence-consent.json signatures/evidence-consent.sig",
@@ -21,15 +22,17 @@
     "check:structure": "npm run check:depcruise && npm run check:circular && npm test"
   },
   "keywords": [
-    "audit-trail",
+    "ai-agent",
+    "audit-evidence",
+    "ai-security",
+    "ai-governance",
     "tamper-evident",
-    "sha256",
+    "aws-kms",
     "aws",
-    "web3",
-    "ai",
-    "evidence",
     "compliance",
-    "trust"
+    "audit-trail",
+    "evidence",
+    "web3"
   ],
   "author": "",
   "license": "MIT",

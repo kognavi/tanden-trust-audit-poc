@@ -1,347 +1,195 @@
 # Portfolio Summary
 
-## Project Name
-
-Tanden Trust Audit PoC
-
-## Overview
-
-Tanden Trust Audit PoC is a prototype system for recording trust-related evidence, such as consent history, activity records, and audit events, in a tamper-evident way.
-
-The project demonstrates how structured JSON evidence can be validated, canonicalized, hashed, verified, tested, and documented as part of an audit-oriented evidence management workflow.
-
-The current implementation is a local MVP, while the design documents describe how the system could evolve into a production-grade AWS-based evidence platform.
+## Project
 
-## Problem Statement
-
-In many organizations, important trust-related events are recorded across fragmented tools such as:
-
-- spreadsheets
-- application logs
-- SaaS audit logs
-- manual approval records
-- exported CSV files
-- screenshots
-- internal workflow tools
-
-These records are often difficult to verify later because reviewers may not know:
-
-- whether the evidence was modified
-- whether the evidence came from a trusted source
-- whether the expected hash or metadata was replaced
-- whether the event was replayed
-- whether the storage layer is immutable
-- whether privileged insiders could bypass controls
-- whether audit procedures are reproducible
-
-This PoC explores how to make evidence more verifiable, reproducible, and explainable.
-
-## What This PoC Demonstrates
-
-This project demonstrates a practical evidence verification workflow:
+**Tanden Trust Audit PoC**
 
-1. Define structured evidence as JSON.
-2. Validate evidence with JSON Schema.
-3. Canonicalize JSON deterministically.
-4. Generate a SHA-256 digest.
-5. Verify evidence against an expected digest.
-6. Test valid and invalid evidence cases.
-7. Document audit procedures.
-8. Map controls to evidence and verification steps.
-9. Model threats and attack scenarios.
-10. Design a production-oriented AWS architecture.
-11. Extend the trust model with AWS KMS asymmetric signing, implemented via `AwsKmsProvider` and verified against a fake KMS client.
-12. Record signing events in a PostgreSQL-backed hash-chained ledger via `PgSigningLogger` for signer accountability.
+## Positioning
 
-## Implemented Features
-
-The current MVP includes:
-
-- sample evidence record
-- JSON Schema for evidence validation
-- validation script
-- SHA-256 hash generation script
-- verification script
-- deterministic JSON canonicalization using RFC 8785 JCS
-- automated tests using Node.js test runner
-- positive tests for valid evidence
-- negative tests for tampered evidence, wrong hashes, schema violations, and invalid fields
-- reproducible command-line verification workflow
+An AWS-oriented **AI Agent Evidence Layer** proof of concept.
 
-Phase 2 additions now implemented:
-
-- sidecar metadata schema validation and canonical signing payload generation
-- ECDSA P-256 sidecar metadata signing and verification
-- AWS KMS-backed asymmetric signing (`AwsKmsProvider`), verified against a fake KMS client
-- PostgreSQL-backed hash-chained signing event ledger (`PgSigningLogger`), verified against an in-memory fake `pg.Pool`
-- local and S3-compatible JSON object storage for evidence and metadata
-- Terraform-managed AWS Budgets cost guardrail alert
-- 113 automated tests passing
-
-## Core Technical Concepts
-
-| Concept | Purpose |
-|---|---|
-| JSON Schema | Ensures evidence follows an expected structure. |
-| RFC 8785 JCS | Produces deterministic canonical JSON for stable hashing. |
-| SHA-256 | Creates a digest used for tamper-evident verification. |
-| Hash verification | Detects whether evidence content changed. |
-| Automated tests | Prove that normal and tampered cases behave as expected. |
-| Audit procedures | Allow reviewers to reproduce verification steps. |
-| Threat modeling | Identifies realistic risks and required controls. |
-| AWS KMS signing design | Adds authenticity and stronger non-repudiation support. |
-
-## Security and Audit Design
-
-The project includes design documents covering:
-
-- framework selection
-- audit procedures
-- control mapping
-- evidence lifecycle
-- threat model
-- AWS reference architecture
-- KMS signing design
-- attack scenarios
-
-Together, these documents show how a simple local verification workflow can be extended into a broader security and audit architecture.
-
-## AWS Production Architecture Design
+The project explores how security-relevant AI agent actions can be transformed into structured, tamper-evident evidence that can later be independently reviewed.
 
-The AWS reference architecture describes a possible production design using:
-
-- Amazon API Gateway for ingestion APIs
-- AWS Lambda for validation, hashing, and orchestration
-- Amazon S3 with Object Lock for immutable evidence storage
-- Amazon DynamoDB for evidence metadata
-- AWS KMS for asymmetric signing and key protection (asymmetric signing implemented via `AwsKmsProvider`; key rotation/protection policy remains a design item)
-- AWS CloudTrail for audit logging
-- Amazon CloudWatch for monitoring and alarms
-- Amazon EventBridge for event-driven workflows
-- IAM least privilege policies
-- separation of duties for key administration and signing
-
-The design is aligned with the AWS Well-Architected Framework pillars:
-
-- Operational Excellence
-- Security
-- Reliability
-- Performance Efficiency
-- Cost Optimization
-- Sustainability
+## Problem
 
-## KMS Signing and Ledger Value
+Modern AI agents can invoke tools, update records, send messages, and create external side effects.
 
-Hash verification can detect whether evidence content has changed.
+Runtime observability may show that an event occurred, but audit and compliance reviewers often need stronger answers:
 
-However, a hash alone does not prove who generated or approved the digest.
+- who or what initiated the action
+- which agent/model configuration executed it
+- what policy decision applied
+- which tool and target were involved
+- whether human approval was required
+- what side effect occurred
+- which source/context objects influenced the action
+- whether the evidence was altered after creation
 
-The implemented KMS signing and signing event ledger design addresses this limitation.
-
-The verified workflow (tested against a fake KMS client and an in-memory fake `pg.Pool`):
-
-1. validate the evidence
-2. canonicalize the evidence
-3. calculate a SHA-256 digest
-4. sign the digest using AWS KMS via `AwsKmsProvider`
-5. record the signing event in a PostgreSQL-backed hash-chained ledger via `PgSigningLogger`
-6. store evidence, metadata, digest, signature, key ID, and algorithm
-7. verify the signature and ledger integrity during audit review
+This project treats that as an **evidence engineering** problem rather than a logging problem.
 
-This adds stronger support for:
+## Core Design
 
-- evidence authenticity
-- signer accountability
-- hash-chained tamper-evident signing event history
-- least privilege signing workflows
-- CloudTrail-based auditability (design)
-- separation of duties
-- long-term verification
+~~~text
+AI Agent Event
+    ↓
+Structured Evidence
+    ↓
+Schema Validation
+    ↓
+Cryptographic Signing
+    ↓
+Versioned Evidence Storage
+    ↓
+Hash-Chained Ledger
+    ↓
+Independent Verification
+    ↓
+Optional External Trust Anchor
+~~~
 
-Remaining production hardening: real AWS KMS/PostgreSQL integration tests, KMS error classification helpers, and PostgreSQL `cause` parity (tracked in issue #71).
+The repository-wide invariant is:
 
-## Attack Scenario Coverage
+~~~text
+Evidence → Schema → Sign → Store → Ledger
+~~~
 
-The project documents practical attack scenarios such as:
+## AI Agent Evidence Profile
 
-- evidence tampering
-- expected hash substitution
-- replay attack
-- unauthorized producer
-- schema bypass
-- timestamp manipulation
-- S3 deletion or overwrite attempt
-- KMS key misuse
-- KMS key deletion or disablement
-- insider admin risk
-- CI/CD compromise
-- dependency compromise
+Added in the portfolio repositioning:
 
-Each scenario is mapped to preventive, detective, and recovery controls.
+- `schemas/ai-agent-evidence.schema.json`
+- `samples/ai-agent-tool-call.json`
+- `tests/ai-agent-evidence-schema.test.js`
+- `docs/ai-agent-evidence-profile.md`
 
-## Skills Demonstrated
+The profile records:
 
-This project demonstrates skills in:
-
-### Software Engineering
+- actor identity
+- agent ID and version
+- model provider and model ID
+- trace/session/task correlation
+- policy ID/version/decision
+- tool/action/target
+- approval context
+- resulting side effect
+- referenced context objects and digests
+- output artifact references and digests
+- PII/secrets/retention metadata
 
-- Node.js scripting
-- JSON Schema validation
-- deterministic data processing
-- automated testing
-- command-line tooling
-- Git and GitHub workflow
-- pull request based development
+Raw prompts, secrets, credentials, and unnecessary customer payloads are intentionally not part of the default profile.
 
-### Security Engineering
+## Implemented Technical Capabilities
 
-- tamper-evident evidence design
-- hashing and canonicalization
-- digital signature design
-- threat modeling
-- attack scenario analysis
-- least privilege design
-- audit logging strategy
-- insider risk consideration
+### Software engineering
 
-### AWS Architecture
-
-- serverless architecture design
-- S3 immutability design
-- DynamoDB metadata modeling
-- KMS asymmetric signing design
-- CloudTrail auditability
-- IAM role separation
-- Well-Architected Framework alignment
-
-### Audit and Compliance Thinking
-
-- reproducible verification procedures
-- control mapping
-- evidence lifecycle modeling
-- reviewer-oriented documentation
-- production limitations and assumptions
-- separation between conceptual design and compliance certification
-
-## Why This Matters
-
-Many audit and compliance workflows still depend on fragile evidence handling.
-
-This project shows how cloud-native architecture and cryptographic verification can make evidence more trustworthy.
-
-The value is not only in generating a hash, but in designing the surrounding process:
-
-- who can create evidence
-- who can sign evidence
-- where evidence is stored
-- how reviewers verify it
-- how tampering is detected
-- how metadata is protected
-- how actions are logged
-- how privileged access is controlled
-
-This reflects the mindset needed for real-world security, audit, and cloud architecture work.
-
-## Interview Talking Points
-
-A concise explanation of this project:
-
-> I built a tamper-evident audit evidence PoC using JSON Schema validation, RFC 8785 JSON canonicalization, SHA-256 hashing, and automated verification tests.
->
-> I also documented how the local MVP could evolve into a production AWS architecture using API Gateway, Lambda, S3 Object Lock, DynamoDB, KMS asymmetric signing, IAM least privilege, CloudTrail, CloudWatch, and EventBridge.
->
-> The project includes audit procedures, control mapping, evidence lifecycle design, threat modeling, KMS signing design, and attack scenarios. The goal is to show not only implementation ability, but also security architecture, auditability, and production design thinking.
-
-## Repository Structure Highlights
-
-Important files and directories:
-
-```text
-samples/
-  evidence-consent.json
-
-schemas/
-  evidence.schema.json
-
-scripts/
-  validate-evidence.js
-  hash-evidence.js
-  verify-evidence.js
-
-tests/
-  *.test.js
-
-docs/
-  framework-selection.md
-  audit-procedures.md
-  control-mapping.md
-  evidence-lifecycle.md
-  threat-model.md
-  aws-reference-architecture.md
-  kms-signing-design.md
-  attack-scenarios.md
-  portfolio-summary.md
-```
-
-## Verification Commands
-
-Typical verification commands:
-
-```bash
-npm test
-npm run validate:evidence
-npm run hash
-npm run verify
-```
-
-Expected results include:
-
-- all automated tests pass
-- evidence schema validation returns `VALID`
-- generated hash is stable
-- verification result returns `VALID`
-
-## Current Status
-
-The project currently includes:
-
-- working local MVP
+- Node.js
+- JSON Schema
+- RFC 8785 JCS
 - automated tests
-- reproducible verification workflow
-- security and audit documentation
-- AWS production reference design
-- AWS KMS-backed signing implementation (`AwsKmsProvider`)
-- PostgreSQL-backed signing event ledger implementation (`PgSigningLogger`)
-- 113 automated tests passing
-- attack scenario analysis
-- portfolio-oriented summary
+- dependency-boundary checks
+- GitHub Actions
 
-## Future Roadmap
+### Security engineering
 
-Possible future improvements include:
+- SHA-256 tamper detection
+- local ECDSA verification
+- AWS KMS signing provider
+- threat modeling
+- STRIDE analysis
+- attack scenarios
+- fail-closed validation
+- partial-failure reconciliation
+- sidecar integrity verification
 
-1. Add a verification runbook.
-2. Add architecture diagrams.
-3. Extend AWS CDK or Terraform infrastructure design (Terraform-managed AWS Budgets guardrail already implemented).
-4. Add DynamoDB metadata schema examples.
-5. Add S3 Object Lock configuration examples.
-6. Add real AWS KMS and PostgreSQL integration tests (current tests use fake/in-memory clients).
-7. Add KMS error classification helpers and PostgreSQL `cause` parity (#71).
-8. Add API Gateway and Lambda ingestion prototype.
-9. Explore optional blockchain anchoring or timestamping.
+### Evidence storage
 
-## Limitations
+- local JSON object store
+- S3-compatible object store
+- PostgreSQL versioned evidence store
+- PostgreSQL signing-event hash chain
 
-This project is a prototype and portfolio artifact.
+### AWS architecture
 
-It does not represent:
+- AWS KMS integration
+- S3 Object Lock Terraform module
+- AWS Budgets cost guardrail
+- production-oriented IAM / CloudTrail / CloudWatch / retention design
+- explicit distinction between current PoC and target architecture
 
-- a production deployment
-- a formal security certification
-- a legal compliance opinion
-- a completed audit system
-- a cryptographic review
-- a penetration test
-- a managed service offering
+### External proof
 
-Before production use, the design should be reviewed by qualified security engineers, AWS architects, compliance professionals, auditors, and legal professionals.
+- Ethereum Sepolia `TrustAnchor.sol`
+- off-chain verification gate
+- digest-only anchoring
+- no raw evidence or PII on-chain
+
+The external anchor is optional and is no longer the project’s primary positioning.
+
+## What This Demonstrates to Employers
+
+The project is intended to demonstrate ability in:
+
+- Cloud Security
+- AI Security / AI Governance
+- GRC-oriented engineering
+- DevSecOps
+- AWS architecture
+- cryptographic integrity
+- secure system design
+- threat modeling
+- auditability and evidence lifecycle design
+
+## What This Demonstrates to Potential Customers
+
+The product hypothesis is:
+
+> Organizations deploying AI agents may need a standardized way to reconstruct important agent actions and verify that the resulting audit evidence has not been altered.
+
+The next validation step is not more cryptography.
+
+It is customer discovery with:
+
+- AI Agent / SaaS teams
+- internal audit
+- compliance
+- security engineering
+- cloud platform teams
+- AWS audit trail owners
+
+## Current Limitations
+
+This repository is not:
+
+- a production SaaS
+- a compliance certification
+- an audit opinion
+- a legal conclusion
+- proof that source events were truthful
+- a complete AI Agent runtime integration
+
+Remaining gaps include:
+
+- live runtime collectors
+- production identity binding
+- deployed WORM retention
+- CloudTrail/CloudWatch correlation
+- completeness/gap proofs
+- multi-tenant isolation
+- formal control-framework mappings
+
+## Interview Explanation
+
+> I built an AWS-oriented evidence integrity PoC for AI agent actions. It validates structured evidence, canonicalizes it deterministically, signs it with local or AWS KMS providers, stores versioned evidence, and records signing events in a PostgreSQL hash chain. I added an AI-agent-specific evidence profile covering actor, agent, model, policy, tool action, approval, side effect, and evidence lineage. The project also includes threat modeling, security automation, immutable-retention design, and an optional external blockchain anchor. My next step is integrating a live AI agent runtime and validating evidence requirements with audit and compliance practitioners.
+
+## Next Milestone
+
+Build one real collector/adapter for a live AI agent runtime and demonstrate:
+
+1. security-relevant tool call
+2. AI Agent Evidence envelope generation
+3. schema validation
+4. signing
+5. storage
+6. ledger append
+7. tamper detection
+8. auditor-facing verification

@@ -2,954 +2,280 @@
 
 [![CI](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/ci.yml/badge.svg)](https://github.com/kognavi/tanden-trust-audit-poc/actions/workflows/ci.yml)
 
-A tamper-evident audit trail prototype for consent history, activity records, and trust events using JSON Schema validation, SHA-256 hash verification, local signature verification, and sidecar metadata verification.
+**An audit-grade evidence layer for AI agent actions on AWS.**
 
-This project demonstrates how structured audit evidence can be validated, hashed, signed, stored, and verified in a reproducible way. It is designed as a technical proof of concept for audit trails, consent records, trust logs, AI-assisted governance, and Web3-compatible verification workflows.
+The core question is simple:
 
----
+> When an AI agent changes something important, can a reviewer later prove what happened, who or what authorized it, and that the evidence itself was not altered?
 
-## Current Status
+This repository is a technical PoC for turning security-relevant AI agent events into structured, tamper-evident evidence.
 
-**MVP status:** v0.1.0 candidate.
-
-The local proof of concept currently supports schema validation, RFC 8785 JCS-compatible canonicalization, SHA-256 tamper detection, local ECDSA P-256 signature verification, automated tests, and GitHub Actions CI.
-
-Phase 2 AWS-backed MVP work is now substantially implemented. The project includes sidecar metadata schema validation, canonical metadata signing payloads, ECDSA SHA-256 sidecar metadata signing and verification with secp256k1 keys, full evidence + sidecar metadata verification, local JSON object storage, S3-compatible JSON object storage, AWS KMS-backed asymmetric signing, and a PostgreSQL-backed hash-chained signing event ledger.
-
-The default test suite verifies both local and S3 sidecar storage flows without requiring AWS credentials or real S3 buckets. S3 behavior is tested through an injected in-memory fake S3 client so that tests remain fast, deterministic, and suitable for CI.
-
-The current Phase 2 metadata storage decisions are documented in ADR 0001, ADR 0002, and ADR 0004 (signing event ledger). Expected digest metadata initially uses sidecar metadata objects, and S3 JSON object storage is implemented as a pluggable backend. DynamoDB, immutable storage, richer metadata indexing, and operational monitoring remain future production hardening options rather than deployed production features. AWS KMS-backed signing and the signing event ledger are implemented and verified against fake/in-memory clients, with real AWS/PostgreSQL integration testing remaining a future step.
-
-On-chain evidence anchoring on Ethereum Sepolia testnet (`TrustAnchor.sol`) and an S3 Object Lock (Compliance mode) WORM Terraform module (`infra/modules/s3-worm`) have also been added as prototypes; see [On-Chain Evidence Anchoring](#on-chain-evidence-anchoring-blockchain-testnet-prototype) and [Phase 2 Implementation Status](#phase-2-implementation-status) below.
-
----
-
-## Overview
-
-Modern digital trust systems require more than simply storing records.
-
-For audit evidence to be useful, it should satisfy at least two technical requirements:
-
-1. **Structural validity**
-   The evidence record should follow an expected schema.
-
-2. **Integrity verification**
-   The evidence record should be detectable if modified after creation.
-
-This PoC combines:
-
-- **JSON Schema validation** for structural correctness
-- **RFC 8785 JCS-compatible canonicalization** for stable cryptographic inputs
-- **SHA-256 hashing** for tamper-evident verification
-- **ECDSA P-256 signatures** for local authenticity demonstrations
-- **Sidecar metadata verification** for separating evidence content from verification metadata
-- **Local and S3-compatible JSON object storage** for storage abstraction
-- **Automated tests** for regression prevention
-- **GitHub Actions CI** for reproducible validation
-
----
-
-## Key Features
-
-- Validate audit evidence records against a JSON Schema
-- Detect malformed or unexpected evidence structures
-- Generate RFC 8785 JCS-compatible canonical JSON from evidence data
-- Calculate SHA-256 hash values
-- Verify whether evidence has been modified
-- Sign and verify evidence using local ECDSA P-256 keys for demonstration
-- Detect tampering with public-key signature verification
-- Validate v2 sidecar metadata for stored evidence
-- Generate canonical sidecar metadata signing payloads
-- Sign and verify sidecar metadata with local ECDSA P-256 keys
-- Verify evidence together with signed sidecar metadata
-- Store and load JSON evidence metadata through `LocalJsonObjectStore`
-- Store and load JSON evidence metadata through `S3JsonObjectStore`
-- Test S3-compatible storage flows using an injected in-memory fake S3 client
-- Run automated tests using Node.js built-in test runner
-- Run validation and verification automatically in GitHub Actions
-
----
-
-## Validation Flow
-
-The basic verification flow is:
-
-```text
-Evidence JSON
-  ↓
-JSON Schema validation
-  ↓
-RFC 8785 JCS-compatible canonical JSON generation
-  ↓
-SHA-256 hash calculation
-  ↓
-Hash verification
-  ↓
-VALID / INVALID result
-```
-
-This separates two important concerns:
-
-| Layer | Purpose |
-|---|---|
-| JSON Schema validation | Confirms that the evidence has the expected structure |
-| SHA-256 hash verification | Confirms that the evidence has not been modified |
-
----
-
-## Sidecar Metadata Verification Flow
-
-Phase 2 extends the basic evidence verification flow with signed sidecar metadata.
-
-The corrected Sidecar contract uses schema `tanden.trust.metadata.v2`, with
-`signatureAlgorithm: ECDSA_SHA_256` and `signatureCurve: secp256k1`. Signatures
-cover the RFC 8785/JCS canonical metadata bytes directly; the provider performs
-the single SHA-256 operation required by its RAW-message contract. The separate
-`digestHex` remains an informational SHA-256 fingerprint of those bytes.
-
-This PoC intentionally does not accept historical v1 Sidecars. Version 1
-combined accidental double hashing with a misleading P-256 algorithm label,
-and the repository contains no durable v1 artifacts requiring compatibility.
-
-```text
-Evidence JSON
-  ↓
-RFC 8785 JCS-compatible canonicalization
-  ↓
-SHA-256 evidence digest
-  ↓
-Sidecar metadata creation
-  ↓
-Canonical metadata signing payload
-  ↓
-ECDSA P-256 metadata signature
-  ↓
-Store evidence and sidecar metadata
-  ↓
-Load evidence and sidecar metadata
-  ↓
-Verify evidence digest and metadata signature
-  ↓
-VALID / INVALID result
-```
-
-This design separates:
-
-| Layer | Purpose |
-|---|---|
-| Evidence object | Stores the original audit evidence |
-| Sidecar metadata object | Stores digest, algorithm, timestamp, evidence reference, and signature |
-| Signature verification | Confirms that metadata was signed by the expected key |
-| Digest verification | Confirms that loaded evidence matches the signed metadata |
-
-The storage layer is intentionally not treated as the cryptographic trust boundary.
-Even when evidence and metadata are loaded from local storage or S3-compatible storage, the verification layer must still validate the evidence digest and sidecar metadata signature.
-
----
-
-## On-Chain Evidence Anchoring (Blockchain, Testnet Prototype)
-
-In addition to AWS KMS-backed signing, this project includes a prototype
-for anchoring evidence digests on a public blockchain (Ethereum Sepolia
-testnet) via a minimal smart contract.
-
-### Design goals
-
-- Anchor only the SHA-256 digest on-chain — never the raw evidence content
-  (privacy preservation and gas efficiency)
-- Require successful off-chain Evidence digest and signed sidecar metadata
-  verification before the application sends a transaction
-- Enforce idempotency both client-side (pre-check) and on-chain (`require`)
-  to avoid wasting gas on duplicate anchoring attempts
-- Keep signature verification and Evidence content outside the contract
-
-### Flow
-
-```text
-Evidence JSON
-  ↓
-Signed sidecar metadata
-  ↓
-Resolve metadata.keyId from deployment trusted keyring
-  ↓
-VerifiedAnchorService off-chain digest and signature verification
-  ↓
-Idempotency check (read-only call to anchoredAt())
-  ↓
-bytes32 digest-only anchor() transaction (Sepolia testnet)
-  ↓
-Transaction confirmation
-```
-
-### Contract
-
-`contracts/TrustAnchor.sol` is intentionally minimal:
-
-```solidity
-mapping(bytes32 => uint256) public anchoredAt;
-
-function anchor(bytes32 hash) external {
-    require(hash != bytes32(0), "Zero digest");
-    require(anchoredAt[hash] == 0, "Already anchored");
-    anchoredAt[hash] = block.timestamp;
-    emit Anchored(hash, block.timestamp);
-}
-```
-
-### Current limitations (by design, testnet prototype)
-
-- `anchor()` has no access control — anyone can call it. This is an
-  intentional "permissionless anchoring" design choice similar to
-  OpenTimestamps-style approaches, not an oversight. Access control
-  would be reconsidered before any production/mainnet use.
-- A single externally-owned account (`ANCHOR_PRIVATE_KEY`, stored via
-  `.env` and never committed) currently holds anchoring authority. This
-  is a single point of failure that production hardening would address
-  — for example, by using AWS KMS asymmetric signing keys directly for
-  Ethereum transaction signing, since AWS KMS's `ECC_SECG_P256K1` key
-  spec is the same curve Ethereum uses (secp256k1). This project already
-  uses AWS KMS for evidence signing (see `AwsKmsProvider`), so extending
-  KMS-backed signing to on-chain anchoring is a natural, still-unimplemented
-  next step rather than a new technology introduction.
-- Deployed only to Sepolia testnet. No third-party smart contract audit
-  has been performed. Not intended for mainnet use in its current form.
-- The official CLI path uses the signed metadata `keyId` to resolve a public
-  key from an operator-configured trusted keyring. `VerifiedAnchorService`
-  performs the actual off-chain verification before sending only the digest.
-  The permissionless contract itself does not prove that an arbitrary caller's
-  digest was verified.
-- `block.timestamp` is block ordering evidence, not a strict trusted timestamp.
-
-### Usage
-
-```bash
-# 1. Deploy the contract to Sepolia (requires SEPOLIA_RPC_URL, ANCHOR_PRIVATE_KEY)
-npx hardhat run scripts/deploy-anchor.js --network sepolia
-
-# 2. Anchor verified evidence (requires signed metadata and a deployment keyring)
-EVIDENCE_FILE=samples/evidence-consent.json \
-EVIDENCE_METADATA_FILE=/path/to/signed-metadata.json \
-TRUSTED_KEYRING_FILE=/path/to/trusted-keyring.json \
-TRUST_ANCHOR_ADDRESS=0x... \
-npx hardhat run scripts/anchor-evidence.js --network sepolia
-```
-
-The keyring is deployment trust configuration, not Evidence input. Its JSON
-keys are signed metadata `keyId` values and its values are public-key file
-paths relative to the keyring file, for example:
-
-```json
-{
-  "local-dev-key-001": "./local-dev-public-key.pem"
-}
-```
-
-Required environment variables (via `.env`, never committed):
-
-```text
-SEPOLIA_RPC_URL=
-ANCHOR_PRIVATE_KEY=
-ETHERSCAN_API_KEY=
-TRUST_ANCHOR_ADDRESS=
-EVIDENCE_FILE=
-EVIDENCE_METADATA_FILE=
-TRUSTED_KEYRING_FILE=
-```
-
----
-
-## Security Model and Current Limitations
-
-The current local MVP demonstrates tamper-evident evidence verification using:
+It combines:
 
 - JSON Schema validation
-- RFC 8785 JSON Canonicalization Scheme
-- SHA-256 hashing
-- deterministic verification scripts
-- local ECDSA P-256 signature verification
-- sidecar metadata signing and verification
-- automated tests
-- GitHub Actions CI
+- RFC 8785 JCS canonicalization
+- SHA-256 digests
+- local ECDSA and AWS KMS signing providers
+- versioned PostgreSQL evidence storage
+- a hash-chained signing ledger
+- S3-compatible object storage
+- an S3 Object Lock WORM Terraform module
+- optional external anchoring through Ethereum Sepolia
 
-This local workflow can detect whether the evidence content has changed.
-
-However, hash verification alone does not prove:
-
-- who produced the evidence
-- who approved the expected hash
-- whether the expected hash was stored in a trusted location
-- whether an attacker replaced both the evidence and the expected hash
-- whether evidence records were deleted, reordered, or omitted
-- whether the event timestamp came from a trusted time source
-- whether the evidence was stored immutably
-
-For this reason, the project separates the current local MVP from the production-oriented security design.
-
-In the production-oriented design, the local hash-based workflow is extended with:
-
-- AWS KMS asymmetric signing for authenticity and stronger non-repudiation
-- S3 Object Lock for immutable evidence storage
-- DynamoDB for evidence metadata, digest, signature, sequence, and verification state
-- CloudTrail for signing, storage, and administrative audit logs
-- IAM least privilege and separation of duties
-- optional hash chaining or Merkle tree anchoring for sequence and completeness checks
-- EventBridge and CloudWatch for monitoring and operational visibility
-
-In short:
-
-| Security property | Local MVP | Production-oriented design |
-|---|---|---|
-| Schema correctness | JSON Schema | JSON Schema |
-| Deterministic canonicalization | RFC 8785 JCS | RFC 8785 JCS |
-| Content tamper detection | SHA-256 hash verification | SHA-256 hash verification |
-| Local authenticity demo | Local ECDSA P-256 signatures | AWS KMS asymmetric signing |
-| Sidecar metadata authenticity | Local ECDSA P-256 metadata signature | KMS-backed metadata signature |
-| Non-repudiation support | Limited | KMS signing, IAM controls, and CloudTrail |
-| Trusted expected hash | Signed sidecar metadata in current PoC | Signed digest and controlled metadata storage |
-| Immutable storage | S3 Object Lock (Compliance mode) implemented as a Terraform module (`infra/modules/s3-worm`); not yet wired into a deployed environment | S3 Object Lock, deployed via `infra/environments/poc` |
-| On-chain digest anchoring | Off-chain verified digest gate + permissionless Sepolia contract, single-EOA transaction key | Authorized relayer policy, hardened key operations, audited contract |
-| Sequence/completeness checks | Not included locally | Hash chain or Merkle tree roadmap |
-| Trusted timestamping | Not included locally | Ingestion time, CloudTrail, and optional external timestamping |
-| Operational auditability | Local logs and tests | CloudTrail, CloudWatch, EventBridge, and runbooks |
-
-This distinction is intentional.
-
-The local MVP is designed to be reproducible and easy to review.
-The AWS production-oriented design describes how the same evidence workflow can be hardened for stronger authenticity, immutability, auditability, and operational control.
+Blockchain is intentionally treated as an **optional external trust anchor**, not as the primary product boundary.
 
 ---
 
-## Project Completion Target
+## Why this exists
 
-This portfolio project is considered complete when it demonstrates:
+Runtime logs are useful, but a log line is not automatically audit evidence.
 
-- local evidence validation
-- deterministic canonicalization
-- SHA-256 tamper detection
-- automated tests
-- GitHub Actions CI
-- verification runbook
-- threat model and attack scenarios
-- AWS KMS signing design
-- AWS production reference architecture
-- documented hash-only limitations
-- architecture diagrams
-- local signature verification prototype
-- sidecar metadata signature verification prototype
-- local JSON object storage prototype
-- S3-compatible JSON object storage prototype
-- local and S3 sidecar storage E2E tests
-- hash chain verification prototype
+A reviewer may need to answer:
 
-The project does not aim to provide a production SaaS, legal compliance certification, or complete AWS deployment in its current phase.
+- Which human, service, or agent initiated the action?
+- Which agent version and model configuration executed it?
+- Which policy decision applied?
+- Which tool or external system was targeted?
+- Was human approval required?
+- What side effect actually occurred?
+- Which source documents or policy objects influenced the action?
+- Has the resulting evidence changed since it was created?
+
+This PoC explores how to preserve that context in a verifiable evidence record.
 
 ---
 
-## Project Structure
+## Product Direction
 
-```text
-.
-├── .github/
-│   └── workflows/
-│       ├── architecture-check.yml
-│       ├── ci.yml
-│       ├── codeql.yml
-│       └── semgrep.yml
-├── contracts/
-│   └── TrustAnchor.sol           # On-chain evidence anchoring contract (Sepolia)
-├── docs/
-│   ├── adr/
-│   │   ├── 0001-digest-metadata-storage.md
-│   │   ├── 0002-s3-json-object-store.md
-│   │   ├── 0003-s3-object-lock-consideration.md
-│   │   └── 0004-signing-event-ledger.md
-│   ├── phase-2-aws/
-│   │   ├── acceptance-criteria.md
-│   │   ├── design.md
-│   │   ├── non-goals.md
-│   │   ├── requirements.md
-│   │   └── tasks.md
-│   ├── README.md
-│   └── framework-selection.md
-├── infra/
-│   ├── environments/
-│   │   └── poc/                 # Environment-level Terraform composition
-│   ├── modules/
-│   │   ├── kms-signing/          # Reusable KMS asymmetric signing key module
-│   │   └── s3-worm/              # S3 Object Lock (Compliance mode) WORM module
-│   └── terraform-github-oidc-s3.tf  # GitHub Actions OIDC → AWS S3 CI integration
-├── lib/
-│   ├── audit-manager.js
-│   ├── audit.js
-│   ├── aws-kms-provider.js
-│   ├── canonicalize-loader.js
-│   ├── json-object-store.js
-│   ├── local-ecdsa-provider.js
-│   ├── metadata-signature.js
-│   ├── metadata-signing.js
-│   ├── metadata.js
-│   ├── pg-signing-logger.js
-│   ├── s3-json-object-store.js
-│   ├── schema-validation.js
-│   ├── sidecar-verifier.js
-│   ├── signature-digest.js
-│   └── signature.js
-├── samples/
-│   ├── evidence-consent.expected.sha256
-│   └── evidence-consent.json
-├── schemas/
-│   ├── evidence.schema.json
-│   └── signing-event.schema.json
-├── scripts/
-│   ├── anchor-evidence.js        # Off-chain verified digest anchoring path
-│   ├── anchor-test.js            # Explicitly gated unsafe contract smoke test only
-│   ├── deploy-anchor.js          # TrustAnchor contract deployment (Sepolia)
-│   ├── generateWallet.js         # ⚠️ Local-only dev wallet generator (never commit output)
-│   ├── generate-local-keys.js
-│   ├── hash-evidence.js
-│   ├── sign-evidence.js
-│   ├── tamper-evidence.js
-│   ├── validate-evidence.js
-│   ├── verify-evidence.js
-│   └── verify-signature.js
-├── terraform/
-│   ├── budget_alert.tf
-│   ├── provider.tf
-│   └── terraform.tfvars.example
-├── tests/
-│   ├── audit-manager.test.js
-│   ├── audit.test.js
-│   ├── aws-kms-provider.test.js
-│   ├── json-object-store.test.js
-│   ├── local-ecdsa-provider.test.js
-│   ├── local-sidecar-e2e.test.js
-│   ├── metadata-signature.test.js
-│   ├── metadata-signing.test.js
-│   ├── metadata.test.js
-│   ├── pg-signing-logger.test.js
-│   ├── s3-json-object-store.integration.js
-│   ├── s3-json-object-store.test.js
-│   ├── s3-sidecar-e2e.test.js
-│   ├── schema-validation.test.js
-│   ├── sidecar-verifier.test.js
-│   └── signature.test.js
-├── hardhat.config.js
-├── package.json
-└── README.md
-```
+The current portfolio direction is:
+
+**AWS × AI Agent Security × Evidence Engineering**
+
+The intended product boundary is an **AI Agent Evidence Layer** that sits between agent runtimes and audit/compliance workflows.
+
+~~~text
+AI Agent / SaaS
+      ↓
+Runtime collector / adapter           planned
+      ↓
+AI Agent Evidence envelope
+      ↓
+JSON Schema validation
+      ↓
+Cryptographic signing
+      ↓
+Versioned evidence storage
+      ↓
+Append-only signing ledger
+      ↓
+Immutable retention                   target
+      ↓
+External trust anchor                 optional
+      ↓
+Independent verification
+~~~
+
+The repository already implements the core evidence integrity pipeline. Live collectors for specific AI agent frameworks are the next product-oriented step.
 
 ---
 
-## Design Documents
+## AI Agent Evidence Profile
 
-Additional design documents are available in the `docs` directory:
+The first AI-agent-specific profile is defined in:
 
-- [Framework Selection](docs/framework-selection.md)
-- [Architecture Diagram](docs/architecture-diagram.md)
-- [Audit Procedures](docs/audit-procedures.md)
-- [Control Mapping](docs/control-mapping.md)
-- [Evidence Lifecycle](docs/evidence-lifecycle.md)
-- [Threat Model](docs/threat-model.md)
-- [Attack Scenarios](docs/attack-scenarios.md)
-- [Signature Provider Design](docs/signature-provider-design.md)
-- [KMS Signing Design](docs/kms-signing-design.md)
-- [AWS KMS Key Management Design](docs/aws-kms-key-management-design.md)
-- [AWS Reference Architecture](docs/aws-reference-architecture.md)
-- [Portfolio Summary](docs/portfolio-summary.md)
-- [Verification Runbook](docs/verification-runbook.md)
+- `schemas/ai-agent-evidence.schema.json`
+- `samples/ai-agent-tool-call.json`
+- `docs/ai-agent-evidence-profile.md`
 
-Phase 2 AWS-backed MVP planning and design:
+It captures:
 
-- [Phase 2 Requirements](docs/phase-2-aws/requirements.md)
-- [Phase 2 Design](docs/phase-2-aws/design.md)
-- [Phase 2 Tasks](docs/phase-2-aws/tasks.md)
-- [Phase 2 Acceptance Criteria](docs/phase-2-aws/acceptance-criteria.md)
-- [Phase 2 Non-Goals](docs/phase-2-aws/non-goals.md)
+| Category | Examples |
+|---|---|
+| Actor | human, service, or agent identity |
+| Agent | agent ID, version, prompt configuration digest |
+| Model | provider, model ID, model version |
+| Execution | trace ID, session ID, task ID |
+| Policy | policy ID, version, allow/deny decision |
+| Action | tool name, operation, target |
+| Approval | required, status, reviewer, timestamp |
+| Side effect | affected resource and outcome |
+| Context references | policy, RAG document, tool-result references and digests |
+| Artifacts | result, report, changeset, message references |
+| Governance metadata | PII/secrets flags and retention class |
 
-Architecture Decision Records:
-
-- [ADR 0001: Digest Metadata Storage](docs/adr/0001-digest-metadata-storage.md)
-- [ADR 0002: S3 JSON Object Store](docs/adr/0002-s3-json-object-store.md)
-- [ADR 0003: S3 Object Lock Consideration](docs/adr/0003-s3-object-lock-consideration.md)
-- [ADR 0004: Signing Event Ledger](docs/adr/0004-signing-event-ledger.md)
+The profile favors **references and digests over raw prompts, secrets, or sensitive payloads**.
 
 ---
 
-## Phase 2 Implementation Status
+## Repository Trust Boundary
 
-> This section covers the AWS-backed Phase 2 work referenced in [Current Status](#current-status) above and detailed further in [Future Roadmap](#future-roadmap) below. Phase 1 corresponds to the v0.1.0 MVP scope (the local proof of concept); Phase 2 adds AWS-backed authenticity and immutability on top of it.
+The architecture invariant is:
 
-Current Phase 2 implementation includes:
+~~~text
+Evidence → Schema → Sign → Store → Ledger
+~~~
 
-- v2 sidecar metadata schema validation
-- canonical sidecar metadata signing payload generation
-- ECDSA P-256 sidecar metadata signing and verification
-- full evidence + sidecar metadata verification
-- local JSON object storage through `LocalJsonObjectStore`
-- S3-compatible JSON object storage through `S3JsonObjectStore`
-- local sidecar storage E2E tests
-- S3 sidecar storage E2E tests using an in-memory fake S3 client
-- AWS KMS-backed asymmetric signing through `AwsKmsProvider` (verified against a fake KMS client)
-- PostgreSQL-backed hash-chained signing event ledger through `PgSigningLogger` (verified against an in-memory fake `pg.Pool`)
-- Terraform-managed AWS Budgets cost guardrail alert
-- S3 Object Lock (Compliance mode) WORM Terraform module (`infra/modules/s3-worm`; not yet wired into a deployed environment)
-- On-chain evidence digest anchoring prototype on Ethereum Sepolia testnet (`TrustAnchor.sol`, `anchor-evidence.js`)
+`EvidenceProcessingService` enforces that sequence for the production-oriented application path.
 
-The default test suite does not require AWS credentials, real S3 buckets, or a live AWS KMS/PostgreSQL connection.
+The external anchor is downstream of the core flow:
 
-```bash
-npm test
-```
+~~~text
+Stored + signed evidence
+        ↓
+Off-chain verification
+        ↓
+Verified digest
+        ↓
+External anchor (optional)
+~~~
 
-Current status:
-
-```text
-130 tests passing
-```
-
-Production hardening still pending:
-
-- real AWS S3, KMS, and PostgreSQL integration tests
-- S3 Versioning
-- S3 Object Lock
-- SSE-S3 or SSE-KMS
-- IAM least-privilege examples
-- KMS error classification helpers and PostgreSQL `cause` parity for TD-002 (#71)
-- lifecycle and retention policy documentation
+This separation matters because immutability alone does not make an event true, authorized, complete, or compliant.
 
 ---
 
-## Requirements
+## What is implemented
 
-- Node.js 20 or later
-- npm
-
-Install dependencies:
-
-```bash
-npm ci
-```
-
----
-
-## Usage
-
-### Run schema validation
-
-```bash
-npm run validate:evidence
-```
-
-Expected result:
-
-```text
-Schema validation result: VALID
-```
-
----
-
-### Generate evidence hash
-
-```bash
-npm run hash
-```
-
-This command generates an RFC 8785 JCS-compatible canonical JSON representation and calculates a SHA-256 hash.
-
----
-
-### Verify evidence integrity
-
-```bash
-npm run verify
-```
-
-The sample verification command reads the trusted expected digest from `samples/evidence-consent.expected.sha256`.
-
-In this local MVP, the sidecar expected digest file is a local trust assumption. In production, expected digests should be protected by signed metadata, immutable storage, or a trusted registry.
-
-Expected result:
-
-```text
-Verification result: VALID
-```
-
----
-
-### Run local signature verification demo
-
-This project also includes a local ECDSA P-256 signature verification demo.
-
-The signature workflow demonstrates authenticity and tamper detection beyond simple hash comparison:
-
-```text
-Evidence JSON
-  ↓
-RFC 8785 JCS-compatible canonical JSON generation
-  ↓
-SHA-256 digest calculation
-  ↓
-ECDSA P-256 signing with local private key
-  ↓
-ECDSA P-256 verification with local public key
-  ↓
-VALID / INVALID result
-```
-
-Run the local signature demo:
-
-```bash
-rm -rf .local-keys signatures
-npm run generate:keys
-npm run sign
-npm run verify:signature
-npm run demo:tamper
-npm run verify:signature || true
-npm run demo:restore
-npm run verify:signature
-```
-
-Expected result:
-
-```text
-Verification result: VALID
-Verification result: INVALID
-Verification result: VALID
-```
-
-The second verification result becomes `INVALID` because the evidence content is modified after signing.
-After restoring the evidence content, the same signature verifies as `VALID` again.
-
-Local private keys and generated signatures are intentionally ignored by Git:
-
-```text
-.local-keys/
-signatures/
-*.sig
-```
-
-> Note: This local signing workflow is for demonstration only.
-> In production, private keys should be managed by AWS KMS or CloudHSM, evidence should be stored with immutability controls such as S3 Object Lock, and verification metadata should be persisted in an auditable store.
-
----
-
-### Run full demo
-
-```bash
-npm run demo
-```
-
-The demo runs:
-
-1. JSON Schema validation
-2. SHA-256 hash generation
-3. SHA-256 hash verification
-
----
-
-## Testing
-
-Run all tests:
-
-```bash
-npm test
-```
-
-The test suite covers:
-
-- Valid evidence data
-- Missing required fields
-- Invalid date-time format
-- Unexpected additional properties
-- Invalid enum values
-- Hash verification success and failure cases
-- RFC 8785 JCS-compatible canonicalization stability
-- Local ECDSA P-256 signing and verification
-- Sidecar metadata schema validation
-- Canonical sidecar metadata signing payload generation
-- Sidecar metadata signature generation and verification
-- Full evidence + sidecar metadata verification
-- Local JSON object storage
-- S3-compatible JSON object storage
-- Local sidecar storage E2E flows
-- S3 sidecar storage E2E flows using an in-memory fake S3 client
-- AWS KMS-backed signing and verification using a fake KMS client
-- PostgreSQL-backed signing event ledger integrity using an in-memory fake `pg.Pool`
-- Tampered evidence detection
-- Tampered metadata detection
-- Missing object handling
-
-Current expected result:
-
-```text
-130 tests passing
-```
-
----
-
-## CI/CD
-
-This repository uses GitHub Actions to automatically run validation and tests on pull requests and pushes to `main`.
-
-The workflow performs:
-
-1. Checkout repository
-2. Setup Node.js
-3. Install dependencies with `npm ci`
-4. Run automated tests
-5. Generate evidence hash
-6. Verify evidence integrity
-
-Workflow file:
-
-```text
-.github/workflows/ci.yml
-```
-
----
-
-## Evidence Schema
-
-The sample evidence record is defined by:
-
-```text
-schemas/evidence.schema.json
-```
-
-The schema currently uses JSON Schema Draft-07 for compatibility with the standard AJV package used in the CI environment.
-
-Example evidence file:
-
-```text
-samples/evidence-consent.json
-```
-
----
-
-## Security and Audit Design Notes
-
-This PoC demonstrates a layered validation approach:
-
-1. **Schema-level validation**
-   - Ensures that required fields exist
-   - Restricts unexpected properties
-   - Validates date-time formats and enum values
-
-2. **Cryptographic integrity verification**
-   - Uses SHA-256 to detect changes to the evidence payload
-   - Produces deterministic hashes from RFC 8785 JCS-compatible canonical JSON
-
-3. **Signature verification**
-   - Uses local ECDSA P-256 signatures for demonstration
-   - Shows how authenticity checks can be added beyond raw hash comparison
-
-4. **Sidecar metadata verification**
-   - Stores digest and verification metadata separately from evidence content
-   - Verifies metadata signatures and evidence digest consistency after loading
-
-This design is useful as a foundation for:
-
-- Consent history tracking
-- Activity record verification
-- AI governance logs
-- Audit trail prototypes
-- Web3-compatible evidence anchoring
-- Compliance-oriented trust systems
-
----
-
-## Limitations
-
-This project is a technical proof of concept only.
-
-It does not provide:
-
-- Legal advice
-- Audit opinion
-- Regulatory compliance certification
-- Production-grade identity management
-- Production-grade key management
-- Non-repudiation guarantees
-- Production-grade immutable storage by default
-- Blockchain anchoring by default (a Sepolia testnet anchoring prototype
-  exists but is not wired into the default `npm test` / `npm run demo` flow)
-- A deployed production AWS environment
-
-Actual audit, compliance, legal, and security requirements should be reviewed with qualified professionals.
-
----
-
-## Future Roadmap
-
-### v0.1.0 MVP Scope
-
-The v0.1.0 MVP focuses on a reproducible local proof of concept for tamper-evident audit evidence.
-
-Included in v0.1.0:
+### Evidence integrity
 
 - JSON Schema validation
 - RFC 8785 JCS-compatible canonicalization
-- SHA-256 evidence hashing
-- Hash-based tamper detection
-- Local ECDSA P-256 signature generation and verification
-- Local tamper detection demo
-- Sidecar metadata schema validation
-- Canonical sidecar metadata signing payload generation
-- Sidecar metadata signing and verification
-- Evidence + sidecar metadata verification
-- Local JSON object storage
-- S3-compatible JSON object storage
-- Local and S3 sidecar storage E2E tests
-- Automated tests
+- SHA-256 evidence digests
+- tamper-detection tests
+- local signature verification
+- signed sidecar metadata verification
+
+### AWS-oriented authenticity
+
+- `AwsKmsProvider`
+- AWS KMS asymmetric signing with `ECC_SECG_P256K1`
+- KMS key-spec fail-fast validation
+- physical KMS key ID propagation
+- fake-client deterministic tests
+
+### Evidence storage and ledger
+
+- local JSON object store
+- S3-compatible JSON object store
+- PostgreSQL versioned evidence store
+- PostgreSQL hash-chained signing ledger
+- partial-failure reconciliation semantics in `EvidenceProcessingService`
+
+### Security engineering
+
+- threat model
+- STRIDE analysis
+- attack scenarios
+- architecture decision records
+- control mapping
+- verification runbook
+- CodeQL
+- Semgrep
+- Dependabot
+- dependency-boundary checks
 - GitHub Actions CI
-- Verification runbook
-- Threat model and attack scenarios
-- AWS-oriented production design documents
 
-### Phase 2: AWS-backed authenticity and immutability
+### External proof prototype
 
-Phase 2 currently includes local and S3-compatible sidecar metadata storage and verification prototypes.
-
-Implemented Phase 2 capabilities:
-
-- Sidecar metadata validation
-- Signed sidecar metadata verification
-- Evidence + metadata verification
-- Local JSON object storage
-- S3-compatible JSON object storage
-- AWS KMS asymmetric signing (`AwsKmsProvider`)
-- PostgreSQL-backed hash-chained signing event ledger (`PgSigningLogger`)
-- Terraform-managed AWS Budgets cost guardrail
-- In-memory fake S3/KMS/PG client testing
-- Local and S3 sidecar E2E tests
-- S3 Object Lock (Compliance mode) WORM module (`infra/modules/s3-worm`,
-  Terraform-defined; not yet wired into a deployed environment)
-- On-chain verified Evidence digest anchoring prototype on Ethereum Sepolia
-  testnet (`VerifiedAnchorService`, `TrustAnchor.sol`, `anchor-evidence.js`),
-  with fail-closed off-chain verification and client/on-chain duplicate checks
-
-Potential future production hardening includes:
-
-- Real AWS S3, KMS, and PostgreSQL integration tests
-- S3 Object Lock based immutable evidence storage
-- S3 Versioning
-- SSE-S3 or SSE-KMS encryption
-- DynamoDB metadata persistence for digest, signature, sequence, and verification state
-- CloudTrail and CloudWatch based operational auditability
-- IAM least-privilege execution roles
-- Key rotation and verification policy documentation
-- Lifecycle and retention policy documentation
-- KMS error classification helpers and PostgreSQL `cause` parity (#71)
-
-### Phase 3: Productization and external verification
-
-Potential future enhancements include:
-
-- API layer with OpenAPI documentation
-- Approval metadata
-- Role-based access control metadata
-- Retention policy metadata
-- Exception handling flags
-- UUID-based evidence identifiers
-- Hash chain or Merkle tree based completeness verification
-- Multi-tenant SaaS architecture
-
-### Out of Scope for v0.1.0
-
-The v0.1.0 MVP does not aim to provide:
-
-- A deployed production AWS environment
-- Legal advice
-- Audit opinion
-- Regulatory compliance certification
-- Production SaaS functionality
-- Default blockchain anchoring
+- `TrustAnchor.sol`
+- Ethereum Sepolia digest anchoring
+- off-chain verification gate through `VerifiedAnchorService`
+- no raw evidence or PII stored on-chain
 
 ---
 
-## Cost Guardrail (AWS Budget Alert)
+## What is not implemented yet
 
-This project uses AWS KMS and related services in later phases, which incur real AWS costs.
-To prevent unexpected charges, an AWS Budgets alert is configured via Terraform in the `terraform/` directory.
+This is a PoC, not a production SaaS.
 
-### What it does
+Not yet complete:
 
-- Sets a monthly cost budget (default: $20 USD) on the AWS account
-- Sends SNS email notifications at 50%, 80%, 100% actual spend, and 100% forecasted spend
-- Uses an SNS topic with an email subscription as the alert delivery mechanism
+- live Bedrock AgentCore / LangGraph / OpenAI / other runtime collectors
+- production IAM and KMS separation-of-duties deployment
+- production PostgreSQL provisioning, HA, backup, and role separation
+- deployed S3 Object Lock retention policy
+- CloudTrail / CloudWatch evidence correlation
+- completeness proofs for missing or reordered evidence
+- tenant isolation and SaaS control plane
+- formal SOC 2, J-SOX, ISO 27001, or regulatory certification
+- legal or audit opinion
 
-### Files
+The repository intentionally distinguishes **implemented controls** from **target architecture**.
 
-```text
-terraform/
-├── provider.tf               # AWS provider (ap-northeast-1, ken-sso profile)
-├── budget_alert.tf           # AWS Budgets + SNS topic + subscription
-├── terraform.tfvars.example  # Template — copy to terraform.tfvars and fill in values
-└── terraform.tfvars          # Actual values (gitignored, never committed)
-```
+---
 
-### Setup
+## Security properties
 
-```bash
-cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Edit terraform/terraform.tfvars and set your alert_email
-cd terraform
-terraform init
-terraform apply
-```
+| Property | Current PoC | Target |
+|---|---|---|
+| Integrity | implemented | hardened |
+| Attribution | partial | identity-bound |
+| Context | AI profile added | runtime-populated |
+| Reconstruction | partial | cross-system correlation |
+| Completeness | limited | sequence/gap verification |
+| Verifiability | implemented locally | independent verifier |
+| Minimization | profile-level design | policy-driven |
+| Retention | Terraform module only | deployed WORM controls |
 
-> `terraform.tfvars`, `*.tfstate`, and `.terraform/` are excluded from git via `.gitignore`.
-> The `alert_email` variable is marked `sensitive = true` in Terraform to prevent accidental log exposure.
+A cryptographic signature proves integrity/authenticity relative to a key. It does **not** prove that the original event was truthful.
+
+---
+
+## Quick verification
+
+~~~bash
+npm ci
+npm run check:structure
+~~~
+
+Useful focused checks:
+
+~~~bash
+npm test
+npm run validate:evidence
+npm run hash
+npm run verify
+~~~
+
+The default test suite does not require production AWS credentials.
+
+---
+
+## Key documents
+
+Start with:
+
+- [AI Agent Evidence Profile](docs/ai-agent-evidence-profile.md)
+- [Architecture](docs/architecture.md)
+- [Architecture Diagram](docs/architecture-diagram.md)
+- [Threat Model](docs/threat-model.md)
+- [Attack Scenarios](docs/attack-scenarios.md)
+- [Control Mapping](docs/control-mapping.md)
+- [Verification Runbook](docs/verification-runbook.md)
+- [Portfolio Summary](docs/portfolio-summary.md)
+- [Roadmap](docs/roadmap.md)
+
+See [docs/README.md](docs/README.md) for the full documentation index.
+
+---
+
+## Portfolio summary
+
+A concise description for recruiters, security engineers, auditors, and design partners:
+
+> I built an AWS-oriented evidence integrity PoC for AI agent actions. The system validates structured evidence, canonicalizes it deterministically, signs it, stores versioned evidence, records signing events in a PostgreSQL hash chain, and supports later verification. I also designed immutable-retention, IAM/KMS, CloudTrail, and external-anchor hardening paths. The next step is connecting a live AI agent runtime to the evidence profile and validating the evidence requirements with audit, compliance, AI security, and SaaS practitioners.
+
+The project is meant to demonstrate:
+
+- AWS security architecture
+- AI agent auditability
+- evidence engineering
+- cryptographic integrity design
+- threat modeling
+- DevSecOps
+- audit/compliance-oriented system thinking
 
 ---
 
 ## License
 
 MIT
-
----
-
-## JSON Canonicalization
-
-This PoC uses RFC 8785 JSON Canonicalization Scheme, JCS, compatible canonicalization via the `canonicalize` package before calculating SHA-256 hashes.
-
-Using JCS-compatible canonicalization avoids relying on ad-hoc key sorting and helps produce stable, interoperable hash inputs across implementations.
-
-The verification flow is:
-
-```text
-Evidence JSON
-  ↓
-JSON Schema validation
-  ↓
-RFC 8785 JCS-compatible canonicalization
-  ↓
-SHA-256 hash calculation
-  ↓
-Hash comparison
-  ↓
-VALID / INVALID
-```
-
-This PoC focuses on structural validation and tamper detection. It does not prove that the original event content is true, nor does it provide legal audit certification by itself.
-
----
-
-## Articles
-
-This project is part of an ongoing exploration of AI × Web3 digital proof, audit evidence, and verifiable trust.
-
-- AI×Web3で「見えない信頼」を証明する
-  https://note.com/fair_beetle339/n/nbc14f4e803b7
-
-- 「見えない信頼」をどう作るか：AI×Web3デジタル証明の実装編
-  https://note.com/fair_beetle339/n/n22ef0c27423a
-
-- 「見えない信頼」は誰が買うのか：AI×Web3デジタル証明の事業編
-  https://note.com/fair_beetle339/n/nffa803738f55
-
-- Tanden Trust Audit PoC：AI×Web3デジタル証明の土台をGitHubで実装する
-  https://note.com/fair_beetle339/n/n432d57838031
-
-- Tanden Trust Audit PoC：ハッシュ検証から電子署名による真正性確認へ
-  https://note.com/fair_beetle339/n/ne53bc5b3d170

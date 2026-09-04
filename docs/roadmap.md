@@ -1,277 +1,193 @@
 # Roadmap
 
-## Phase 0: Repository Setup
+## Strategic Direction
 
-Status: Completed
+The project is now positioned as an **AI Agent Evidence Layer** on AWS.
 
-Goals:
+Blockchain/Web3 remains an optional external trust mechanism rather than the primary product boundary.
 
-- Create public GitHub repository
-- Add README
-- Add MIT License
-- Add Node `.gitignore`
-- Add initial documentation
+The next milestones prioritize market validation and live AI-agent evidence collection over adding more cryptographic components.
 
-Deliverables:
+## Completed Foundation
 
-- README.md
-- LICENSE
-- .gitignore
-- docs/architecture.md
-- docs/audit-design.md
-- docs/threat-model.md
-- docs/roadmap.md
+### Local evidence integrity
 
-## Phase 1: Local Evidence Verification
+- JSON Schema validation
+- RFC 8785 JCS canonicalization
+- SHA-256 tamper detection
+- local signatures
+- signed sidecar metadata
+- automated tests
 
-Status: Completed
+### AWS-oriented authenticity and storage
 
-Goals:
+- S3-compatible object store
+- `AwsKmsProvider`
+- PostgreSQL versioned evidence store
+- PostgreSQL signing-event hash chain
+- `EvidenceProcessingService`
+- real/fake integration test separation
+- S3 Object Lock Terraform module
+- AWS Budgets cost guardrail
 
-- Create sample evidence JSON
-- Validate evidence records against JSON Schema
-- Canonicalize evidence using RFC 8785 (JCS)
-- Implement SHA-256 digest generation
-- Implement hash-based evidence verification
-- Confirm that changes to evidence data are detectable
+### Security engineering
 
-Deliverables:
+- threat model
+- STRIDE mapping
+- attack scenarios
+- ADRs
+- verification runbook
+- CodeQL
+- Semgrep
+- Dependabot
+- architecture checks
 
-- samples/evidence-consent.json
-- lib/schema.js
-- lib/canonicalize.js
-- lib/hash.js
-- scripts/verify-evidence.js
-- Unit tests for hashing, canonicalization, and schema validation
+### External proof prototype
 
-## Phase 1.5: Signature & Sidecar Metadata Layer
+- `VerifiedAnchorService`
+- `TrustAnchor.sol`
+- Ethereum Sepolia digest anchoring
 
-Status: Completed
+## Phase A: AI Agent Evidence Profile
 
-Goals:
-
-- Sign canonical evidence digests using a local ECDSA P-256 key pair
-- Define a versioned sidecar metadata schema
-- Separate the signature provider from digest generation for future extensibility
-- Implement a local JSON object store with safe key validation
-- Detect tampering in both evidence and sidecar metadata
+Status: **Implemented**
 
 Deliverables:
 
-- lib/signature.js
-- lib/signature-digest.js
-- Local ECDSA signing/verification provider
-- Sidecar metadata schema v1 (validation, canonical signing payload)
-- LocalJsonObjectStore (safe key handling, error mapping)
-- Local sidecar E2E tests (tamper detection for evidence and metadata)
-- docs/signature-provider-design.md
+- `schemas/ai-agent-evidence.schema.json`
+- `samples/ai-agent-tool-call.json`
+- `tests/ai-agent-evidence-schema.test.js`
+- `docs/ai-agent-evidence-profile.md`
 
-## Phase 2: AWS S3 Integration
+Goal:
 
-Status: Completed
+Define the minimum security-relevant context required to reconstruct and verify an AI agent action without storing raw secrets or sensitive payloads by default.
 
-Goals:
+## Phase B: Live Runtime Collector
 
-- Implement an S3-backed JSON object store with the same interface as the local store
-- Reuse sidecar metadata signing/verification against S3-stored objects
-- Add tamper detection tests using a fake S3 client
-- Verify the implementation against a real AWS S3 bucket in a gated, opt-in test
+Status: **Next**
 
-Deliverables:
+Goal:
 
-- lib/s3-object-store.js
-- S3 sidecar E2E tests (fake client): tamper detection, missing object handling
-- Gated real AWS S3 integration test (`npm run test:aws:s3`)
-- Manual real AWS S3 verification record (ap-northeast-1, temporary bucket, SSE-S3, public access blocked)
-- docs/aws-s3-integration-test.md
-- docs/local-verification-result.md
+Connect one real AI agent runtime to the evidence pipeline.
 
-## Phase 3: Security Documentation Hardening
+Candidate scope:
 
-Status: In Progress
+- AWS Bedrock AgentCore or another AWS-oriented agent runtime
+- one security-relevant tool call
+- actor/agent/model/policy/tool/approval/side-effect mapping
+- no raw secrets or unnecessary PII
+- process through `EvidenceProcessingService`
 
-Goals:
+Acceptance criteria:
 
-- Document the threat model for the current MVP implementation (assets, trust boundaries, threat actors)
-- Map STRIDE categories to current mitigations
-- Record residual risks and explicit future mitigations
-- Organize the growing docs/ directory with a navigable index
-- Document explicit design decisions (ADRs) for deferred production controls
+1. capture one real tool-call event
+2. convert it into the AI Agent Evidence profile
+3. validate it
+4. sign it
+5. persist it
+6. append ledger event
+7. verify it after reload
+8. tamper with evidence and show verification failure
 
-Deliverables:
-
-- docs/threat-model.md (updated for current MVP scope)
-- docs/README.md (documentation index) — planned
-- docs/adr/0003-s3-object-lock-consideration.md — planned
-
-## Phase 4: AWS KMS Signing & Key Management
-
-Status: Completed (implemented and verified against fake/in-memory
-AWS SDK and PostgreSQL clients; real AWS KMS and real PostgreSQL
-integration testing tracked in #71)
-
-Goals:
-
-- Replace the local ECDSA signing provider with an AWS KMS asymmetric signing provider
-- Keep the existing signature provider interface unchanged for callers
-- Define least-privilege IAM policies for signing operations
-- Record KMS key usage via AWS CloudTrail
-- Implement a PostgreSQL-backed hash-chained signing event ledger
-  (`PgSigningLogger`) to record signing operations independently of
-  the KMS provider itself
-
-Reference Designs:
-
-- docs/kms-signing-design.md
-- docs/aws-kms-key-management-design.md
-- ADR 0004 (signing event ledger)
-
-Deliverables:
-
-- lib/aws-kms-provider.js
-- lib/pg-signing-logger.js
-- tests/aws-kms-provider.test.js (fake KMS client, including
-  TD-001/TD-003 KeySpec guard and public key caching)
-- tests/pg-signing-logger.test.js (fake pg.Pool client, hash-chain
-  verification)
-
-Note: This implementation is verified against fake/in-memory AWS SDK
-and PostgreSQL clients. Real AWS KMS and real PostgreSQL integration
-testing remain future work, tracked in #71.
-
-## Phase 5: Tamper-Resistance Enhancement
+## Phase C: Auditor-Facing Evidence Bundle
 
 Status: Planned
 
-Goals:
+Goal:
 
-- Add SSE-KMS support to the S3 object store as an alternative to SSE-S3
-- Evaluate S3 Object Lock (Governance vs. Compliance mode) for evidence buckets
-- Enable S3 Versioning on production-oriented buckets
-- Explore external timestamping options
+Produce a reviewable evidence packet for a single agent action.
 
-Possible Technologies:
+Include:
 
-- S3 Object Lock
-- SSE-KMS
-- S3 Versioning
-- OpenTimestamps
+- evidence record
+- digest
+- signature metadata
+- signer/KMS key reference
+- version
+- ledger event reference
+- policy/approval references
+- verification result
+- provenance references
 
-## Phase 6: AI-Assisted Audit Review
+The bundle should be understandable by security, internal audit, compliance, or incident response practitioners without reading application source code.
+
+## Phase D: AWS Production Hardening
 
 Status: Planned
 
-Goals:
+Priority items:
 
-- Use AI to summarize audit evidence
-- Detect inconsistencies in records
-- Generate human-readable audit reports
-- Keep AI output traceable to source evidence
+- real AWS KMS + PostgreSQL integration coverage
+- production IAM/key policy and separation of duties
+- S3 Object Lock deployment and retention operations
+- CloudTrail/CloudWatch correlation
+- backup/HA and recovery
+- evidence retention lifecycle
+- operational alerts
+- incident response runbook
 
-Important Principles:
+## Phase E: Completeness and Reconstruction
 
-- AI should not replace source evidence
-- AI analysis should be reviewable
-- AI-generated output should be clearly separated from original records
+Status: Planned
 
-## Phase 7: Web3-Compatible Verification
+Goal:
 
-Status: In Progress (verified digest application gate implemented; production relayer controls remain planned)
+Move beyond tamper detection to evidence-set completeness.
 
-Goals:
+Explore:
 
-- Harden blockchain-compatible evidence anchoring for production operations
-- Explore Verifiable Credentials
-- Explore selective disclosure
-- Avoid storing personal data on-chain
+- monotonic sequence numbers
+- chain-head checkpoints
+- Merkle trees
+- missing-event detection
+- cross-system correlation IDs
+- reconciliation queues
 
-Possible Technologies:
+## Phase F: Control Mapping and Customer Validation
 
-- Ethereum-compatible hash anchoring
-- Polygon or other L2 networks
-- Verifiable Credentials
-- Decentralized Identifiers
-- Zero-knowledge proofs
+Status: Planned
 
-## Current Priority
+Do not claim formal compliance mapping until validated with practitioners.
 
-Phases 0-4 are complete (verified against fake/in-memory AWS SDK and
-PostgreSQL clients). The current priority is closing out remaining
-Phase 4 hardening work before moving to Phase 5:
+Research targets:
 
-1. Real AWS KMS and real PostgreSQL integration tests (#71)
-2. KMS error classification helpers built on the TD-002 `cause` chain
-3. PostgreSQL-side `cause` chain parity with `AwsKmsProvider` (#71)
-4. Verification runbook (`docs/verification-runbook.md`)
-5. Architecture diagrams
-6. Begin Phase 5 (S3 Object Lock, SSE-KMS, versioning) design work
+- AI Agent / SaaS operators
+- internal audit
+- compliance
+- security engineering
+- cloud governance
+- regulated SaaS / FinTech teams
 
----
+Key questions:
 
-## Technical Debt Backlog
+- what evidence is requested after an agent action?
+- which evidence is difficult to reconstruct today?
+- what retention period is required?
+- what data cannot be stored in audit evidence?
+- who owns the budget?
+- what would trigger a paid PoC?
 
-The following items were identified during Phase 4 implementation and are tracked here for future resolution.
+## Phase G: Optional External Trust Anchoring
 
-### TD-001: AwsKmsProvider — KeySpec validation on initialization
+Status: Prototype exists
 
-**Priority:** High
+External anchoring remains optional.
 
-**Status:** ✅ Resolved
+Possible mechanisms:
 
-**Context:** `decodeDerSignatureToRaw` normalizes r and s values to exactly 32 bytes, which is correct for secp256k1 (P-256K1). If the KMS key is inadvertently configured with a different curve (e.g. P-384, P-521), this fixed-width decoding will silently produce incorrect signatures rather than failing loudly.
+- public blockchain
+- transparency log
+- trusted timestamp service
 
-**Proposed fix:** In the constructor or a lazy `initialize()` method, call `GetPublicKeyCommand` and assert that `response.KeySpec` equals `ECC_SECG_P256K1`. Throw an error immediately if it does not match (Fail Fast principle).
+Selection should be driven by customer trust requirements, not by technology preference.
 
-**Affected file:** `lib/aws-kms-provider.js`
+## Current Priority Order
 
-**Resolution:** Implemented as a lazy, cached guard `_ensureKeySpecVerified()`, invoked at the start of `signDigest`, `verifyDigestSignature`, and `getPublicKey`. Throws immediately if `response.KeySpec !== 'ECC_SECG_P256K1'`. Verified in `tests/aws-kms-provider.test.js` (`_ensureKeySpecVerified: throws on unsupported KeySpec (TD-001)`).
-
----
-
-
-
-### TD-002: AwsKmsProvider — Add `cause` chain to error wrapping
-
-**Priority:** Medium
-
-**Status:** [x] Resolved
-
-**Context:** The current `catch` blocks in `signDigest`, `verifyDigestSignature`, and `getPublicKey` create a new `Error` with a descriptive message but discard the original AWS SDK error. This means callers cannot programmatically detect specific error types such as `AccessDeniedException` or `KMSInvalidStateException`.
-
-**Proposed fix:** Replace:
-
-```js
-throw new Error(`KMS Sign operation failed: ${err.message}`);
-```
-
-with:
-
-```js
-throw new Error(`KMS Sign operation failed: ${err.message}`, { cause: err });
-```
-
-in all three KMS operation catch blocks. Requires Node.js ≥ 16.9.0 (already satisfied by the project's `engines` constraint of ≥ 20).
-
-**Affected file:** `lib/aws-kms-provider.js`
-
-**Resolution:** Implemented in PR #70 (`fix(kms): preserve error cause
-chain in KMS operations`). All three KMS operation catch blocks
-(`signDigest`, `verifyDigestSignature`, `getPublicKey`) now attach the
-original AWS SDK error via `{ cause: err }`.
-
----
-
-### TD-003: AwsKmsProvider — Cache `getPublicKey()` result
-
-**Priority:** Low
-
-**Status:** ✅ Resolved
-
-**Context:** The public key for an asymmetric KMS key is immutable for the lifetime of the key. Calling `GetPublicKeyCommand` on every verification incurs an unnecessary KMS API call and associated cost.
-
-**Proposed fix:** Store the result of the first `GetPublicKeyCommand` call in an instance variable (`this._cachedPublicKey`). Return the cached value on subsequent calls without issuing a new API request.
-
-**Affected file:** `lib/aws-kms-provider.js`
-
-**Resolution:** Resolved as a side effect of the TD-001 fix — `_ensureKeySpecVerified()` caches the public key bytes returned alongside `KeySpec` from the same `GetPublicKeyCommand` call, eliminating redundant KMS API calls on repeated `getPublicKey()` invocations. Verified in `tests/aws-kms-provider.test.js` (`_ensureKeySpecVerified: caches result across multiple calls (TD-003)`).
-
+1. AI Agent runtime collector
+2. auditor-facing evidence bundle
+3. practitioner interviews / design partners
+4. AWS production hardening
+5. completeness/gap verification
+6. control-framework mapping
+7. optional external anchor hardening

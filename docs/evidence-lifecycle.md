@@ -2,268 +2,212 @@
 
 ## Purpose
 
-This document describes the assumed lifecycle of evidence records in the Tanden Trust Audit PoC.
+This document describes the target lifecycle for AI Agent audit evidence in Tanden Trust Audit PoC.
 
-The purpose is to clarify how evidence is created, validated, canonicalized, hashed, verified, reviewed, and eventually retained or archived.
+The lifecycle starts with a security-relevant agent event and ends with review, retention, and eventual disposition.
 
-This PoC does not provide formal audit assurance. The lifecycle described here is intended for design, demonstration, and portfolio purposes.
+This is a technical design, not a formal audit or legal retention policy.
 
 ## Lifecycle Overview
 
-The evidence lifecycle consists of the following stages:
+1. Agent event occurs
+2. Runtime signal is collected
+3. Evidence envelope is created
+4. Schema validation
+5. Canonicalization
+6. Cryptographic signing
+7. Versioned evidence storage
+8. Ledger append
+9. Optional immutable retention
+10. Independent review / reperformance
+11. Exception and reconciliation handling
+12. Retention / archival / disposition
+13. Optional external trust anchoring
 
-1. Event Occurrence
-2. Evidence Creation
-3. Schema Validation
-4. Canonicalization
-5. Hash Generation
-6. Hash Verification
-7. Evidence Storage
-8. Review and Reperformance
-9. Exception Handling
-10. Retention and Archival
+## 1. Agent Event
 
-## Lifecycle Stages
+A security-relevant action occurs.
 
-### 1. Event Occurrence
+Examples:
 
-A business or system event occurs.
+- an agent calls a write-capable tool
+- an agent sends a message
+- an agent updates a customer or financial record
+- an agent requests or receives human approval
+- an agent is blocked by policy
+- an agent performs a destructive action
 
-Examples include:
+The current repository contains a synthetic tool-call sample.
 
-- consent granted
-- consent revoked
-- activity recorded
-- approval completed
-- document acknowledged
-- exception detected
+## 2. Runtime Collection
 
-In the current MVP, the primary sample event is `CONSENT_GRANTED`.
+Target state:
 
-### 2. Evidence Creation
+A collector/adapter receives runtime metadata from an agent platform.
 
-An evidence record is created as a structured JSON document.
+The collector is not yet implemented.
 
-The evidence record includes key metadata such as:
+It should collect only the context required for the control objective and must avoid unnecessary secrets/PII.
 
-- `evidenceId`
-- `schemaVersion`
-- `eventType`
-- `subjectId`
-- `actorId`
-- `occurredAt`
-- `sourceSystem`
-- `purpose`
-- `consent`
-- `metadata`
+## 3. Evidence Envelope
 
-The current MVP uses synthetic demo data only.
+The collector maps the event to:
 
-### 3. Schema Validation
+- `schemas/ai-agent-evidence.schema.json`
 
-The evidence record is validated against a JSON Schema.
+Key categories include:
 
-This stage checks whether the evidence record:
+- actor
+- agent
+- model
+- execution
+- policy
+- action
+- approval
+- side effect
+- context references
+- artifact references
+- governance metadata
 
-- contains required fields
-- uses valid data types
-- follows expected enum values
-- rejects unexpected additional properties
-- uses a valid date-time format for `occurredAt`
+## 4. Schema Validation
 
-Current command:
+Validation occurs before signing.
 
-- `npm run validate:evidence`
+Invalid evidence fails closed.
 
-### 4. Canonicalization
+For the synthetic profile:
 
-The evidence record is converted into deterministic canonical JSON.
+~~~bash
+npm run validate:agent-evidence
+~~~
 
-The current MVP uses RFC 8785 JSON Canonicalization Scheme compatible behavior.
+## 5. Canonicalization
 
-Canonicalization ensures that equivalent JSON objects produce the same byte representation even if object key order differs.
+The evidence object is canonicalized using RFC 8785 JCS-compatible behavior.
 
-This is important because cryptographic hashes must be calculated from stable input.
+This creates stable cryptographic input.
 
-### 5. Hash Generation
+## 6. Signing
 
-A SHA-256 digest is calculated from the canonicalized evidence record.
+The evidence is signed using the configured signing provider.
 
-Current command:
+Current implementations include:
 
-- `npm run hash`
+- local ECDSA provider
+- `AwsKmsProvider`
 
-The hash acts as a tamper-evident fingerprint of the evidence record.
+A signature contributes authenticity relative to a key, but does not prove that the source event was truthful.
 
-If the evidence content changes, the calculated hash changes.
+## 7. Versioned Storage
 
-### 6. Hash Verification
+`PgEvidenceStore` supports versioned evidence persistence.
 
-A reviewer or system recalculates the hash and compares it with the expected digest.
+The target architecture may also use S3 for immutable object retention.
 
-Current command:
+## 8. Ledger Append
 
-- `npm run verify`
+`PgSigningLogger` records signing events in a hash-chained PostgreSQL ledger.
 
-If the calculated hash matches the expected hash, the evidence is considered unchanged with respect to the verified digest.
+`EvidenceProcessingService` enforces the ordered flow and exposes reconciliation data when storage succeeds but ledger append fails.
 
-If the calculated hash does not match, the evidence should be treated as potentially tampered with or inconsistent.
+## 9. Immutable Retention
 
-### 7. Evidence Storage
+Target state:
 
-In the current MVP, evidence records are stored as local sample JSON files.
-
-Future production-oriented designs may store evidence in immutable or controlled storage.
-
-Potential AWS implementation options include:
-
-- Amazon S3
+- S3 Versioning
 - S3 Object Lock
-- DynamoDB
-- AWS KMS
-- AWS CloudTrail
-- Amazon EventBridge
-- Amazon CloudWatch
+- controlled retention
+- legal hold where required
+- least-privilege administration
 
-Storage should support integrity, traceability, access accountability, and retention requirements.
+A Terraform S3 WORM module exists, but production retention operations are not yet deployed.
 
-### 8. Review and Reperformance
+## 10. Independent Review
 
-A reviewer can independently reperform the verification process.
+A reviewer should be able to:
 
-A typical review flow is:
+1. retrieve the evidence
+2. validate schema
+3. recalculate the digest
+4. verify the signature
+5. inspect actor/agent/model/policy/action/approval/side-effect context
+6. resolve referenced artifacts where authorized
+7. inspect store/ledger references
+8. identify missing evidence or unresolved exceptions
 
-1. Select an evidence record.
-2. Validate it against the JSON Schema.
-3. Canonicalize the evidence record.
-4. Recalculate the SHA-256 hash.
-5. Compare the calculated hash with the expected digest.
-6. Inspect event metadata.
-7. Determine whether the evidence supports the relevant control objective.
+## 11. Exception and Reconciliation
 
-This supports audit reperformance and technical transparency.
-
-### 9. Exception Handling
-
-Exceptions may occur when evidence records are invalid, inconsistent, tampered with, revoked, or incomplete.
-
-Examples include:
+Examples:
 
 - schema validation failure
-- missing required fields
-- invalid consent status
-- malformed timestamp
-- hash mismatch
-- unexpected additional properties
-- revoked consent
-- duplicate evidence ID
-- missing expected digest
+- signing failure
+- duplicate evidence version
+- storage failure
+- ledger append failure
+- missing referenced artifact
+- verification failure
+- approval mismatch
+- side-effect mismatch
+- missing sequence / suspected evidence gap
 
-The current MVP includes negative tests for schema violations and tampered evidence scenarios.
+The current implementation already distinguishes partial failure after storage and preserves reconciliation metadata for ledger retry.
 
-Future versions may add dedicated exception evidence samples and lifecycle states.
+## 12. Retention / Archival / Disposition
 
-### 10. Retention and Archival
-
-The current MVP does not enforce retention or archival rules.
-
-Future production-oriented designs should define:
+A production policy should define:
 
 - retention period
-- archival policy
-- deletion policy
-- legal hold behavior
-- immutable storage requirements
-- lifecycle transitions
-- evidence expiration rules
+- retention class
+- archive tier
+- legal hold
+- deletion authority
+- evidence expiration
+- verification requirements before disposal
 
-Potential AWS implementation options include:
+These decisions require audit, legal, privacy, compliance, and security input.
 
-- S3 Object Lock Governance Mode
-- S3 Object Lock Compliance Mode
-- S3 Lifecycle policies
-- Glacier storage classes
-- CloudTrail audit logs
+## 13. Optional External Trust Anchor
 
-## State Model
+After off-chain verification, a verified digest may be anchored outside the primary storage boundary.
 
-The following conceptual states may be used in future versions:
+Current prototype:
 
-| State | Description |
+- Ethereum Sepolia
+- `VerifiedAnchorService`
+- `TrustAnchor.sol`
+
+This step is optional.
+
+It must not become a substitute for source authenticity, IAM controls, approval evidence, retention, or operational monitoring.
+
+## Target State Model
+
+| State | Meaning |
 |---|---|
-| `CREATED` | Evidence record has been generated. |
-| `VALIDATED` | Evidence passed schema validation. |
-| `REJECTED` | Evidence failed schema validation. |
-| `CANONICALIZED` | Evidence was converted to canonical JSON. |
-| `HASHED` | Digest was calculated. |
-| `VERIFIED` | Calculated digest matched expected digest. |
-| `FAILED_VERIFICATION` | Calculated digest did not match expected digest. |
-| `STORED` | Evidence was stored in a controlled location. |
-| `REVIEWED` | Evidence was reviewed by a human or automated process. |
-| `RETAINED` | Evidence is under retention control. |
-| `ARCHIVED` | Evidence was moved to archival storage. |
-| `EXPIRED` | Retention period has ended. |
+| `COLLECTED` | Runtime signal captured |
+| `VALIDATED` | Evidence profile validation passed |
+| `REJECTED` | Validation failed |
+| `SIGNED` | Cryptographic signature created |
+| `STORED` | Versioned evidence persisted |
+| `LEDGERED` | Signing/processing event recorded |
+| `RECONCILIATION_REQUIRED` | partial failure requires repair |
+| `VERIFIED` | reviewer/system successfully reperformed verification |
+| `FAILED_VERIFICATION` | integrity/authenticity verification failed |
+| `RETAINED` | retention control active |
+| `ARCHIVED` | moved to archive |
+| `DISPOSED` | retention period ended and authorized disposal completed |
 
-## Current MVP Coverage
+This state model is conceptual and not yet implemented as a persistent state machine.
 
-The current MVP supports:
+## Security Notes
 
-- evidence creation using sample JSON
-- JSON Schema validation
-- deterministic canonicalization
-- SHA-256 hash generation
-- hash verification
-- negative tests for invalid and tampered evidence
-- basic reviewer reperformance
+- logs and evidence are not identical
+- integrity does not prove truthfulness
+- completeness remains a major future control
+- raw secrets should not be copied into evidence by default
+- references/digests require resolvers and retention guarantees
+- external anchors are optional
 
-The current MVP does not yet support:
+## Current Next Step
 
-- trusted timestamping
-- external signature verification
-- AWS KMS signing
-- immutable object storage
-- retention enforcement
-- deletion protection
-- lifecycle state persistence
-- automated exception workflow
-- production monitoring
-
-## Relationship to Other Design Documents
-
-This lifecycle document complements the following documents:
-
-- `docs/framework-selection.md`
-- `docs/audit-procedures.md`
-- `docs/control-mapping.md`
-
-The relationship can be summarized as follows:
-
-| Document | Main Question |
-|---|---|
-| `framework-selection.md` | Why were the current tools and architecture selected? |
-| `audit-procedures.md` | How can a reviewer inspect or reperform verification? |
-| `control-mapping.md` | Which control objectives are supported by which evidence fields and checks? |
-| `evidence-lifecycle.md` | What lifecycle does evidence follow from creation to retention or archival? |
-
-## Limitations
-
-This document is conceptual and implementation-oriented.
-
-It does not represent a formal audit opinion, certification, compliance attestation, legal conclusion, or production-ready retention policy.
-
-The lifecycle should be reviewed by qualified audit, compliance, security, and legal professionals before production use.
-
-## Future Enhancements
-
-Future versions may add:
-
-- lifecycle state machine implementation
-- `case_id` and correlation ID fields
-- consent revocation lifecycle
-- rollback and cancellation events
-- exception evidence samples
-- attack scenario tests
-- AWS KMS signing workflow
-- S3 Object Lock retention model
-- CloudTrail-based access accountability
-- automated lifecycle report generation
+Implement one live runtime collector and run the full lifecycle for one security-relevant tool call.

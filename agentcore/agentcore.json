@@ -14,16 +14,15 @@
   "onlineEvalConfigs": [],
   "agentCoreGateways": [],
   "policyEngines": [],
-  "agents": [
+  "runtimes": [
     {
-      "type": "AgentCoreRuntime",
       "name": "TandenEvidenceDemo",
       "build": "CodeZip",
-      "entrypoint": "main.js",
+      "entrypoint": "main.ts",
       "codeLocation": "app/TandenEvidenceDemo/",
       "runtimeVersion": "NODE_22",
-      "protocol": "HTTP",
       "networkMode": "PUBLIC",
+      "protocol": "HTTP",
       "envVars": [
         {
           "name": "AWS_REGION",

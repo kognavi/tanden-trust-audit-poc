@@ -1,0 +1,123 @@
+name: AgentCore Live Evidence Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_cost:
+        description: "Select RUN to allow exactly one real AgentCore Runtime invocation."
+        required: true
+        default: "NO"
+        type: choice
+        options:
+          - "NO"
+          - "RUN"
+      agent_runtime_arn:
+        description: "Existing Amazon Bedrock AgentCore Runtime ARN."
+        required: true
+        type: string
+      qualifier:
+        description: "AgentCore Runtime qualifier."
+        required: true
+        default: "DEFAULT"
+        type: string
+      region:
+        description: "AWS Region containing the Runtime."
+        required: true
+        default: "ap-northeast-1"
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  live-demo:
+    if: ${{ inputs.confirm_cost == 'RUN' }}
+    name: One-shot AgentCore evidence demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Verify AgentCore CLI support
+        run: |
+          aws --version
+          aws bedrock-agentcore invoke-agent-runtime help >/dev/null
+
+      - name: Create one-shot invocation context
+        run: |
+          mkdir -p demo-output
+          SESSION_ID="$(node -e "console.log(require('node:crypto').randomUUID())")"
+          TRACE_ID="trace-$(node -e "console.log(require('node:crypto').randomUUID())")"
+
+          echo "AGENTCORE_RUNTIME_SESSION_ID=$SESSION_ID" >> "$GITHUB_ENV"
+          echo "AGENTCORE_TRACE_ID=$TRACE_ID" >> "$GITHUB_ENV"
+
+          AGENTCORE_RUNTIME_SESSION_ID="$SESSION_ID"           AGENTCORE_TRACE_ID="$TRACE_ID"           node <<'NODE'
+          const fs = require("node:fs");
+
+          const payload = {
+            prompt:
+              "Run the configured portfolio audit demo tool exactly once. Use only synthetic demo data. Return JSON with an auditEvent produced by the tool execution path.",
+            auditContext: {
+              runtimeSessionId: process.env.AGENTCORE_RUNTIME_SESSION_ID,
+              traceId: process.env.AGENTCORE_TRACE_ID,
+              evidenceId: "evd-2026-000399"
+            }
+          };
+
+          fs.writeFileSync(
+            "demo-output/agentcore-request.json",
+            JSON.stringify(payload),
+            "utf8"
+          );
+          NODE
+
+      - name: Invoke AgentCore Runtime exactly once
+        env:
+          AWS_REGION: ${{ inputs.region }}
+          AGENTCORE_RUNTIME_ARN: ${{ inputs.agent_runtime_arn }}
+          AGENTCORE_QUALIFIER: ${{ inputs.qualifier }}
+        run: |
+          aws bedrock-agentcore invoke-agent-runtime             --region "$AWS_REGION"             --agent-runtime-arn "$AGENTCORE_RUNTIME_ARN"             --qualifier "$AGENTCORE_QUALIFIER"             --runtime-session-id "$AGENTCORE_RUNTIME_SESSION_ID"             --trace-id "$AGENTCORE_TRACE_ID"             --content-type "application/json"             --accept "application/json"             --cli-binary-format raw-in-base64-out             --payload fileb://demo-output/agentcore-request.json             demo-output/agentcore-runtime-response.json
+
+      - name: Process live response through local Evidence pipeline
+        env:
+          AWS_REGION: ${{ inputs.region }}
+          AGENTCORE_RUNTIME_ARN: ${{ inputs.agent_runtime_arn }}
+          AGENTCORE_QUALIFIER: ${{ inputs.qualifier }}
+        run: |
+          npm run demo:agentcore:process --             demo-output/agentcore-runtime-response.json             demo-output/agentcore-live-demo-result.json
+
+      - name: Publish sanitized demo summary
+        run: |
+          {
+            echo "## AgentCore Live Evidence Demo"
+            echo
+            echo '~~~json'
+            cat demo-output/agentcore-live-demo-result.json
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove raw Runtime data from runner workspace
+        if: always()
+        run: |
+          rm -f demo-output/agentcore-runtime-response.json
+          rm -f demo-output/agentcore-request.json

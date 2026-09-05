@@ -47,13 +47,20 @@ jobs:
         run: |
           cp agentcore/aws-targets.example.json agentcore/aws-targets.json
           agentcore validate --json
-          rm -f agentcore/aws-targets.json
 
       - name: Build vendored AgentCore CDK scaffold without AWS calls
         working-directory: agentcore/cdk
         run: |
           npm install --ignore-scripts --no-audit --fund=false
           npm run build
+
+      - name: Synthesize CloudFormation without AWS credentials
+        working-directory: agentcore/cdk
+        run: node dist/bin/cdk.js
+
+      - name: Cleanup temporary AgentCore target
+        if: always()
+        run: rm -f agentcore/aws-targets.json
 
       - name: Verify no AWS credentials are requested
         run: |

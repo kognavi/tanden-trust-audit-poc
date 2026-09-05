@@ -11,7 +11,7 @@ resources:
 permissions:
   rules:
     - capability: shell
-      match: ["npm test", "npm run *", "git status", "git diff*"]
+      match: ["npm test", "npm run check:structure", "npm run check:circular", "npm run check:depcruise", "npm run validate:evidence", "npm run verify", "git status", "git diff*"]
       effect: allow
 ---
 

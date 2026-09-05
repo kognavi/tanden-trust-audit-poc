@@ -55,6 +55,10 @@ jobs:
           npm install --ignore-scripts --no-audit --fund=false
           npm run build
 
+      - name: Synthesize CloudFormation without AWS credentials
+        working-directory: agentcore/cdk
+        run: node dist/bin/cdk.js
+
       - name: Verify no AWS credentials are requested
         run: |
           test -z "${AWS_ACCESS_KEY_ID:-}"

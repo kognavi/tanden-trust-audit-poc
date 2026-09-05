@@ -97,14 +97,17 @@ jobs:
 
       - name: Publish sanitized dry-run result
         if: always()
+        env:
+          DRY_RUN_REGION: ${{ inputs.region }}
+          DRY_RUN_EXIT_CODE: ${{ steps.dryrun.outputs.exit_code }}
         run: |
           {
             echo "## AgentCore Runtime Dry Run"
             echo
             echo "- mode: dry-run only"
-            echo "- region: ${{ inputs.region }}"
+            echo "- region: $DRY_RUN_REGION"
             echo "- deploy executed: NO"
-            echo "- dry-run exit code: ${{ steps.dryrun.outputs.exit_code }}"
+            echo "- dry-run exit code: $DRY_RUN_EXIT_CODE"
             echo
             echo "### Sanitized output"
             echo '```text'

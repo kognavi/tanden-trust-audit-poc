@@ -102,3 +102,15 @@ npm run check:structure
 - 結果説明は日本語で行う。
 - code、API名、AWS service名、識別子は正式名称を維持する。
 - 専門用語には必要に応じて短い説明を付ける。
+
+## AI Development OS
+
+このRepositoryでは、KiroとCodexを同一役割の重複要員ではなく、仕様駆動と独立検証を組み合わせる開発系として使用します。
+
+- non-trivialな変更は原則として `.kiro/specs/<feature>/` に `requirements.md`、`design.md`、`tasks.md` を用意してから実装する。
+- Kiroは主にrequirements、design、task decomposition、implementation orchestrationを担当する。
+- Codexは主にimplementation、debugging、test追加、independent reviewを担当する。
+- security-sensitiveまたはarchitecture-sensitiveな変更は、実装担当とは別のAgentによるreviewを優先する。
+- Kiro Skillsは `.kiro/skills/`、Codex Skillsは `.agents/skills/` に置く。
+- production deployment、IAM権限拡大、security control削除、破壊的操作、大幅なcost増加はHuman Approvalを必須とする。
+- 詳細は `docs/ai-development-os.md` を参照する。

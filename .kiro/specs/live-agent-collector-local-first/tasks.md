@@ -21,6 +21,9 @@
 
 - [x] Select Amazon Bedrock AgentCore Runtime as the AWS-oriented Agent runtime.
 - [ ] Capture one real AgentCore tool-call event by manually running the one-shot workflow.
+- [x] Prepare a minimal Node.js 22 CodeZip Runtime package with one synthetic Strands tool.
+- [x] Add an AWS-free TypeScript preflight for the Runtime package.
+- [x] Add a deployment/cleanup runbook for the one-shot proof.
 - [x] Implement and test mapping of AgentCore response envelopes through the same normalized event contract.
 - [x] Implement and test Evidence production from an AgentCore response fixture.
 - [x] Implement and test local Evidence verification for the AgentCore adapter.

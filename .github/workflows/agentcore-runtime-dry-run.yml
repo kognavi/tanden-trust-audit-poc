@@ -65,6 +65,10 @@ jobs:
       - name: Validate project config
         run: agentcore validate --json
 
+      - name: Install Runtime dependencies for CodeZip bundling
+        working-directory: app/TandenEvidenceDemo
+        run: npm install --ignore-scripts --no-audit --fund=false
+
       - name: Install and build vendored AgentCore CDK scaffold
         working-directory: agentcore/cdk
         run: |

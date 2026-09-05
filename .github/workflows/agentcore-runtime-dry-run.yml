@@ -80,7 +80,7 @@ jobs:
           (
             cd agentcore/cdk
             node dist/bin/cdk.js
-          ) > ../../demo-output/cdk-synth.stdout 2> ../../demo-output/cdk-synth.stderr
+          ) > "$GITHUB_WORKSPACE/demo-output/cdk-synth.stdout" 2> "$GITHUB_WORKSPACE/demo-output/cdk-synth.stderr"
           RC=$?
           set -e
           echo "exit_code=$RC" >> "$GITHUB_OUTPUT"
@@ -149,3 +149,4 @@ jobs:
         run: |
           rm -f agentcore/aws-targets.json
           rm -f demo-output/dry-run.stdout demo-output/dry-run.stderr
+          rm -f demo-output/cdk-synth.stdout demo-output/cdk-synth.stderr

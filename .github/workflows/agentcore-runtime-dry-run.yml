@@ -1,0 +1,120 @@
+name: AgentCore Runtime Dry Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_no_deploy:
+        description: "Select DRY_RUN to preview AgentCore resources without deploying them."
+        required: true
+        default: "NO"
+        type: choice
+        options:
+          - "NO"
+          - "DRY_RUN"
+      region:
+        description: "AWS Region for the deployment preview."
+        required: true
+        default: "ap-northeast-1"
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  dry-run:
+    if: ${{ inputs.confirm_no_deploy == 'DRY_RUN' }}
+    name: Preview minimal AgentCore Runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install AgentCore CLI
+        run: npm install --global @aws/agentcore@0.28.1
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Create ephemeral deployment target
+        env:
+          AWS_REGION: ${{ inputs.region }}
+        run: |
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          ACCOUNT_ID="$ACCOUNT_ID" AWS_REGION="$AWS_REGION" node <<'NODE'
+          const fs = require("node:fs");
+          const target = [{
+            name: "default",
+            description: "One-shot portfolio dry-run target",
+            account: process.env.ACCOUNT_ID,
+            region: process.env.AWS_REGION
+          }];
+          fs.writeFileSync("agentcore/aws-targets.json", JSON.stringify(target, null, 2) + "\n");
+          NODE
+
+      - name: Validate project config
+        run: agentcore validate --json
+
+      - name: Preview deployment without creating resources
+        id: dryrun
+        shell: bash
+        run: |
+          mkdir -p demo-output
+          set +e
+          agentcore deploy --dry-run --json > demo-output/dry-run.stdout 2> demo-output/dry-run.stderr
+          RC=$?
+          set -e
+          echo "exit_code=$RC" >> "$GITHUB_OUTPUT"
+
+          ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          ACCOUNT_ID="$ACCOUNT_ID" node <<'NODE'
+          const fs = require("node:fs");
+          const account = process.env.ACCOUNT_ID;
+          for (const file of ["demo-output/dry-run.stdout", "demo-output/dry-run.stderr"]) {
+            if (!fs.existsSync(file)) continue;
+            let text = fs.readFileSync(file, "utf8");
+            text = text.split(account).join("<redacted-account>");
+            fs.writeFileSync(file + ".sanitized", text, "utf8");
+          }
+          NODE
+
+          if [ "$RC" -ne 0 ]; then
+            echo "AgentCore dry-run failed. Sanitized output follows:"
+            cat demo-output/dry-run.stderr.sanitized || true
+            cat demo-output/dry-run.stdout.sanitized || true
+            exit "$RC"
+          fi
+
+      - name: Publish sanitized dry-run result
+        if: always()
+        run: |
+          {
+            echo "## AgentCore Runtime Dry Run"
+            echo
+            echo "- mode: dry-run only"
+            echo "- region: ${{ inputs.region }}"
+            echo "- deploy executed: NO"
+            echo "- dry-run exit code: ${{ steps.dryrun.outputs.exit_code }}"
+            echo
+            echo "### Sanitized output"
+            echo '```text'
+            cat demo-output/dry-run.stdout.sanitized 2>/dev/null || true
+            cat demo-output/dry-run.stderr.sanitized 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove ephemeral target and raw output
+        if: always()
+        run: |
+          rm -f agentcore/aws-targets.json
+          rm -f demo-output/dry-run.stdout demo-output/dry-run.stderr

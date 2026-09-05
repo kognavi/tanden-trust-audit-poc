@@ -80,6 +80,8 @@ Candidate scope:
 - fixture-based collector and normalized event contract first
 - Amazon Bedrock AgentCore Runtime selected for the manual demo adapter
 - AgentCore response adapter and one-shot manual workflow implemented; actual AWS invocation pending
+- minimal Node.js 22 CodeZip Runtime package prepared with one synthetic Strands tool
+- AWS-free Runtime TypeScript preflight added
 - one security-relevant tool call
 - actor/agent/model/policy/tool/approval/side-effect mapping
 - no raw secrets or unnecessary PII

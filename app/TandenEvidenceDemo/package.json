@@ -1,0 +1,22 @@
+{
+  "name": "tanden-agentcore-evidence-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@strands-agents/sdk": "1.16.0",
+    "express": "5.2.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.1",
+    "typescript": "6.0.3"
+  }
+}

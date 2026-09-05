@@ -1,0 +1,56 @@
+name: AgentCore Runtime Static Check
+
+on:
+  pull_request:
+    paths:
+      - "app/TandenEvidenceDemo/**"
+      - "agentcore/**"
+      - ".github/workflows/agentcore-runtime-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "app/TandenEvidenceDemo/**"
+      - "agentcore/**"
+      - ".github/workflows/agentcore-runtime-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: Type-check minimal AgentCore Runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Install Runtime dependencies
+        working-directory: app/TandenEvidenceDemo
+        run: npm install --ignore-scripts --no-audit --fund=false
+
+      - name: Type-check Runtime
+        working-directory: app/TandenEvidenceDemo
+        run: npm run typecheck
+
+      - name: Install AgentCore CLI for config validation
+        run: npm install --global @aws/agentcore@0.28.1
+
+      - name: Validate AgentCore project config without AWS calls
+        run: |
+          cp agentcore/aws-targets.example.json agentcore/aws-targets.json
+          agentcore validate --json
+          rm -f agentcore/aws-targets.json
+
+      - name: Verify no AWS credentials are requested
+        run: |
+          test -z "${AWS_ACCESS_KEY_ID:-}"
+          test -z "${AWS_SECRET_ACCESS_KEY:-}"
+          test -z "${AWS_SESSION_TOKEN:-}"

@@ -77,6 +77,18 @@ Independent verification
 
 The repository already implements the core evidence integrity pipeline. Live collectors for specific AI agent frameworks are the next product-oriented step.
 
+### Local-first cost policy
+
+This portfolio is intentionally designed to avoid ongoing cloud spend.
+
+- normal development and CI use local/fake dependencies
+- default CI does not request AWS credentials
+- real AWS integration is manual only
+- no persistent RDS/Aurora, NAT Gateway, OpenSearch, always-on ECS/EC2, or provisioned model throughput is required
+- successful AWS demonstrations are preserved as non-sensitive evidence, not as permanently running infrastructure
+
+See [Cost Guardrails](docs/cost-guardrails.md).
+
 ---
 
 ## AI Agent Evidence Profile
@@ -236,7 +248,7 @@ npm run hash
 npm run verify
 ~~~
 
-The default test suite does not require production AWS credentials.
+The default test suite does not require production AWS credentials and does not make real AWS API calls. Real AWS integration is isolated to a manually dispatched workflow.
 
 ---
 

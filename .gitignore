@@ -204,3 +204,8 @@ plan_output.tfplan
 
 # Hardhat flattened output
 flattened.sol
+
+# AgentCore local deployment state
+agentcore/aws-targets.json
+agentcore/.env.local
+agentcore/cdk/

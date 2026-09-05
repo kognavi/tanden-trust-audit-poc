@@ -12,6 +12,8 @@ This directory contains design, security, audit, and product-facing documentatio
 | `architecture-diagram.md` | Product, current, and target diagrams |
 | `roadmap.md` | Product-oriented next steps |
 | `agentcore-live-demo.md` | Manual one-shot Amazon Bedrock AgentCore evidence demo contract |
+| `agentcore-runtime-deploy.md` | Minimal Runtime deployment and cleanup runbook |
+| `agentcore-runtime-preflight.md` | AWS-free Runtime TypeScript preflight |
 | `cost-guardrails.md` | Local-first / AWS-on-demand cost policy |
 | `verification-runbook.md` | Reviewer verification guide |
 

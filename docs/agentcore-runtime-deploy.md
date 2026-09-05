@@ -43,7 +43,7 @@ This does not call AWS.
 
 Use the current CLI release documented by AWS:
 
-    npm install -g @aws/agentcore@0.24.2
+    npm install -g @aws/agentcore@0.28.1
     agentcore --version
 
 The repository contains `agentcore/agentcore.json` and `agentcore/aws-targets.example.json`.
@@ -81,7 +81,7 @@ Expected proof:
 
 ## Cleanup
 
-After the proof is captured, run `agentcore status`, remove the runtime from the AgentCore project configuration, and deploy the updated project so the CLI tears down the removed resources. Then verify in the AWS Console that the Runtime and associated CloudFormation resources are gone.
+After the proof is captured, run `agentcore status`, then use `agentcore remove all` and review `agentcore deploy --dry-run` before the final teardown deploy. After teardown, verify in the AWS Console that the Runtime and associated CloudFormation resources are gone.
 
 ## Evidence to preserve
 

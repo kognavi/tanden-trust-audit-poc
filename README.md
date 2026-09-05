@@ -75,7 +75,7 @@ External trust anchor                 optional
 Independent verification
 ~~~
 
-The repository already implements the core evidence integrity pipeline, a runtime-neutral local collector, and an Amazon Bedrock AgentCore response adapter. The remaining Phase B-2 step is one manually triggered real AgentCore invocation.
+The repository already implements the core evidence integrity pipeline, a runtime-neutral local collector, an Amazon Bedrock AgentCore response adapter, and a minimal one-tool Node.js 22 CodeZip Runtime package. The remaining Phase B-2 step is one manually triggered real AgentCore invocation.
 
 ### Local-first cost policy
 
@@ -266,6 +266,8 @@ Start with:
 - [Verification Runbook](docs/verification-runbook.md)
 - [Portfolio Summary](docs/portfolio-summary.md)
 - [AgentCore Live Demo](docs/agentcore-live-demo.md)
+- [Minimal AgentCore Runtime Deployment](docs/agentcore-runtime-deploy.md)
+- [AgentCore Runtime Preflight](docs/agentcore-runtime-preflight.md)
 - [Cost Guardrails](docs/cost-guardrails.md)
 - [Roadmap](docs/roadmap.md)
 

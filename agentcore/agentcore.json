@@ -7,15 +7,23 @@
     "Project": "tanden-trust-audit-poc",
     "Environment": "demo"
   },
-  "runtimes": [
+  "memories": [],
+  "credentials": [],
+  "payments": [],
+  "evaluators": [],
+  "onlineEvalConfigs": [],
+  "agentCoreGateways": [],
+  "policyEngines": [],
+  "agents": [
     {
+      "type": "AgentCoreRuntime",
       "name": "TandenEvidenceDemo",
       "build": "CodeZip",
       "entrypoint": "main.js",
       "codeLocation": "app/TandenEvidenceDemo/",
       "runtimeVersion": "NODE_22",
-      "networkMode": "PUBLIC",
       "protocol": "HTTP",
+      "networkMode": "PUBLIC",
       "envVars": [
         {
           "name": "AWS_REGION",
@@ -31,12 +39,5 @@
         "CostMode": "one-shot"
       }
     }
-  ],
-  "memories": [],
-  "credentials": [],
-  "payments": [],
-  "evaluators": [],
-  "onlineEvalConfigs": [],
-  "agentCoreGateways": [],
-  "policyEngines": []
+  ]
 }

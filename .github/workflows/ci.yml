@@ -6,14 +6,13 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test and verify evidence
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      contents: read
 
     steps:
       - name: Checkout repository
@@ -34,17 +33,8 @@ jobs:
       - name: Validate sample evidence
         run: npm run validate:evidence
 
+      - name: Validate AI Agent evidence sample
+        run: npm run validate:agent-evidence
+
       - name: Verify sample evidence
         run: npm run verify
-
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
-        with:
-          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
-          aws-region: ap-northeast-1
-
-      - name: Run AWS S3 integration test
-        env:
-          RUN_AWS_INTEGRATION_TESTS: "1"
-          AWS_S3_INTEGRATION_BUCKET: tanden-trust-audit-poc-test-bucket
-        run: npm run test:aws:s3

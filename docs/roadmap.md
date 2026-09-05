@@ -8,6 +8,8 @@ Blockchain/Web3 remains an optional external trust mechanism rather than the pri
 
 The next milestones prioritize market validation and live AI-agent evidence collection over adding more cryptographic components.
 
+The implementation policy is **Local-first / AWS-on-demand**. Normal development and CI should not make real AWS calls. A real AWS run is used only for short, explicit portfolio demonstrations.
+
 ## Completed Foundation
 
 ### Local evidence integrity
@@ -67,19 +69,45 @@ Define the minimum security-relevant context required to reconstruct and verify 
 
 Status: **Next**
 
+Implementation policy: **Local-first**. Build and test the collector with fixtures and local/fake dependencies first. Add one manually triggered AWS demo only after the local path is complete.
+
 Goal:
 
 Connect one real AI agent runtime to the evidence pipeline.
 
 Candidate scope:
 
-- AWS Bedrock AgentCore or another AWS-oriented agent runtime
+- fixture-based collector and normalized event contract first
+- AWS Bedrock AgentCore or another AWS-oriented agent runtime as a later manual demo adapter
 - one security-relevant tool call
 - actor/agent/model/policy/tool/approval/side-effect mapping
 - no raw secrets or unnecessary PII
 - process through `EvidenceProcessingService`
 
 Acceptance criteria:
+
+1. capture one synthetic/fixture tool-call event locally
+2. convert it into the AI Agent Evidence profile
+3. validate it
+4. sign it locally
+5. persist it with local/test dependencies
+6. append ledger event
+7. verify it after reload
+8. tamper with evidence and show verification failure
+9. manually capture one real AWS tool-call event
+10. run the same mapping path and preserve a non-sensitive demo record
+
+Cost constraints:
+
+- no real AWS calls in default CI
+- no persistent RDS/Aurora
+- no NAT Gateway
+- no always-on ECS/EC2
+- no OpenSearch
+- no provisioned model throughput
+- real AWS validation must be manual and time-bounded
+
+Legacy acceptance criteria below are superseded by the local-first sequence above.
 
 1. capture one real tool-call event
 2. convert it into the AI Agent Evidence profile
@@ -183,6 +211,19 @@ Possible mechanisms:
 Selection should be driven by customer trust requirements, not by technology preference.
 
 ## Current Priority Order
+
+1. local-first AI Agent collector and mapper
+2. one manual live AWS demonstration
+3. auditor-facing evidence bundle
+4. practitioner interviews / design partners
+5. AWS production hardening
+6. completeness/gap verification
+7. control-framework mapping
+8. optional external anchor hardening
+
+Detailed implementation spec: `.kiro/specs/live-agent-collector-local-first/`
+
+Previous ordering retained below for history.
 
 1. AI Agent runtime collector
 2. auditor-facing evidence bundle

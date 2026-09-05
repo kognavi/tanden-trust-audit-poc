@@ -87,6 +87,18 @@ AI Agent evidence profileの基準文書:
 
 Semgrep、CodeQL、Dependabot、dependency-cruiser、Madge、automated tests、IAM least privilege、AWS KMS separation of duties、CloudTrail auditabilityを維持します。
 
+## Cost Guardrails
+
+このRepositoryはportfolio PoCであり、default運用は **Local-first / AWS-on-demand** とします。
+
+- 通常のdevelopmentとCIではreal AWS APIを呼ばない。
+- AWS credentials/OIDCをdefault CIへ要求しない。
+- NAT Gateway、persistent RDS/Aurora、OpenSearch、always-on ECS/EC2、provisioned model throughputをbaselineへ追加しない。
+- real AWS integrationはmanual triggerかつ明示的Human Approvalを必要とする。
+- AWS上の実証ではshort-lived resourceを優先し、実証後にcleanupする。
+- recurring AWS costを発生させる変更はmerge前にHuman Approvalを必須とする。
+- 詳細は `docs/cost-guardrails.md` を参照する。
+
 ## Validation
 
 実装変更後は、原則としてpackage scriptsをSingle Interfaceとして使用します。

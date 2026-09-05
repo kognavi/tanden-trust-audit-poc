@@ -19,14 +19,14 @@
 
 ## Phase B-2: Manual Live AWS Demo
 
-- [ ] Select one AWS-oriented Agent runtime.
-- [ ] Capture one real tool-call event.
-- [ ] Map it through the same normalized event contract.
-- [ ] Produce Evidence.
-- [ ] Verify Evidence.
-- [ ] Tamper and verify failure.
-- [ ] Record a non-sensitive demo result.
-- [ ] Clean up any billable resources.
+- [x] Select Amazon Bedrock AgentCore Runtime as the AWS-oriented Agent runtime.
+- [ ] Capture one real AgentCore tool-call event by manually running the one-shot workflow.
+- [x] Implement and test mapping of AgentCore response envelopes through the same normalized event contract.
+- [x] Implement and test Evidence production from an AgentCore response fixture.
+- [x] Implement and test local Evidence verification for the AgentCore adapter.
+- [x] Implement and test tamper verification failure for the AgentCore adapter.
+- [ ] Record a non-sensitive result from an actual AWS invocation.
+- [ ] Clean up the manually created AgentCore Runtime after the proof, if it is no longer needed.
 
 ## Non-Goals
 

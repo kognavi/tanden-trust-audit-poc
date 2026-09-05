@@ -56,7 +56,7 @@ The intended product boundary is an **AI Agent Evidence Layer** that sits betwee
 ~~~text
 AI Agent / SaaS
       ↓
-Runtime collector / adapter           planned
+Runtime collector / adapter           local + AgentCore adapter implemented
       ↓
 AI Agent Evidence envelope
       ↓
@@ -75,7 +75,7 @@ External trust anchor                 optional
 Independent verification
 ~~~
 
-The repository already implements the core evidence integrity pipeline. Live collectors for specific AI agent frameworks are the next product-oriented step.
+The repository already implements the core evidence integrity pipeline, a runtime-neutral local collector, and an Amazon Bedrock AgentCore response adapter. The remaining Phase B-2 step is one manually triggered real AgentCore invocation.
 
 ### Local-first cost policy
 
@@ -201,7 +201,8 @@ This is a PoC, not a production SaaS.
 
 Not yet complete:
 
-- live Bedrock AgentCore / LangGraph / OpenAI / other runtime collectors
+- one real Amazon Bedrock AgentCore Runtime invocation and preserved sanitized demo result
+- additional LangGraph / OpenAI / other runtime collectors
 - production IAM and KMS separation-of-duties deployment
 - production PostgreSQL provisioning, HA, backup, and role separation
 - deployed S3 Object Lock retention policy
@@ -264,6 +265,8 @@ Start with:
 - [Control Mapping](docs/control-mapping.md)
 - [Verification Runbook](docs/verification-runbook.md)
 - [Portfolio Summary](docs/portfolio-summary.md)
+- [AgentCore Live Demo](docs/agentcore-live-demo.md)
+- [Cost Guardrails](docs/cost-guardrails.md)
 - [Roadmap](docs/roadmap.md)
 
 See [docs/README.md](docs/README.md) for the full documentation index.

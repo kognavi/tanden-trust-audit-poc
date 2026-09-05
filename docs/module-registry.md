@@ -29,6 +29,8 @@ Evidence → Schema → Sign → Store → Ledger
 | lib/evidence-processing-service.js | EvidenceProcessingService, EvidenceValidationError, EvidenceStoreWriteError, EvidenceLedgerWriteError | Application | 既存Schema validator、signing provider、PgEvidenceStore互換Store、PgSigningLogger互換Ledgerをcomposeし、`Schema → Sign → Store → Ledger`の順序とpartial failure semanticsを単一APIで強制 | tests/evidence-processing-service.test.js |
 | lib/normalized-agent-event.js | validateNormalizedAgentEvent, assertNormalizedAgentEvent, NormalizedAgentEventValidationError | Ingress / Schema | runtime-neutralなAgent tool-call event contractをvalidateし、raw promptやsecret-bearing fieldなど想定外入力をfail closedで拒否 | tests/normalized-agent-event.test.js |
 | lib/collectors/fixture-agent-collector.js | FixtureAgentCollector | Ingress Adapter | synthetic fixtureをruntime event相当として読み出し、Normalized Agent Event contractを通してisolated copyを返すlocal-first adapter | tests/fixture-agent-collector.test.js |
+| lib/collectors/bedrock-agentcore-collector.js | BedrockAgentCoreCollector, BedrockAgentCoreCollectorError, parseRuntimeResponse | Ingress Adapter | AgentCore Runtime response envelopeからvalidated auditEventだけを抽出し、invoked session/traceとのcorrelation mismatchをfail closedで拒否 | tests/bedrock-agentcore-collector.test.js |
+| lib/agentcore-live-demo.js | AgentCoreLiveDemoError, runAgentCoreLiveDemo | Application / Demo | live AgentCore responseを既存mapperとEvidenceProcessingServiceへ通し、local ECDSAでoriginal PASS / tampered FAILを検証し、sanitized summaryのみ生成 | tests/agentcore-live-demo.test.js |
 | lib/ai-agent-evidence-mapper.js | AI_AGENT_EVIDENCE_SCHEMA_VERSION, HASH_ALGORITHM, mapNormalizedAgentEventToEvidence | Evidence Mapping | normalized Agent eventをAWS SDK shapeへ依存せずAI Agent Evidence profileへ変換し、EvidenceProcessingService前段へ渡す | tests/ai-agent-evidence-mapper.test.js, tests/ai-agent-collector-e2e.test.js |
 | lib/verified-anchor-service.js | VerifiedAnchorService, TrustedKeyResolver, VerificationGateError, AlreadyAnchoredError, AnchorTransactionError | External Proof / Application | signed metadataのkeyIdをdeployment trusted keyringへbindし、既存sidecar verifierを内部実行して、Evidenceから再計算したverified bytes32 digestだけをWeb3 clientへ渡す | tests/verified-anchor-service.test.js |
 
@@ -37,6 +39,7 @@ Evidence → Schema → Sign → Store → Ledger
 - `tests/local-sidecar-e2e.test.js`: local storeでEvidenceとsidecar metadataの保存・検証・改ざん検知
 - `tests/s3-sidecar-e2e.test.js`: fake Amazon S3 clientで同flowを検証
 - `tests/ai-agent-collector-e2e.test.js`: fixture Agent event → normalized contract → AI Agent Evidence mapper → EvidenceProcessingService → local ECDSA → Store/Ledger test doubles → signature verification / tamper failure のlocal-first E2E
+- `tests/agentcore-live-demo.test.js`: sanitized AgentCore response fixture → AgentCore collector → mapper → EvidenceProcessingService → original PASS / tampered FAIL のlive-adapter preflight
 
 ## Known Issues
 

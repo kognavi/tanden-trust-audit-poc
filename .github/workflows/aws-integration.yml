@@ -1,0 +1,49 @@
+name: AWS Integration Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_cost:
+        description: "Type RUN to allow real AWS API calls for this one demo run."
+        required: true
+        default: "NO"
+        type: choice
+        options:
+          - "NO"
+          - "RUN"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  aws-integration:
+    if: ${{ inputs.confirm_cost == 'RUN' }}
+    name: Manual AWS integration demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Run AWS S3 integration test
+        env:
+          RUN_AWS_INTEGRATION_TESTS: "1"
+          AWS_S3_INTEGRATION_BUCKET: tanden-trust-audit-poc-test-bucket
+        run: npm run test:aws:s3

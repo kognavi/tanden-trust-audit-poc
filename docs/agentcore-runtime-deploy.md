@@ -88,3 +88,19 @@ After the proof is captured, run `agentcore status`, then use `agentcore remove 
 Preserve only a sanitized proof under `docs/demo/` containing the run date, Region, Runtime ARN SHA-256, Evidence ID, trace/session correlation IDs, Evidence digest, original PASS, tampered FAIL, and cleanup confirmation.
 
 Never preserve raw Runtime request/response data, credentials, secrets, or unnecessary PII.
+
+## GitHub Actions dry-run
+
+After this Runtime package is merged to `main`, use the manual workflow:
+
+- `AgentCore Runtime Dry Run`
+- `confirm_no_deploy = DRY_RUN`
+- Region = `ap-northeast-1`
+
+The workflow assumes the existing repository OIDC role, derives the AWS account ID with STS, creates an ephemeral local `aws-targets.json`, validates the AgentCore config, and runs:
+
+    agentcore deploy --dry-run --json
+
+It does not run `agentcore deploy` without `--dry-run` and therefore does not create the Runtime or CloudFormation resources.
+
+The workflow publishes a sanitized job summary and deletes the temporary target plus raw dry-run files from the runner.

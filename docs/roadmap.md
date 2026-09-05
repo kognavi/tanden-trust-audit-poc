@@ -67,7 +67,7 @@ Define the minimum security-relevant context required to reconstruct and verify 
 
 ## Phase B: Live Runtime Collector
 
-Status: **Next**
+Status: **In progress**
 
 Implementation policy: **Local-first**. Build and test the collector with fixtures and local/fake dependencies first. Add one manually triggered AWS demo only after the local path is complete.
 
@@ -78,7 +78,8 @@ Connect one real AI agent runtime to the evidence pipeline.
 Candidate scope:
 
 - fixture-based collector and normalized event contract first
-- AWS Bedrock AgentCore or another AWS-oriented agent runtime as a later manual demo adapter
+- Amazon Bedrock AgentCore Runtime selected for the manual demo adapter
+- AgentCore response adapter and one-shot manual workflow implemented; actual AWS invocation pending
 - one security-relevant tool call
 - actor/agent/model/policy/tool/approval/side-effect mapping
 - no raw secrets or unnecessary PII

@@ -10,12 +10,12 @@
 
 ## Phase B-1: Collector Skeleton
 
-- [ ] Add normalized Agent event contract.
-- [ ] Add fixture-based collector adapter.
-- [ ] Add AI Agent Evidence mapper.
-- [ ] Add unit tests for mapping and data minimization.
-- [ ] Add negative tests for missing policy/approval context.
-- [ ] Run through `EvidenceProcessingService` with local/test dependencies.
+- [x] Add normalized Agent event contract.
+- [x] Add fixture-based collector adapter.
+- [x] Add AI Agent Evidence mapper.
+- [x] Add unit tests for mapping and data minimization.
+- [x] Add negative tests for missing policy/approval context.
+- [x] Run through `EvidenceProcessingService` with local/test dependencies.
 
 ## Phase B-2: Manual Live AWS Demo
 

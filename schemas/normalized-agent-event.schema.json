@@ -1,0 +1,307 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/tanden-trust-audit-poc/schemas/normalized-agent-event.schema.json",
+  "title": "Normalized AI Agent Tool Call Event",
+  "description": "Runtime-neutral contract consumed by the AI Agent Evidence mapper. Raw prompts, responses, credentials, and secret-bearing payloads are intentionally outside this contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidenceId",
+    "eventType",
+    "occurredAt",
+    "sourceSystem",
+    "actor",
+    "agent",
+    "model",
+    "execution",
+    "policy",
+    "action",
+    "approval",
+    "sideEffect",
+    "contextReferences",
+    "artifacts",
+    "metadata"
+  ],
+  "properties": {
+    "evidenceId": {
+      "type": "string",
+      "pattern": "^evd-[0-9]{4}-[0-9]{6}$"
+    },
+    "eventType": {
+      "type": "string",
+      "const": "AGENT_TOOL_CALL"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sourceSystem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["human", "service", "agent"]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principalRef": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agentId", "agentVersion"],
+      "properties": {
+        "agentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agentVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "framework": {
+          "type": "string",
+          "minLength": 1
+        },
+        "promptConfigDigestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "modelId"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "modelId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "modelVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traceId", "sessionId"],
+      "properties": {
+        "traceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "taskId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyId", "policyVersion", "decision"],
+      "properties": {
+        "policyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["allow", "deny", "not_evaluated"]
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toolName", "operation", "target"],
+      "properties": {
+        "toolName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "enum": ["READ", "WRITE", "EXECUTE", "SEND", "DELETE", "OTHER"]
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "status"],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["not_required", "pending", "approved", "rejected"]
+        },
+        "approverId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decidedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": ["approved", "rejected"]
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["approverId", "decidedAt"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "required": {
+                "const": false
+              }
+            },
+            "required": ["required"]
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": "not_required"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "sideEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "resource", "outcome"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": ["NONE", "READ_ONLY", "EXTERNAL_WRITE", "MESSAGE_SENT", "RESOURCE_DELETED", "OTHER"]
+        },
+        "resource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["SUCCESS", "FAILED", "BLOCKED", "UNKNOWN"]
+        }
+      }
+    },
+    "contextReferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "reference"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["INPUT", "RAG_DOCUMENT", "POLICY", "TOOL_RESULT", "OTHER"]
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digestSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "reference"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["OUTPUT", "REPORT", "CHANGESET", "MESSAGE", "OTHER"]
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digestSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "containsPersonalData", "containsSecrets", "notes"],
+      "properties": {
+        "environment": {
+          "type": "string",
+          "enum": ["demo", "test", "development"]
+        },
+        "containsPersonalData": {
+          "type": "boolean"
+        },
+        "containsSecrets": {
+          "const": false
+        },
+        "retentionClass": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

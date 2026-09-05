@@ -71,13 +71,33 @@ jobs:
           npm install --ignore-scripts --no-audit --fund=false
           npm run build
 
+      - name: Preflight CDK synth with full diagnostics
+        id: synth
+        shell: bash
+        run: |
+          mkdir -p demo-output
+          set +e
+          (
+            cd agentcore/cdk
+            node dist/bin/cdk.js
+          ) > ../../demo-output/cdk-synth.stdout 2> ../../demo-output/cdk-synth.stderr
+          RC=$?
+          set -e
+          echo "exit_code=$RC" >> "$GITHUB_OUTPUT"
+          if [ "$RC" -ne 0 ]; then
+            echo "Direct CDK synth failed. Diagnostic output follows:"
+            cat demo-output/cdk-synth.stderr || true
+            cat demo-output/cdk-synth.stdout || true
+            exit "$RC"
+          fi
+
       - name: Preview deployment without creating resources
         id: dryrun
         shell: bash
         run: |
           mkdir -p demo-output
           set +e
-          agentcore deploy --dry-run --json > demo-output/dry-run.stdout 2> demo-output/dry-run.stderr
+          AGENTCORE_DEBUG=1 agentcore deploy --dry-run --json > demo-output/dry-run.stdout 2> demo-output/dry-run.stderr
           RC=$?
           set -e
           echo "exit_code=$RC" >> "$GITHUB_OUTPUT"
@@ -105,6 +125,7 @@ jobs:
         if: always()
         env:
           DRY_RUN_REGION: ${{ inputs.region }}
+          SYNTH_EXIT_CODE: ${{ steps.synth.outputs.exit_code }}
           DRY_RUN_EXIT_CODE: ${{ steps.dryrun.outputs.exit_code }}
         run: |
           {
@@ -113,6 +134,7 @@ jobs:
             echo "- mode: dry-run only"
             echo "- region: $DRY_RUN_REGION"
             echo "- deploy executed: NO"
+            echo "- direct CDK synth exit code: $SYNTH_EXIT_CODE"
             echo "- dry-run exit code: $DRY_RUN_EXIT_CODE"
             echo
             echo "### Sanitized output"

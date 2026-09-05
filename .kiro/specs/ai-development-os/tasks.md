@@ -4,8 +4,8 @@
 - [x] Preserve existing trust boundary and Terraform architecture
 - [x] Add AI Development OS specification
 - [x] Add shared governance and portable MCP configuration
-- [ ] Add Kiro specialized Agents and Skills
-- [ ] Add Codex Skills and safe project defaults
-- [ ] Add deterministic structure test
+- [x] Add Kiro specialized Agents and Skills
+- [x] Add Codex Skills and safe project defaults
+- [x] Add deterministic structure test
 - [ ] Confirm PR CI is green
-- [ ] Independent final diff review
+- [x] Independent final diff review

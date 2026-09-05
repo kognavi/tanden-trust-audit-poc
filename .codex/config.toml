@@ -1,0 +1,7 @@
+# Project-local safe defaults. Applied only when Codex trusts this project.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+allow_login_shell = false
+
+[sandbox_workspace_write]
+network_access = false

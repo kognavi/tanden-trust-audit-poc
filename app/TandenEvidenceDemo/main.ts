@@ -232,7 +232,7 @@ app.post("/invocations", async (req: Request, res: Response) => {
     });
 
     await agent.invoke(parsed.prompt, {
-      cancellationSignal: AbortSignal.timeout(15_000),
+      cancelSignal: AbortSignal.timeout(15_000),
     });
 
     if (toolCallCount !== 1 || auditEvent === null) {

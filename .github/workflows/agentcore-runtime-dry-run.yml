@@ -65,6 +65,12 @@ jobs:
       - name: Validate project config
         run: agentcore validate --json
 
+      - name: Install and build vendored AgentCore CDK scaffold
+        working-directory: agentcore/cdk
+        run: |
+          npm install --ignore-scripts --no-audit --fund=false
+          npm run build
+
       - name: Preview deployment without creating resources
         id: dryrun
         shell: bash

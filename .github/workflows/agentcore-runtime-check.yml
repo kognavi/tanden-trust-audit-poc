@@ -49,6 +49,12 @@ jobs:
           agentcore validate --json
           rm -f agentcore/aws-targets.json
 
+      - name: Build vendored AgentCore CDK scaffold without AWS calls
+        working-directory: agentcore/cdk
+        run: |
+          npm install --ignore-scripts --no-audit --fund=false
+          npm run build
+
       - name: Verify no AWS credentials are requested
         run: |
           test -z "${AWS_ACCESS_KEY_ID:-}"

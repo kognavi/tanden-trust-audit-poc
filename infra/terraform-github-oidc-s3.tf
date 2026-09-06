@@ -22,7 +22,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_caller_identity" "current" {}
 
 # ---------------------------------------------------------------------
 # 変数定義
@@ -175,28 +174,6 @@ resource "aws_iam_role_policy" "s3_test_access" {
   name   = "s3-integration-test-access"
   role   = aws_iam_role.gh_actions_tanden_audit_poc.id
   policy = data.aws_iam_policy_document.s3_test_access.json
-}
-
-# ---------------------------------------------------------------------
-# AgentCore dry-run用 CloudFormation 読み取り最小権限
-# ---------------------------------------------------------------------
-
-data "aws_iam_policy_document" "agentcore_dry_run_read" {
-  statement {
-    sid     = "DescribeAgentCoreDemoStack"
-    effect  = "Allow"
-    actions = ["cloudformation:DescribeStacks"]
-
-    resources = [
-      "arn:aws:cloudformation:${var.aws_region}:${data.aws_caller_identity.current.account_id}:stack/AgentCore-TandenEvidenceDemo-default/*"
-    ]
-  }
-}
-
-resource "aws_iam_role_policy" "agentcore_dry_run_read" {
-  name   = "agentcore-dry-run-read"
-  role   = aws_iam_role.gh_actions_tanden_audit_poc.id
-  policy = data.aws_iam_policy_document.agentcore_dry_run_read.json
 }
 
 # ---------------------------------------------------------------------

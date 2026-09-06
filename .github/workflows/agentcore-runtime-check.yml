@@ -55,12 +55,118 @@ jobs:
           npm run build
 
       - name: Synthesize CloudFormation without AWS credentials
-        working-directory: agentcore/cdk
-        run: node dist/bin/cdk.js
+        shell: bash
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/demo-output/static-cdk.out"
+          mkdir -p "$GITHUB_WORKSPACE/demo-output"
+          (
+            cd agentcore/cdk
+            CDK_OUTDIR="$GITHUB_WORKSPACE/demo-output/static-cdk.out" node dist/bin/cdk.js
+          )
+
+      - name: Verify least-privilege Runtime policy in synthesized template
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const outDir = path.join(process.cwd(), "demo-output", "static-cdk.out");
+          const files = fs.readdirSync(outDir).filter((name) => name.endsWith(".template.json"));
+          if (files.length !== 1) {
+            throw new Error(`Expected exactly one synthesized template, found ${files.length}`);
+          }
+
+          const template = JSON.parse(fs.readFileSync(path.join(outDir, files[0]), "utf8"));
+          const policies = Object.values(template.Resources ?? {}).filter(
+            (resource) => resource?.Type === "AWS::IAM::Policy"
+          );
+          if (policies.length !== 1) {
+            throw new Error(`Expected exactly one AWS::IAM::Policy, found ${policies.length}`);
+          }
+
+          const statements = policies[0]?.Properties?.PolicyDocument?.Statement ?? [];
+          const actions = statements.flatMap((statement) =>
+            Array.isArray(statement.Action) ? statement.Action : [statement.Action]
+          ).filter(Boolean);
+
+          const forbidden = [
+            "bedrock:CountTokens",
+            "logs:GetLogEvents",
+            "logs:FilterLogEvents",
+            "logs:PutResourcePolicy",
+            "bedrock-agentcore:GetConfigurationBundle",
+            "bedrock-agentcore:GetConfigurationBundleVersion",
+            "bedrock-agentcore:ListConfigurationBundles",
+            "bedrock-agentcore:ListConfigurationBundleVersions",
+            "bedrock-agentcore:CreateConfigurationBundle",
+            "bedrock-agentcore:UpdateConfigurationBundle",
+            "bedrock-agentcore:DeleteConfigurationBundle"
+          ];
+          for (const action of forbidden) {
+            if (actions.includes(action)) {
+              throw new Error(`Forbidden broad Runtime permission remains: ${action}`);
+            }
+          }
+
+          const required = [
+            "bedrock:InvokeModel",
+            "bedrock:InvokeModelWithResponseStream",
+            "xray:PutTraceSegments",
+            "xray:PutTelemetryRecords",
+            "logs:DescribeLogGroups",
+            "logs:CreateLogGroup",
+            "logs:DescribeLogStreams",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ];
+          for (const action of required) {
+            if (!actions.includes(action)) {
+              throw new Error(`Required Runtime permission missing: ${action}`);
+            }
+          }
+
+          const policyJson = JSON.stringify(policies[0].Properties.PolicyDocument);
+          for (const expected of [
+            "inference-profile/jp.amazon.nova-2-lite-v1:0",
+            "ap-northeast-1::foundation-model/amazon.nova-2-lite-v1:0",
+            "ap-northeast-3::foundation-model/amazon.nova-2-lite-v1:0",
+            "/aws/bedrock-agentcore/runtimes/*"
+          ]) {
+            if (!policyJson.includes(expected)) {
+              throw new Error(`Expected scoped policy resource missing: ${expected}`);
+            }
+          }
+
+          for (const forbiddenResource of ["foundation-model/*", "inference-profile/*"]) {
+            if (policyJson.includes(forbiddenResource)) {
+              throw new Error(`Broad Bedrock resource remains: ${forbiddenResource}`);
+            }
+          }
+
+          const wildcardStatements = statements.filter((statement) => statement.Resource === "*");
+          const allowedWildcardActions = new Set([
+            "xray:PutTraceSegments",
+            "xray:PutTelemetryRecords",
+            "logs:DescribeLogGroups"
+          ]);
+          for (const statement of wildcardStatements) {
+            const statementActions = Array.isArray(statement.Action) ? statement.Action : [statement.Action];
+            for (const action of statementActions) {
+              if (!allowedWildcardActions.has(action)) {
+                throw new Error(`Unexpected wildcard Resource permission: ${action}`);
+              }
+            }
+          }
+
+          console.log("Least-privilege Runtime policy assertions passed.");
+          NODE
 
       - name: Cleanup temporary AgentCore target
         if: always()
-        run: rm -f agentcore/aws-targets.json
+        run: |
+          rm -f agentcore/aws-targets.json
+          rm -rf demo-output/static-cdk.out
 
       - name: Verify no AWS credentials are requested
         run: |

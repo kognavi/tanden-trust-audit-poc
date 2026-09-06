@@ -8,7 +8,7 @@ import {
   type CustomJWTAuthorizerConfig,
   type HarnessDeploymentConfig,
 } from '@aws/agentcore-cdk';
-import { Aspects, Aws, CfnOutput, type IAspect, Stack, type StackProps } from 'aws-cdk-lib';
+import { Aspects, Aws, CfnOutput, CfnResource, type IAspect, Stack, type StackProps } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
@@ -96,11 +96,7 @@ const NOVA_2_LITE_JP_PROFILE_ID = 'jp.amazon.nova-2-lite-v1:0';
  */
 class TandenEvidenceDemoRuntimeLeastPrivilegeAspect implements IAspect {
   visit(node: Construct): void {
-    if (!(node instanceof iam.CfnPolicy)) {
-      return;
-    }
-
-    if (!node.node.path.includes('RuntimeExecutionRole/DefaultPolicy/Resource')) {
+    if (!(node instanceof CfnResource) || node.cfnResourceType !== 'AWS::IAM::Policy') {
       return;
     }
 
@@ -201,7 +197,11 @@ export class AgentCoreStack extends Stack {
     // For this minimal portfolio PoC, replace only that generated default policy
     // with the reviewed least-privilege document above.
     if (spec.name === TANDEN_DEMO_PROJECT_NAME) {
-      Aspects.of(this.application).add(new TandenEvidenceDemoRuntimeLeastPrivilegeAspect());
+      // Apply at stack scope because the L3 may attach the generated IAM policy
+      // outside the AgentCoreApplication construct subtree. The demo stack
+      // intentionally synthesizes exactly one AWS::IAM::Policy; the static check
+      // below enforces that invariant before this customization can be accepted.
+      Aspects.of(this).add(new TandenEvidenceDemoRuntimeLeastPrivilegeAspect());
     }
 
     // Create AgentCoreMcp if there are gateways configured

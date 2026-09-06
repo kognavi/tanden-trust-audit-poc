@@ -95,6 +95,72 @@ jobs:
             exit "$RC"
           fi
 
+      - name: Build sanitized CloudFormation resource inventory
+        shell: bash
+        run: |
+          mkdir -p demo-output
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const outDir = path.join(process.cwd(), "agentcore", "cdk", "cdk.out");
+          const files = fs.existsSync(outDir)
+            ? fs.readdirSync(outDir).filter((name) => name.endsWith(".template.json")).sort()
+            : [];
+
+          if (files.length === 0) {
+            throw new Error(`No synthesized CloudFormation templates found in ${outDir}`);
+          }
+
+          const rows = [];
+          const counts = new Map();
+
+          for (const file of files) {
+            const template = JSON.parse(fs.readFileSync(path.join(outDir, file), "utf8"));
+            for (const [logicalId, resource] of Object.entries(template.Resources ?? {})) {
+              const type = resource?.Type ?? "UNKNOWN";
+              const propertyKeys = Object.keys(resource?.Properties ?? {}).sort();
+              rows.push({
+                template: file,
+                logicalId,
+                type,
+                propertyKeys,
+              });
+              counts.set(type, (counts.get(type) ?? 0) + 1);
+            }
+          }
+
+          const lines = [];
+          lines.push("## Synthesized CloudFormation Resource Inventory");
+          lines.push("");
+          lines.push("> Safe inventory only: logical IDs, resource types, and property names. No property values are emitted.");
+          lines.push("");
+          lines.push("### Counts by resource type");
+          lines.push("");
+          lines.push("| Resource type | Count |");
+          lines.push("| --- | ---: |");
+          for (const [type, count] of [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+            lines.push(`| \`${type}\` | ${count} |`);
+          }
+          lines.push("");
+          lines.push("### Resource list");
+          lines.push("");
+          lines.push("| Template | Logical ID | Resource type | Property names |");
+          lines.push("| --- | --- | --- | --- |");
+          for (const row of rows.sort((a, b) =>
+            a.template.localeCompare(b.template) ||
+            a.type.localeCompare(b.type) ||
+            a.logicalId.localeCompare(b.logicalId)
+          )) {
+            const props = row.propertyKeys.length ? row.propertyKeys.map((p) => `\`${p}\``).join(", ") : "—";
+            lines.push(`| \`${row.template}\` | \`${row.logicalId}\` | \`${row.type}\` | ${props} |`);
+          }
+          lines.push("");
+          lines.push(`**Total synthesized resources:** ${rows.length}`);
+
+          fs.writeFileSync("demo-output/cdk-resource-inventory.md", lines.join("\n") + "\n");
+          NODE
+
       - name: Preview deployment without creating resources
         id: dryrun
         shell: bash
@@ -146,6 +212,8 @@ jobs:
             cat demo-output/dry-run.stdout.sanitized 2>/dev/null || true
             cat demo-output/dry-run.stderr.sanitized 2>/dev/null || true
             echo '```'
+            echo
+            cat demo-output/cdk-resource-inventory.md 2>/dev/null || true
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove ephemeral target and raw output
@@ -154,3 +222,4 @@ jobs:
           rm -f agentcore/aws-targets.json
           rm -f demo-output/dry-run.stdout demo-output/dry-run.stderr
           rm -f demo-output/cdk-synth.stdout demo-output/cdk-synth.stderr
+          rm -f demo-output/cdk-resource-inventory.md

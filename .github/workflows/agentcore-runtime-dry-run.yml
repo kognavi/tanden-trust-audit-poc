@@ -162,6 +162,106 @@ jobs:
           fs.writeFileSync("demo-output/cdk-resource-inventory.md", lines.join("\n") + "\n");
           NODE
 
+      - name: Extract sanitized IAM policy actions and resources
+        shell: bash
+        run: |
+          mkdir -p demo-output
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const outDir = path.join(process.cwd(), "demo-output", "cdk.out");
+          const files = fs.existsSync(outDir)
+            ? fs.readdirSync(outDir).filter((name) => name.endsWith(".template.json")).sort()
+            : [];
+
+          if (files.length === 0) {
+            throw new Error(`No synthesized CloudFormation templates found in ${outDir}`);
+          }
+
+          function redactString(value) {
+            return String(value)
+              .replace(/\b\d{12}\b/g, "<redacted-account>")
+              .replace(/AKIA[0-9A-Z]{16}/g, "<redacted-access-key>");
+          }
+
+          function sanitize(value) {
+            if (typeof value === "string") return redactString(value);
+            if (Array.isArray(value)) return value.map(sanitize);
+            if (value && typeof value === "object") {
+              return Object.fromEntries(
+                Object.entries(value).map(([k, v]) => [k, sanitize(v)])
+              );
+            }
+            return value;
+          }
+
+          function asList(value) {
+            return Array.isArray(value) ? value : [value];
+          }
+
+          const rows = [];
+          for (const file of files) {
+            const template = JSON.parse(fs.readFileSync(path.join(outDir, file), "utf8"));
+            for (const [logicalId, resource] of Object.entries(template.Resources ?? {})) {
+              if (resource?.Type !== "AWS::IAM::Policy") continue;
+
+              const statements = asList(resource?.Properties?.PolicyDocument?.Statement ?? []);
+              statements.forEach((statement, index) => {
+                const actions = asList(statement?.Action ?? []).map(sanitize);
+                const resources = asList(statement?.Resource ?? []).map(sanitize);
+                rows.push({
+                  template: file,
+                  logicalId,
+                  statement: index + 1,
+                  effect: statement?.Effect ?? "UNKNOWN",
+                  actions,
+                  resources,
+                });
+              });
+            }
+          }
+
+          const lines = [];
+          lines.push("## IAM Policy Least-Privilege Review Input");
+          lines.push("");
+          lines.push("> Extracted from the locally synthesized CloudFormation template. Only Effect, Action, and Resource are shown. 12-digit AWS account IDs are redacted.");
+          lines.push("");
+          if (rows.length === 0) {
+            lines.push("No `AWS::IAM::Policy` statements were found.");
+          } else {
+            for (const row of rows) {
+              lines.push(`### ${row.logicalId} / Statement ${row.statement}`);
+              lines.push("");
+              lines.push(`- Effect: \`${row.effect}\``);
+              lines.push("- Action:");
+              for (const action of row.actions) {
+                lines.push(`  - \`${JSON.stringify(action)}\``);
+              }
+              lines.push("- Resource:");
+              for (const resource of row.resources) {
+                lines.push(`  - \`${JSON.stringify(resource)}\``);
+              }
+              const actionText = JSON.stringify(row.actions);
+              const resourceText = JSON.stringify(row.resources);
+              const broadAction = row.actions.some((a) =>
+                typeof a === "string" && (a === "*" || a.endsWith(":*"))
+              );
+              const broadResource = row.resources.some((r) => r === "*");
+              if (broadAction || broadResource) {
+                lines.push("");
+                lines.push(`- Review flag: ${[
+                  broadAction ? "broad action" : null,
+                  broadResource ? "wildcard resource" : null
+                ].filter(Boolean).join(", ")}`);
+              }
+              lines.push("");
+            }
+          }
+
+          fs.writeFileSync("demo-output/iam-policy-review.md", lines.join("\n") + "\n");
+          NODE
+
       - name: Preview deployment without creating resources
         id: dryrun
         shell: bash
@@ -215,6 +315,8 @@ jobs:
             echo '```'
             echo
             cat demo-output/cdk-resource-inventory.md 2>/dev/null || true
+            echo
+            cat demo-output/iam-policy-review.md 2>/dev/null || true
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove ephemeral target and raw output
@@ -224,4 +326,5 @@ jobs:
           rm -f demo-output/dry-run.stdout demo-output/dry-run.stderr
           rm -f demo-output/cdk-synth.stdout demo-output/cdk-synth.stderr
           rm -f demo-output/cdk-resource-inventory.md
+          rm -f demo-output/iam-policy-review.md
           rm -rf demo-output/cdk.out

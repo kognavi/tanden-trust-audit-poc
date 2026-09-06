@@ -8,7 +8,7 @@ import {
   type CustomJWTAuthorizerConfig,
   type HarnessDeploymentConfig,
 } from '@aws/agentcore-cdk';
-import { CfnOutput, Stack, type StackProps } from 'aws-cdk-lib';
+import { Aspects, Aws, CfnOutput, type IAspect, Stack, type StackProps } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 
@@ -80,6 +80,78 @@ function toCdkId(name: string): string {
   return name.replace(/_/g, '');
 }
 
+
+const TANDEN_DEMO_PROJECT_NAME = 'TandenEvidenceDemo';
+const NOVA_2_LITE_MODEL_ID = 'amazon.nova-2-lite-v1:0';
+const NOVA_2_LITE_JP_PROFILE_ID = 'jp.amazon.nova-2-lite-v1:0';
+
+/**
+ * Tighten the AgentCore CLI L3-generated execution-role default policy for the
+ * single-runtime TandenEvidenceDemo portfolio PoC.
+ *
+ * The upstream L3 intentionally emits a broad developer policy. This aspect
+ * replaces only the RuntimeExecutionRole/DefaultPolicy document after the L3
+ * construct tree has been created, while leaving the role trust policy and
+ * Runtime resource unchanged.
+ */
+class TandenEvidenceDemoRuntimeLeastPrivilegeAspect implements IAspect {
+  visit(node: Construct): void {
+    if (!(node instanceof iam.CfnPolicy)) {
+      return;
+    }
+
+    if (!node.node.path.includes('RuntimeExecutionRole/DefaultPolicy/Resource')) {
+      return;
+    }
+
+    const inferenceProfileArn =
+      `arn:${Aws.PARTITION}:bedrock:ap-northeast-1:${Aws.ACCOUNT_ID}:inference-profile/${NOVA_2_LITE_JP_PROFILE_ID}`;
+    const tokyoFoundationModelArn =
+      `arn:${Aws.PARTITION}:bedrock:ap-northeast-1::foundation-model/${NOVA_2_LITE_MODEL_ID}`;
+    const osakaFoundationModelArn =
+      `arn:${Aws.PARTITION}:bedrock:ap-northeast-3::foundation-model/${NOVA_2_LITE_MODEL_ID}`;
+    const runtimeLogGroupArn =
+      `arn:${Aws.PARTITION}:logs:${Aws.REGION}:${Aws.ACCOUNT_ID}:log-group:/aws/bedrock-agentcore/runtimes/*`;
+    const runtimeLogStreamArn = `${runtimeLogGroupArn}:*`;
+
+    node.addOverride('Properties.PolicyDocument', {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Sid: 'InvokeNova2LiteJpOnly',
+          Effect: 'Allow',
+          Action: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+          Resource: [inferenceProfileArn, tokyoFoundationModelArn, osakaFoundationModelArn],
+        },
+        {
+          Sid: 'WriteAgentCoreTraces',
+          Effect: 'Allow',
+          Action: ['xray:PutTraceSegments', 'xray:PutTelemetryRecords'],
+          Resource: '*',
+        },
+        {
+          Sid: 'DiscoverAgentCoreLogGroups',
+          Effect: 'Allow',
+          Action: ['logs:DescribeLogGroups'],
+          Resource: '*',
+        },
+        {
+          Sid: 'ManageAgentCoreRuntimeLogGroup',
+          Effect: 'Allow',
+          Action: ['logs:CreateLogGroup', 'logs:DescribeLogStreams'],
+          Resource: runtimeLogGroupArn,
+        },
+        {
+          Sid: 'WriteAgentCoreRuntimeLogStreams',
+          Effect: 'Allow',
+          Action: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+          Resource: runtimeLogStreamArn,
+        },
+      ],
+    });
+  }
+}
+
 /**
  * Decide whether a deployed runtime should receive payment env vars + IAM grants.
  * Payments today only ships a runtime shim for Python HTTP runtimes; injecting
@@ -124,6 +196,13 @@ export class AgentCoreStack extends Stack {
       appProps.credentials = credentials;
     }
     this.application = new AgentCoreApplication(this, 'Application', appProps as any);
+
+    // The official AgentCore L3 emits a broad development-oriented Runtime policy.
+    // For this minimal portfolio PoC, replace only that generated default policy
+    // with the reviewed least-privilege document above.
+    if (spec.name === TANDEN_DEMO_PROJECT_NAME) {
+      Aspects.of(this.application).add(new TandenEvidenceDemoRuntimeLeastPrivilegeAspect());
+    }
 
     // Create AgentCoreMcp if there are gateways configured
     if (mcpSpec?.agentCoreGateways && mcpSpec.agentCoreGateways.length > 0) {

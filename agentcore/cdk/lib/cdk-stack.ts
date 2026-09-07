@@ -82,6 +82,7 @@ function toCdkId(name: string): string {
 
 
 const TANDEN_DEMO_PROJECT_NAME = 'TandenEvidenceDemo';
+const TANDEN_RUNTIME_ROLE_NAME = 'TandenEvidenceDemoRuntimeExecutionRole';
 const NOVA_2_LITE_MODEL_ID = 'amazon.nova-2-lite-v1:0';
 const NOVA_2_LITE_JP_PROFILE_ID = 'jp.amazon.nova-2-lite-v1:0';
 
@@ -96,7 +97,16 @@ const NOVA_2_LITE_JP_PROFILE_ID = 'jp.amazon.nova-2-lite-v1:0';
  */
 class TandenEvidenceDemoRuntimeLeastPrivilegeAspect implements IAspect {
   visit(node: Construct): void {
-    if (!(node instanceof CfnResource) || node.cfnResourceType !== 'AWS::IAM::Policy') {
+    if (!(node instanceof CfnResource)) {
+      return;
+    }
+
+    if (node.cfnResourceType === 'AWS::IAM::Role') {
+      node.addOverride('Properties.RoleName', TANDEN_RUNTIME_ROLE_NAME);
+      return;
+    }
+
+    if (node.cfnResourceType !== 'AWS::IAM::Policy') {
       return;
     }
 

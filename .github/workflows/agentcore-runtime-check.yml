@@ -78,11 +78,30 @@ jobs:
           }
 
           const template = JSON.parse(fs.readFileSync(path.join(outDir, files[0]), "utf8"));
-          const policies = Object.values(template.Resources ?? {}).filter(
+          const resources = Object.values(template.Resources ?? {});
+          const policies = resources.filter(
             (resource) => resource?.Type === "AWS::IAM::Policy"
+          );
+          const roles = resources.filter(
+            (resource) => resource?.Type === "AWS::IAM::Role"
           );
           if (policies.length !== 1) {
             throw new Error(`Expected exactly one AWS::IAM::Policy, found ${policies.length}`);
+          }
+          if (roles.length !== 1) {
+            throw new Error(`Expected exactly one AWS::IAM::Role, found ${roles.length}`);
+          }
+          if (roles[0]?.Properties?.RoleName !== "TandenEvidenceDemoRuntimeExecutionRole") {
+            throw new Error(`Runtime role name is not pinned for least-privilege scoping`);
+          }
+
+          const manifestPath = path.join(outDir, "manifest.json");
+          const manifestJson = fs.readFileSync(manifestPath, "utf8");
+          if (!manifestJson.includes("cdk-tandenpoc-")) {
+            throw new Error("Synthesized assembly does not reference the dedicated tandenpoc bootstrap qualifier");
+          }
+          if (manifestJson.includes("cdk-hnb659fds-")) {
+            throw new Error("Default shared CDK qualifier unexpectedly remains in the synthesized assembly");
           }
 
           const statements = policies[0]?.Properties?.PolicyDocument?.Statement ?? [];

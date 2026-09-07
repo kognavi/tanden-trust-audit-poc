@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { AgentCoreStack, type HarnessConfig } from '../lib/cdk-stack';
 import { ConfigIO, HarnessSpecSchema, type AwsDeploymentTarget } from '@aws/agentcore-cdk';
-import { App, type Environment } from 'aws-cdk-lib';
+import { App, DefaultStackSynthesizer, type Environment } from 'aws-cdk-lib';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -19,6 +19,8 @@ function sanitize(name: string): string {
 function toStackName(projectName: string, targetName: string): string {
   return `AgentCore-${sanitize(projectName)}-${sanitize(targetName)}`;
 }
+
+const TANDEN_CDK_QUALIFIER = 'tandenpoc';
 
 async function main() {
   // Config root is parent of cdk/ directory. The CLI sets process.cwd() to agentcore/cdk/.
@@ -199,6 +201,9 @@ async function main() {
       harnesses: harnessConfigs.length > 0 ? harnessConfigs : undefined,
       paymentSpec,
       env,
+      synthesizer: new DefaultStackSynthesizer({
+        qualifier: TANDEN_CDK_QUALIFIER,
+      }),
       description: `AgentCore stack for ${spec.name} deployed to ${target.name} (${target.region})`,
       tags: {
         'agentcore:project-name': spec.name,

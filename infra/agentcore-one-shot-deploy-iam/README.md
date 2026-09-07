@@ -10,14 +10,16 @@ The GitHub role itself has no direct CloudFormation create/update/delete, no IAM
 
 It can only:
 
-1. assume the standard CDK bootstrap deploy / file-publishing / lookup roles for this account and region,
+1. assume the dedicated `tandenpoc` CDK deploy and file-publishing roles for this account and region,
 2. read the demo and `CDKToolkit` stack status,
-3. read the CDK bootstrap version SSM parameter,
+3. read the dedicated CDK bootstrap version SSM parameter,
 4. invoke / inspect / stop only AgentCore runtimes tagged `Project=tanden-trust-audit-poc`.
+
+The GitHub role intentionally does **not** assume the image-publishing role. This Runtime uses AgentCore `CodeZip`, so the deployment path needs the CDK file asset path, not ECR image publishing. It also does not assume the lookup role because the current synthesized stack contains no context/VPC lookups.
 
 ## Critical delegated-privilege review
 
-The target account/region is currently **not CDK-bootstrapped**: the expected `cdk-hnb659fds-*` roles and `CDKToolkit` stack are absent.
+The target account/region is currently **not CDK-bootstrapped**. The Tanden PoC uses the dedicated qualifier `tandenpoc`; the corresponding `cdk-tandenpoc-*` roles and `CDKToolkit` stack are absent.
 
 This changes the deployment sequence. The CDK deploy role ultimately delegates CloudFormation execution to the bootstrap execution role, so **do not apply this Terraform yet** and do not run a real AgentCore deploy until an explicit bootstrap design is reviewed.
 
@@ -26,7 +28,7 @@ From an administrator-authenticated local shell, inspect:
 ```bash
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 REGION="ap-northeast-1"
-QUALIFIER="hnb659fds"
+QUALIFIER="tandenpoc"
 
 for ROLE in \
   "cdk-${QUALIFIER}-deploy-role-${ACCOUNT_ID}-${REGION}" \
@@ -53,7 +55,22 @@ npx cdk bootstrap --show-template > ../../demo-output/cdk-bootstrap-template.yam
 
 The `--show-template` command is review-only; it does not deploy the bootstrap stack.
 
-For the eventual bootstrap, do not rely on the default CloudFormation execution policy. Provide a dedicated managed policy using `--cloudformation-execution-policies` that is scoped to the three synthesized demo resource types and required asset publishing path. Review that policy and the generated bootstrap template before any bootstrap command is allowed.
+The CDK app is pinned to the same `tandenpoc` qualifier via `DefaultStackSynthesizer`. The Terraform root creates the dedicated managed policy `TandenAgentCoreCfnExecution`, scoped to the synthesized demo Runtime, its deterministic execution role, and the Runtime Identity service-linked role creation path.
+
+After the Terraform plan is reviewed and the three IAM resources are explicitly approved, save the plan before applying it. Only after the managed policy exists may the bootstrap command be considered:
+
+```bash
+ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+REGION="ap-northeast-1"
+
+cd agentcore/cdk
+npx cdk bootstrap "aws://${ACCOUNT_ID}/${REGION}" \
+  --qualifier tandenpoc \
+  --cloudformation-execution-policies \
+  "arn:aws:iam::${ACCOUNT_ID}:policy/TandenAgentCoreCfnExecution"
+```
+
+Do not run that command yet. First review the post-PR Terraform plan and the synthesized CDK assembly to confirm the `tandenpoc` roles are referenced.
 
 If the deploy path ultimately uses `AdministratorAccess` or another materially broad execution policy, stop. A caller policy that only grants `sts:AssumeRole` is not truly least-privilege if the assumed role can administer the account.
 
@@ -68,8 +85,9 @@ terraform validate
 terraform plan
 ```
 
-Expected result on first use is two creates:
+Expected result on first use is three creates:
 
+- `aws_iam_policy.agentcore_cfn_execution`
 - `aws_iam_role.agentcore_one_shot`
 - `aws_iam_role_policy.agentcore_one_shot`
 
@@ -78,7 +96,7 @@ No existing IAM role, OIDC provider, S3 bucket, or AgentCore resource should be 
 Do **not** run `terraform apply` until:
 
 - this plan is reviewed,
-- a custom least-privilege CDK bootstrap execution policy is designed and reviewed,
+- the `TandenAgentCoreCfnExecution` managed policy and its exact actions/resources are reviewed,
 - the bootstrap template and role chain are reviewed,
 - the one-shot workflow has an explicit human confirmation gate,
 - teardown permissions and teardown verification are ready.

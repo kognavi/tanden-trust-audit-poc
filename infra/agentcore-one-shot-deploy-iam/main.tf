@@ -26,9 +26,9 @@ variable "github_repo" {
 }
 
 variable "cdk_qualifier" {
-  description = "CDK bootstrap qualifier. Default is the standard modern-bootstrap qualifier."
+  description = "Dedicated CDK bootstrap qualifier for the Tanden one-shot PoC."
   type        = string
-  default     = "hnb659fds"
+  default     = "tandenpoc"
 }
 
 provider "aws" {
@@ -47,7 +47,116 @@ locals {
 
   cdk_deploy_role_arn = "arn:aws:iam::${local.account_id}:role/cdk-${var.cdk_qualifier}-deploy-role-${local.account_id}-${var.aws_region}"
   cdk_file_role_arn   = "arn:aws:iam::${local.account_id}:role/cdk-${var.cdk_qualifier}-file-publishing-role-${local.account_id}-${var.aws_region}"
-  cdk_lookup_role_arn = "arn:aws:iam::${local.account_id}:role/cdk-${var.cdk_qualifier}-lookup-role-${local.account_id}-${var.aws_region}"
+  runtime_role_name   = "TandenEvidenceDemoRuntimeExecutionRole"
+  runtime_role_arn    = "arn:aws:iam::${local.account_id}:role/${local.runtime_role_name}"
+}
+
+data "aws_iam_policy_document" "agentcore_cfn_execution" {
+  statement {
+    sid    = "CreateTaggedTandenRuntime"
+    effect = "Allow"
+    actions = [
+      "bedrock-agentcore:CreateAgentRuntime",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Project"
+      values   = ["tanden-trust-audit-poc"]
+    }
+  }
+
+  statement {
+    sid    = "ManageTaggedTandenRuntime"
+    effect = "Allow"
+    actions = [
+      "bedrock-agentcore:GetAgentRuntime",
+      "bedrock-agentcore:UpdateAgentRuntime",
+      "bedrock-agentcore:DeleteAgentRuntime",
+      "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+      "bedrock-agentcore:GetAgentRuntimeEndpoint",
+      "bedrock-agentcore:UpdateAgentRuntimeEndpoint",
+      "bedrock-agentcore:DeleteAgentRuntimeEndpoint",
+      "bedrock-agentcore:TagResource",
+      "bedrock-agentcore:UntagResource",
+      "bedrock-agentcore:ListTagsForResource",
+    ]
+    resources = [
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*",
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*/runtime-endpoint/*",
+    ]
+  }
+
+  statement {
+    sid     = "DeleteRuntimeWorkloadIdentity"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:DeleteWorkloadIdentity"]
+    resources = [
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:workload-identity-directory/default/workload-identity/*"
+    ]
+  }
+
+  statement {
+    sid    = "ManageOnlyTandenRuntimeExecutionRole"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole",
+      "iam:GetRole",
+      "iam:DeleteRole",
+      "iam:UpdateAssumeRolePolicy",
+      "iam:UpdateRoleDescription",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:ListRoleTags",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
+    ]
+    resources = [local.runtime_role_arn]
+  }
+
+  statement {
+    sid     = "PassOnlyTandenRuntimeRoleToAgentCore"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [local.runtime_role_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["bedrock-agentcore.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid     = "CreateOnlyAgentCoreRuntimeIdentityServiceLinkedRole"
+    effect  = "Allow"
+    actions = ["iam:CreateServiceLinkedRole"]
+    resources = [
+      "arn:aws:iam::${local.account_id}:role/aws-service-role/runtime-identity.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreRuntimeIdentity"
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["runtime-identity.bedrock-agentcore.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "agentcore_cfn_execution" {
+  name        = "TandenAgentCoreCfnExecution"
+  description = "Least-privilege CloudFormation execution policy for the one-shot Tanden AgentCore Runtime stack."
+  policy      = data.aws_iam_policy_document.agentcore_cfn_execution.json
+
+  tags = {
+    Project   = "tanden-trust-audit-poc"
+    Purpose   = "agentcore-cfn-execution"
+    ManagedBy = "terraform"
+  }
 }
 
 data "aws_iam_policy_document" "github_trust" {
@@ -95,7 +204,6 @@ data "aws_iam_policy_document" "agentcore_one_shot" {
     resources = [
       local.cdk_deploy_role_arn,
       local.cdk_file_role_arn,
-      local.cdk_lookup_role_arn,
     ]
   }
 
@@ -154,4 +262,9 @@ resource "aws_iam_role_policy" "agentcore_one_shot" {
 output "agentcore_one_shot_role_arn" {
   description = "Use this role for the gated one-shot deploy/invoke/teardown workflow."
   value       = aws_iam_role.agentcore_one_shot.arn
+}
+
+output "agentcore_cfn_execution_policy_arn" {
+  description = "Pass this ARN to cdk bootstrap --cloudformation-execution-policies."
+  value       = aws_iam_policy.agentcore_cfn_execution.arn
 }

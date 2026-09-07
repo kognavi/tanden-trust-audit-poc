@@ -76,13 +76,24 @@ data "aws_iam_policy_document" "agentcore_cfn_execution" {
       "bedrock-agentcore:DeleteAgentRuntime",
       "bedrock-agentcore:CreateAgentRuntimeEndpoint",
       "bedrock-agentcore:GetAgentRuntimeEndpoint",
+      "bedrock-agentcore:UpdateAgentRuntimeEndpoint",
       "bedrock-agentcore:DeleteAgentRuntimeEndpoint",
       "bedrock-agentcore:TagResource",
       "bedrock-agentcore:UntagResource",
       "bedrock-agentcore:ListTagsForResource",
     ]
     resources = [
-      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*"
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*",
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*/runtime-endpoint/*",
+    ]
+  }
+
+  statement {
+    sid     = "DeleteRuntimeWorkloadIdentity"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:DeleteWorkloadIdentity"]
+    resources = [
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:workload-identity-directory/default/workload-identity/*"
     ]
   }
 

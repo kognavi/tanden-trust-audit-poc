@@ -4,9 +4,9 @@
 - [x] Gather context from Loop Engineering docs, template and tests
 - [x] Define validation requirements
 - [x] Define minimal dependency-free design
-- [ ] Implement validator
-- [ ] Add deterministic tests
-- [ ] Integrate validator into package scripts
+- [x] Implement validator
+- [x] Add deterministic tests
+- [x] Integrate validator into package scripts
 - [ ] Run PR CI
 - [ ] Independent diff review
 - [ ] Record reusable learning

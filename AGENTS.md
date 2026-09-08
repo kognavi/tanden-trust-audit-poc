@@ -69,8 +69,24 @@ AI Agent evidence profileの基準文書:
 - `docs/ai-agent-evidence-profile.md`: AI Agent evidenceのproduct-facing profile
 - `docs/adr/`: 採用した設計判断
 - `docs/roadmap.md`: 将来計画
+- `docs/ai-development-os.md`: AI Development OSの運用モデル
+- `docs/loop-engineering.md`: Repository knowledge loopの運用モデル
+- `knowledge/`: AIとHumanが共有するGit管理済みMarkdown knowledge vault
 
 現在状態はcode、tests、module registryを照合して判断します。差異があれば推測で埋めず、変更範囲に含まれる場合だけ整合させます。
+
+## Knowledge Loop Rules
+
+AIとの会話そのものを長期状態の正本にしません。継続状態はRepository内のMarkdownとGit historyに残します。
+
+- 未整理の思考、仮説、調査メモはまず `knowledge/00-inbox/` に置く。
+- non-trivialなAI編集はbranchまたはgit worktreeで行い、mainのknowledgeを直接破壊的に書き換えない。
+- 過去の設計判断や知識は原則として削除せず、新しいnoteから `supports`、`contradicts`、`supersedes` で関係を明示する。
+- AI生成knowledgeはstatus、source、review情報を持てる形にする。
+- security-sensitive / architecture-sensitiveなknowledge変更は実装担当とは別のAgentによるreviewを優先する。
+- raw prompt、raw response、secret、credential、不要なPIIをknowledgeへ保存しない。
+- knowledge noteはcode/tests/module registryより強いcurrent implementation truthとして扱わない。
+- 詳細は `docs/loop-engineering.md` と `.kiro/specs/loop-engineering/` を参照する。
 
 ## Security Baseline
 
@@ -125,4 +141,5 @@ npm run check:structure
 - security-sensitiveまたはarchitecture-sensitiveな変更は、実装担当とは別のAgentによるreviewを優先する。
 - Kiro Skillsは `.kiro/skills/`、Codex Skillsは `.agents/skills/` に置く。
 - production deployment、IAM権限拡大、security control削除、破壊的操作、大幅なcost増加はHuman Approvalを必須とする。
+- Loop Engineeringではチャットではなく `knowledge/` とGit historyを継続状態として使用する。
 - 詳細は `docs/ai-development-os.md` を参照する。

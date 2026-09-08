@@ -86,6 +86,28 @@ data "aws_iam_policy_document" "agentcore_cfn_execution" {
       "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*",
       "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*/runtime-endpoint/*",
     ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:ResourceTag/Project"
+      values   = ["tanden-trust-audit-poc"]
+    }
+  }
+
+  statement {
+    sid     = "TagOnlyTandenRuntimeResources"
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:TagResource"]
+    resources = [
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*",
+      "arn:aws:bedrock-agentcore:${var.aws_region}:${local.account_id}:runtime/*/runtime-endpoint/*",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestTag/Project"
+      values   = ["tanden-trust-audit-poc"]
+    }
   }
 
   statement {

@@ -21,7 +21,8 @@
     "check:depcruise": "depcruise --config .dependency-cruiser.js lib",
     "check:structure": "npm run check:depcruise && npm run check:circular && npm run validate:knowledge && npm test",
     "demo:agentcore:process": "node scripts/process-agentcore-live-response.js",
-    "validate:knowledge": "node scripts/validate-knowledge-metadata.js"
+    "validate:knowledge": "node scripts/validate-knowledge-metadata.js",
+    "context:generate": "node scripts/generate-context-pack.js"
   },
   "keywords": [
     "ai-agent",

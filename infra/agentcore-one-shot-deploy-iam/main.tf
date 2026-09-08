@@ -78,8 +78,6 @@ data "aws_iam_policy_document" "agentcore_cfn_execution" {
       "bedrock-agentcore:GetAgentRuntimeEndpoint",
       "bedrock-agentcore:UpdateAgentRuntimeEndpoint",
       "bedrock-agentcore:DeleteAgentRuntimeEndpoint",
-      "bedrock-agentcore:TagResource",
-      "bedrock-agentcore:UntagResource",
       "bedrock-agentcore:ListTagsForResource",
     ]
     resources = [

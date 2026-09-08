@@ -4,10 +4,10 @@
 - [x] Gather existing Loop Engineering context
 - [x] Define requirements
 - [x] Define deterministic retrieval design
-- [ ] Implement generator
-- [ ] Add tests
-- [ ] Add package command
-- [ ] Generate first Context Pack
+- [x] Implement generator
+- [x] Add tests
+- [x] Add package command
+- [x] Generate first Context Pack
 - [ ] Run PR CI
 - [ ] Independent diff review
 - [ ] Record reusable learning

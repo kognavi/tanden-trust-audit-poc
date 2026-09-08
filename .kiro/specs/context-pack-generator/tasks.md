@@ -9,5 +9,5 @@
 - [x] Add package command
 - [x] Generate first Context Pack
 - [ ] Run PR CI
-- [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Independent diff review
+- [x] Record reusable learning

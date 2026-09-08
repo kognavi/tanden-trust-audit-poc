@@ -7,6 +7,6 @@
 - [x] Implement validator
 - [x] Add deterministic tests
 - [x] Integrate validator into package scripts
-- [ ] Run PR CI
-- [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Run PR CI
+- [x] Independent diff review
+- [x] Record reusable learning

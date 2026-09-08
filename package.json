@@ -19,8 +19,9 @@
     "test:aws:s3": "node --test tests/*.integration.js",
     "check:circular": "madge --circular --extensions js lib/",
     "check:depcruise": "depcruise --config .dependency-cruiser.js lib",
-    "check:structure": "npm run check:depcruise && npm run check:circular && npm test",
-    "demo:agentcore:process": "node scripts/process-agentcore-live-response.js"
+    "check:structure": "npm run check:depcruise && npm run check:circular && npm run validate:knowledge && npm test",
+    "demo:agentcore:process": "node scripts/process-agentcore-live-response.js",
+    "validate:knowledge": "node scripts/validate-knowledge-metadata.js"
   },
   "keywords": [
     "ai-agent",

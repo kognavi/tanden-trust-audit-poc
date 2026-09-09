@@ -12,6 +12,7 @@ test("AI Development OS required files exist", () => {
     "docs/loop-engineering.md",
     "docs/context-to-spec-handoff.md",
     "docs/spec-readiness-gate.md",
+    "docs/implementation-handoff.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -105,4 +106,18 @@ test("Implementation Handoff stays wired into developer and PR governance", () =
   assert.equal(pkg.scripts["impl:handoff"], "node scripts/create-implementation-handoff.js");
   assert.match(rootAgents, /impl:handoff/);
   assert.match(developer, /Implementation Handoff/);
+});
+
+test("PR template carries implementation provenance fields", () => {
+  const template = read(".github/pull_request_template.md");
+  for (const label of [
+    "Source Context Pack",
+    "Context ID",
+    "Spec",
+    "Spec Readiness",
+    "Implementation Handoff",
+    "Branch / Worktree"
+  ]) {
+    assert.match(template, new RegExp(label));
+  }
 });

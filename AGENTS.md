@@ -147,4 +147,6 @@ npm run check:structure
 - generated scaffoldは承認済み仕様ではない。placeholderを残したままimplementationへ進まない。
 - implementation開始前に `npm run spec:ready -- <feature-slug>` を実行し、Spec Readiness Gateがpassしていることを確認する。
 - Spec Readiness Gateは最低限の完成条件を検査するだけで、要件妥当性や設計品質のHuman/Agent reviewを代替しない。
+- Spec Readiness Gate通過後、`npm run impl:handoff -- <feature-slug>` でImplementation Handoff manifestを生成し、Source Context Pack / Spec / branch/worktree提案 / PR provenanceを実装担当へ渡す。
+- Implementation Handoff generatorはgit branch/worktree/pushを自動実行しない。実Git操作はHuman/Developerが状態を確認して実行する。
 - 詳細は `docs/ai-development-os.md` を参照する。

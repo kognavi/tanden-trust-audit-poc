@@ -17,11 +17,12 @@
 4. 関連するknowledge、code、tests、ADRを集めてContext Packとして文脈化する。
 5. Context Packをhandoff入力として `.kiro/specs/<feature>/` のrequirements/design/tasks scaffoldを生成し、code/tests/module registryと照合して仕様を確定する。
 6. `npm run spec:ready -- <feature-slug>` を実行し、placeholder・未解決Open Questions・未完了Review Checklist・Source Context Pack不整合がないことを確認する。
-7. branchまたはgit worktree上で最小変更を実装する。
-8. testsとsecurity checksを実行する。
-9. 実装担当とは別のAgentがdiffを批判的にreviewする。
-10. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
-11. Pull Requestを作成し、checksとHuman review後にmergeする。
+7. `npm run impl:handoff -- <feature-slug>` でImplementation Handoffを生成し、provenanceと推奨branch/worktree planを確認する。
+8. Human/DeveloperがGit状態を確認してbranchまたはgit worktreeを作成し、最小変更を実装する。
+9. testsとsecurity checksを実行する。
+10. 実装担当とは別のAgentがdiffを批判的にreviewする。
+11. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
+12. Pull RequestへContext Pack / Spec / Readiness / Implementation Handoff provenanceを記録し、checksとHuman review後にmergeする。
 
 ## Persistent state
 

@@ -157,4 +157,7 @@ npm run check:structure
 - BuilderとReviewerは同一identityにしない。sensitive changeではBuilderとSecurity Reviewerも同一identityにしない。
 - Reviewerは `reviewer-review.md`、sensitive changeのSecurity Reviewerは `security-review.md` にPASS/FAILとdelegated identityを記録し、Verification Evidence Gateが一致を検査する。
 - Role IDはprovenance labelでありcryptographic identity proofではない。merge/deployはHuman Approval境界に残す。
+- Multi-Agent Delegation後は `npm run agent:graph:init -- <feature-slug> [max-retries]` でTask Graphを初期化し、`npm run agent:graph:event -- <feature-slug> <event>` だけでstate transitionする。
+- Builder → Reviewer → Security Reviewer(optional) → Verificationの順序を飛び越えない。FAILはBuilder retryへrouteし、maxRetries超過でFAILED terminal stateにする。
+- `agent-task-graph.json` を手編集してGateを迂回しない。COMPLETE/FAILED terminal stateは自動で再開しない。
 - 詳細は `docs/ai-development-os.md` を参照する。

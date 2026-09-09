@@ -30,3 +30,9 @@ Spec Readiness Gate:
 - Do not begin implementation until `npm run spec:ready -- <feature-slug>` passes.
 - A green readiness gate is necessary but not sufficient; still inspect the finalized requirements/design and current code/tests/module registry.
 - If readiness fails, return to the Spec/Context loop instead of bypassing the gate.
+
+Implementation Handoff:
+- After Spec Readiness passes, require `npm run impl:handoff -- <feature-slug>`.
+- Read the generated `implementation-handoff.md` before editing code.
+- Do not treat suggested git commands as auto-approved. Check local git state before creating branch/worktree.
+- Preserve Context Pack / Spec / Readiness / Handoff provenance in the PR.

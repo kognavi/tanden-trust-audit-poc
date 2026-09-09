@@ -149,4 +149,6 @@ npm run check:structure
 - Spec Readiness Gateは最低限の完成条件を検査するだけで、要件妥当性や設計品質のHuman/Agent reviewを代替しない。
 - Spec Readiness Gate通過後、`npm run impl:handoff -- <feature-slug>` でImplementation Handoff manifestを生成し、Source Context Pack / Spec / branch/worktree提案 / PR provenanceを実装担当へ渡す。
 - Implementation Handoff generatorはgit branch/worktree/pushを自動実行しない。実Git操作はHuman/Developerが状態を確認して実行する。
+- implementation完了後かつPR作成前に `npm run impl:conform -- <feature-slug> [base-ref]` を実行し、changed filesがreview済みSpecのAffected Componentsとprovenanceに適合することを確認する。
+- Implementation Conformance Gateは意味的な要件適合を証明しない。scope drift/provenance driftを検出する補助Gateであり、independent reviewを代替しない。
 - 詳細は `docs/ai-development-os.md` を参照する。

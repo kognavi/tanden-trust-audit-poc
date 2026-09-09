@@ -30,6 +30,8 @@ Multi-Agent Delegationを実行順序・retry・failure routingまで拡張し�
 - Security Reviewer FAILでBuilder retryへ戻す。
 - Verification FAILでBuilder retryへ戻す。
 - retryCountがmaxRetriesを超える場合graphをFAILED terminal stateにする。
+- Verification Gateはagent-task-graph.jsonを読み、Verification taskがREADYでない場合failする。
+- Verification Evidenceへorchestrator status / retryCount / task statesを含める。
 - Verification PASSでgraphをCOMPLETE terminal stateにする。
 - COMPLETE/FAILED後のstate-changing eventを拒否する。
 - external AI API、agent spawning、merge、deployを実行しない。

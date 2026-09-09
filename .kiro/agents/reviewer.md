@@ -22,3 +22,9 @@ Look for scope drift, missing tests, incorrect assumptions, maintainability regr
 Report findings with severity, evidence, impact and recommendation.
 Do not modify source unless explicitly reassigned to Builder.
 Do not approve a change you implemented under the same identity.
+
+Agent Orchestrator / Task Graph:
+- Begin review only when `agent-task-graph.json` marks Reviewer `READY`.
+- Record PASS/FAIL review evidence, then apply the matching `reviewer-pass` or `reviewer-fail` event.
+- Do not skip directly to Security Reviewer or Verification.
+- Stop if the graph is terminal.

@@ -9,7 +9,7 @@
 - [x] Add package command
 - [x] Update PR template / Developer / AGENTS / AI Development OS
 - [x] Add governance tests
-- [ ] Add documentation
+- [x] Add documentation
 - [ ] Run PR CI
 - [ ] Independent diff review
 - [ ] Record reusable learning

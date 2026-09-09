@@ -14,7 +14,25 @@ const {
 function fixture(run) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "verification-evidence-"));
   try {
-    fs.mkdirSync(path.join(root, ".kiro", "specs", "feature"), { recursive: true });
+    const specDir = path.join(root, ".kiro", "specs", "feature");
+    fs.mkdirSync(specDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(specDir, "agent-delegation.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        generatedAt: "2026-09-09T00:00:00.000Z",
+        roles: {
+          builder: "builder-agent",
+          reviewer: "reviewer-agent",
+          securityReviewer: null
+        }
+      }, null, 2) + "\n"
+    );
+    fs.writeFileSync(
+      path.join(specDir, "reviewer-review.md"),
+      "# Reviewer Review\n\n- Status: PASS\n- Reviewed by: reviewer-agent\n"
+    );
     return run(root);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -72,6 +90,9 @@ test("conformance and structure PASS generate evidence pack", () =>
     assert.equal(result.evidence.payload.status, "PASS");
     assert.equal(result.evidence.payload.checks.implementationConformance, "PASS");
     assert.equal(result.evidence.payload.checks.structureValidation, "PASS");
+    assert.equal(result.evidence.payload.checks.reviewerReview, "PASS");
+    assert.equal(result.evidence.payload.roles.builder, "builder-agent");
+    assert.equal(result.evidence.payload.roles.reviewer, "reviewer-agent");
     assert.equal(verifyEvidenceDocument(result.evidence), true);
   }));
 
@@ -129,8 +150,22 @@ test("sensitive changes require security review evidence", () =>
 
 test("sensitive changes pass with explicit security review", () =>
   fixture((root) => {
+    const specDir = path.join(root, ".kiro", "specs", "feature");
     fs.writeFileSync(
-      path.join(root, ".kiro", "specs", "feature", "security-review.md"),
+      path.join(specDir, "agent-delegation.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        generatedAt: "2026-09-09T00:00:00.000Z",
+        roles: {
+          builder: "builder-agent",
+          reviewer: "reviewer-agent",
+          securityReviewer: "codex-security"
+        }
+      }, null, 2) + "\n"
+    );
+    fs.writeFileSync(
+      path.join(specDir, "security-review.md"),
       "# Security Review\n\n- Status: PASS\n- Reviewed by: codex-security\n"
     );
 
@@ -146,4 +181,30 @@ test("sensitive changes pass with explicit security review", () =>
     assert.equal(result.verified, true);
     assert.equal(result.evidence.payload.checks.securityReview, "PASS");
     assert.equal(result.evidence.payload.securityReview.reviewedBy, "codex-security");
+  }));
+
+
+test("missing reviewer review blocks verification", () =>
+  fixture((root) => {
+    fs.unlinkSync(path.join(root, ".kiro", "specs", "feature", "reviewer-review.md"));
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.some((error) => error.includes("reviewer-review.md is missing")));
+  }));
+
+test("reviewer identity mismatch blocks verification", () =>
+  fixture((root) => {
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "reviewer-review.md"),
+      "# Reviewer Review\n\n- Status: PASS\n- Reviewed by: builder-agent\n"
+    );
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.some((error) => error.includes("delegated reviewer identity")));
   }));

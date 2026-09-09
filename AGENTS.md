@@ -153,4 +153,8 @@ npm run check:structure
 - Implementation Conformance Gateは意味的な要件適合を証明しない。scope drift/provenance driftを検出する補助Gateであり、independent reviewを代替しない。
 - Conformance通過後、merge判断前に `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、structure validation・conformance・sensitive-path security review signalを `verification-evidence.json` へ固定する。
 - Verification EvidenceのSHA-256 digestはintegrity signalでありdigital signatureではない。Gate PASSはsemantic correctness、Human Approval、production verificationを代替しない。
+- non-trivial implementationでは `npm run agent:delegate -- <feature-slug> <builder-id> <reviewer-id> [security-reviewer-id]` でBuilder / Reviewer / Security Reviewerのrole provenanceを固定する。
+- BuilderとReviewerは同一identityにしない。sensitive changeではBuilderとSecurity Reviewerも同一identityにしない。
+- Reviewerは `reviewer-review.md`、sensitive changeのSecurity Reviewerは `security-review.md` にPASS/FAILとdelegated identityを記録し、Verification Evidence Gateが一致を検査する。
+- Role IDはprovenance labelでありcryptographic identity proofではない。merge/deployはHuman Approval境界に残す。
 - 詳細は `docs/ai-development-os.md` を参照する。

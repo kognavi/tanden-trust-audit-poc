@@ -15,10 +15,12 @@ test("AI Development OS required files exist", () => {
     "docs/implementation-handoff.md",
     "docs/implementation-conformance-gate.md",
     "docs/verification-evidence-gate.md",
+    "docs/multi-agent-delegation.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
     ".kiro/agents/developer.md",
+    ".kiro/agents/reviewer.md",
     ".kiro/agents/security-reviewer.md",
     ".kiro/specs/ai-development-os/requirements.md",
     ".kiro/specs/ai-development-os/design.md",
@@ -147,4 +149,23 @@ test("Verification & Evidence Gate stays wired into merge governance", () => {
   assert.match(developer, /Verification & Evidence Gate/);
   assert.match(template, /Verification Evidence/);
   assert.match(template, /Evidence Digest/);
+});
+
+
+test("Multi-Agent Delegation stays wired into verification governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const developer = read(".kiro/agents/developer.md");
+  const reviewer = read(".kiro/agents/reviewer.md");
+  const securityReviewer = read(".kiro/agents/security-reviewer.md");
+  const template = read(".github/pull_request_template.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["agent:delegate"], "node scripts/create-agent-delegation.js");
+  assert.match(rootAgents, /agent:delegate/);
+  assert.match(rootAgents, /BuilderとReviewer/);
+  assert.match(developer, /Multi-Agent Delegation/);
+  assert.match(reviewer, /independent challenger/i);
+  assert.match(securityReviewer, /agent-delegation\.json/);
+  assert.match(template, /Agent Delegation/);
+  assert.match(template, /Security Reviewer/);
 });

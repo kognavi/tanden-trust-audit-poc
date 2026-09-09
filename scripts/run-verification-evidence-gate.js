@@ -38,13 +38,50 @@ function verifyEvidenceDocument(document) {
   return document.digest.value === digestPayload(document.payload);
 }
 
-function parseSecurityReview(markdown) {
+function parseReviewArtifact(markdown) {
   const statusMatch = markdown.match(/^\s*-\s*Status:\s*(.+)\s*$/mi);
   const reviewerMatch = markdown.match(/^\s*-\s*Reviewed by:\s*(.+)\s*$/mi);
   return {
     status: statusMatch ? statusMatch[1].trim() : null,
     reviewedBy: reviewerMatch ? reviewerMatch[1].trim() : null
   };
+}
+
+function parseSecurityReview(markdown) {
+  return parseReviewArtifact(markdown);
+}
+
+function readDelegation(repositoryRoot, featureSlug) {
+  const delegationPath = path.join(
+    repositoryRoot,
+    ".kiro",
+    "specs",
+    featureSlug,
+    "agent-delegation.json"
+  );
+  if (!fs.existsSync(delegationPath)) {
+    return { valid: false, error: "agent-delegation.json is missing" };
+  }
+
+  try {
+    const document = JSON.parse(fs.readFileSync(delegationPath, "utf8"));
+    if (document.feature !== featureSlug) {
+      return { valid: false, error: "delegation feature does not match requested feature" };
+    }
+    const roles = document.roles || {};
+    if (!roles.builder || !roles.reviewer) {
+      return { valid: false, error: "delegation requires builder and reviewer identities" };
+    }
+    if (roles.builder === roles.reviewer) {
+      return { valid: false, error: "builder and reviewer identities must differ" };
+    }
+    if (roles.securityReviewer && roles.securityReviewer === roles.builder) {
+      return { valid: false, error: "builder and securityReviewer identities must differ" };
+    }
+    return { valid: true, document, roles };
+  } catch (error) {
+    return { valid: false, error: "agent-delegation.json is invalid JSON" };
+  }
 }
 
 function runStructureValidation(repositoryRoot) {
@@ -103,9 +140,41 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     errors.push("npm run check:structure failed");
   }
 
+  const delegation = options.delegationResult || readDelegation(root, featureSlug);
+  if (!delegation.valid) {
+    errors.push(delegation.error);
+  }
+
+  let reviewerReview = { status: null, reviewedBy: null };
+  if (delegation.valid) {
+    const reviewerReviewPath = path.join(
+      root,
+      ".kiro",
+      "specs",
+      featureSlug,
+      "reviewer-review.md"
+    );
+    if (!fs.existsSync(reviewerReviewPath)) {
+      errors.push("reviewer-review.md is missing");
+    } else {
+      reviewerReview = parseReviewArtifact(fs.readFileSync(reviewerReviewPath, "utf8"));
+      if (reviewerReview.status !== "PASS") {
+        errors.push("reviewer-review.md must declare Status: PASS");
+      }
+      if (!reviewerReview.reviewedBy) {
+        errors.push("reviewer-review.md must declare Reviewed by");
+      } else if (reviewerReview.reviewedBy !== delegation.roles.reviewer) {
+        errors.push("reviewer-review.md Reviewed by must match delegated reviewer identity");
+      }
+    }
+  }
+
   let securityReview = { status: "N/A", reviewedBy: null };
   const sensitiveFiles = conformance.sensitiveFiles || [];
   if (sensitiveFiles.length > 0) {
+    if (!delegation.valid || !delegation.roles.securityReviewer) {
+      errors.push("sensitive changes require delegated securityReviewer identity");
+    }
     const securityReviewPath = path.join(
       root,
       ".kiro",
@@ -123,6 +192,12 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       }
       if (!securityReview.reviewedBy) {
         errors.push("security-review.md must declare Reviewed by");
+      } else if (
+        delegation.valid &&
+        delegation.roles.securityReviewer &&
+        securityReview.reviewedBy !== delegation.roles.securityReviewer
+      ) {
+        errors.push("security-review.md Reviewed by must match delegated securityReviewer identity");
       }
     }
   }
@@ -133,6 +208,8 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       errors,
       conformance,
       structure,
+      delegation,
+      reviewerReview,
       securityReview
     };
   }
@@ -150,9 +227,11 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       contextId: conformance.contextId,
       specDir: conformance.specDir
     },
+    roles: delegation.roles,
     checks: {
       implementationConformance: "PASS",
       structureValidation: "PASS",
+      reviewerReview: reviewerReview.status,
       securityReview: securityReview.status
     },
     commands: {
@@ -160,6 +239,7 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     },
     changedFiles: conformance.changedFiles || [],
     sensitiveFiles,
+    reviewerReview,
     securityReview
   };
 
@@ -183,6 +263,8 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     outputPath,
     conformance,
     structure,
+    delegation,
+    reviewerReview,
     securityReview
   };
 }
@@ -223,7 +305,9 @@ if (require.main === module) runCli();
 module.exports = {
   createEvidenceDocument,
   digestPayload,
+  parseReviewArtifact,
   parseSecurityReview,
+  readDelegation,
   runStructureValidation,
   stableStringify,
   validateVerificationEvidenceGate,

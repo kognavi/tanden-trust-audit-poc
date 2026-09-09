@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "feature": "multi-agent-delegation",
+  "generatedAt": "2026-09-09T05:30:00.000Z",
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "independent-reviewer",
+    "securityReviewer": null
+  }
+}

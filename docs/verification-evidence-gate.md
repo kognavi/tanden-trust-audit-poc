@@ -18,10 +18,12 @@ default base-refは `main` です。
 
 1. Implementation Conformance GateがPASSすること
 2. `npm run check:structure` がPASSすること
-3. sensitive path変更時、`.kiro/specs/<feature>/security-review.md` が存在すること
-4. security reviewが `Status: PASS` とnon-empty `Reviewed by:` を持つこと
-5. PASS結果を `verification-evidence.json` に記録すること
-6. Evidence payloadのSHA-256 digestが一致すること
+3. `.kiro/specs/<feature>/agent-delegation.json` が存在し、BuilderとReviewerが分離されていること
+4. `reviewer-review.md` が `Status: PASS` を持ち、`Reviewed by:` がdelegated Reviewer identityと一致すること
+5. sensitive path変更時、delegated Security Reviewerが存在すること
+6. sensitive path変更時、`security-review.md` が `Status: PASS` を持ち、`Reviewed by:` がdelegated Security Reviewer identityと一致すること
+7. PASS結果を `verification-evidence.json` に記録すること
+8. Evidence payloadのSHA-256 digestが一致すること
 
 ## Evidence Pack
 
@@ -41,6 +43,8 @@ PASS時に次を生成します。
 - sensitive files
 - Implementation Conformance result
 - structure validation result
+- Builder / Reviewer / Security Reviewer role provenance
+- reviewer review status
 - security review status
 - generated timestamp
 - SHA-256 digest

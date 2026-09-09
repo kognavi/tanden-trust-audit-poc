@@ -27,7 +27,8 @@
     "spec:ready": "node scripts/check-spec-readiness.js",
     "impl:handoff": "node scripts/create-implementation-handoff.js",
     "impl:conform": "node scripts/check-implementation-conformance.js",
-    "verify:gate": "node scripts/run-verification-evidence-gate.js"
+    "verify:gate": "node scripts/run-verification-evidence-gate.js",
+    "agent:delegate": "node scripts/create-agent-delegation.js"
   },
   "keywords": [
     "ai-agent",

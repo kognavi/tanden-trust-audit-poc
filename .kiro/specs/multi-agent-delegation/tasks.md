@@ -9,12 +9,12 @@
 - [x] Gather Loop 007 context
 - [x] Define role-separation requirements
 - [x] Define delegation/evidence design
-- [ ] Implement delegation generator
-- [ ] Add Reviewer Agent
-- [ ] Extend Verification Evidence Gate
-- [ ] Add tests
-- [ ] Add package command
-- [ ] Update governance docs / PR template / agents
+- [x] Implement delegation generator
+- [x] Add Reviewer Agent
+- [x] Extend Verification Evidence Gate
+- [x] Add tests
+- [x] Add package command
+- [x] Update governance docs / PR template / agents
 - [ ] Run PR CI
 - [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Record reusable learning

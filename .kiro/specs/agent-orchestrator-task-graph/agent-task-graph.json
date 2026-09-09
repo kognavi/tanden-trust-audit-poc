@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "feature": "agent-orchestrator-task-graph",
+  "generatedAt": "2026-09-09T05:40:00.000Z",
+  "updatedAt": "2026-09-09T05:41:00.000Z",
+  "status": "ACTIVE",
+  "maxRetries": 2,
+  "retryCount": 0,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "independent-reviewer",
+    "securityReviewer": null
+  },
+  "tasks": {
+    "builder": {
+      "status": "PASS",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "READY",
+      "actor": "independent-reviewer"
+    },
+    "securityReviewer": {
+      "status": "SKIPPED",
+      "actor": null
+    },
+    "verification": {
+      "status": "BLOCKED",
+      "actor": "verification-gate"
+    }
+  },
+  "history": [
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-09T05:41:00.000Z"
+    }
+  ]
+}

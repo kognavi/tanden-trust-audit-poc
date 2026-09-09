@@ -11,7 +11,7 @@ resources:
 permissions:
   rules:
     - capability: shell
-      match: ["npm test", "npm run check:structure", "npm run check:circular", "npm run check:depcruise", "npm run validate:evidence", "npm run verify", "npm run agent:delegate*", "git status", "git diff*"]
+      match: ["npm test", "npm run check:structure", "npm run check:circular", "npm run check:depcruise", "npm run validate:evidence", "npm run verify", "npm run agent:delegate*", "npm run agent:graph:*", "git status", "git diff*"]
       effect: allow
 ---
 
@@ -56,3 +56,9 @@ Multi-Agent Delegation:
 - Do not author `reviewer-review.md` for your own implementation.
 - Do not author `security-review.md` for your own sensitive implementation.
 - Hand completed implementation to the delegated Reviewer before merge verification.
+
+Agent Orchestrator / Task Graph:
+- Before Builder work, require `agent-task-graph.json` and confirm Builder task is `READY`.
+- After implementation/tests are complete, advance only through the orchestrator event contract; do not edit task graph state by hand.
+- On Reviewer/Security/Verification failure, accept reassignment only when the graph routes back to Builder `READY`.
+- Stop work when graph status is `FAILED` or `COMPLETE`.

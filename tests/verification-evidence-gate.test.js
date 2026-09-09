@@ -208,3 +208,20 @@ test("reviewer identity mismatch blocks verification", () =>
     assert.equal(result.verified, false);
     assert.ok(result.errors.some((error) => error.includes("delegated reviewer identity")));
   }));
+
+
+test("delegation feature mismatch blocks verification", () =>
+  fixture((root) => {
+    const delegationPath = path.join(root, ".kiro", "specs", "feature", "agent-delegation.json");
+    const delegation = JSON.parse(fs.readFileSync(delegationPath, "utf8"));
+    delegation.feature = "other-feature";
+    fs.writeFileSync(delegationPath, JSON.stringify(delegation, null, 2) + "\n");
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.some((error) => error.includes("delegation feature")));
+  }));

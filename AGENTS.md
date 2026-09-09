@@ -142,4 +142,7 @@ npm run check:structure
 - Kiro Skillsは `.kiro/skills/`、Codex Skillsは `.agents/skills/` に置く。
 - production deployment、IAM権限拡大、security control削除、破壊的操作、大幅なcost増加はHuman Approvalを必須とする。
 - Loop Engineeringではチャットではなく `knowledge/` とGit historyを継続状態として使用する。
+- non-trivialな新規featureでは、原則として `knowledge/20-research/context-packs/` のContext PackをSpec handoff入力とする。
+- Context PackからSpecへ移る場合は `npm run spec:scaffold -- <context-pack-path> <feature-slug>` で3ファイルの標準骨格を作り、Kiro/Codexがcode/tests/module registryを照合して内容を確定する。
+- generated scaffoldは承認済み仕様ではない。placeholderを残したままimplementationへ進まない。
 - 詳細は `docs/ai-development-os.md` を参照する。

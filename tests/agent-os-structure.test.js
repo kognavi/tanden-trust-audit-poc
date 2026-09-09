@@ -10,6 +10,7 @@ test("AI Development OS required files exist", () => {
   const required = [
     "docs/ai-development-os.md",
     "docs/loop-engineering.md",
+    "docs/context-to-spec-handoff.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -68,4 +69,17 @@ test("loop engineering keeps repository trust boundary explicit", () => {
   assert.match(docs, /Evidence → Schema → Sign → Store → Ledger/);
   assert.match(docs, /git worktree/);
   assert.match(docs, /Human approval/i);
+});
+
+test("Context Pack to Spec handoff stays wired into agent governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const architect = read(".kiro/agents/architect.md");
+  const developer = read(".kiro/agents/developer.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["spec:scaffold"], "node scripts/scaffold-spec-from-context.js");
+  assert.match(rootAgents, /Context Pack/);
+  assert.match(rootAgents, /spec:scaffold/);
+  assert.match(architect, /source Context Pack/i);
+  assert.match(developer, /Source Context Pack/i);
 });

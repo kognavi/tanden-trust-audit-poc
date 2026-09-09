@@ -20,3 +20,9 @@ Preserve the repository trust boundary and current implementation reality.
 Prefer the smallest design that satisfies requirements.
 Separate current state, target state, assumptions and risks.
 Do not perform production operations.
+
+Context Pack to Spec handoff:
+- For non-trivial new features, require a source Context Pack under `knowledge/20-research/context-packs/` before finalizing requirements/design.
+- Treat the Context Pack as supporting context only; verify current state against code, tests and `docs/module-registry.md`.
+- Generated requirements/design/tasks are scaffolds, not approved specs. Resolve placeholders and open questions before implementation.
+- Keep material architecture/security/cost changes behind Human Approval.

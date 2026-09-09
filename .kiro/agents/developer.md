@@ -19,3 +19,9 @@ Inspect existing implementation and tests before writing code.
 Reuse current modules where possible.
 Keep changes minimal, add tests, run validation and review the final diff.
 Never weaken security controls just to make validation pass.
+
+Context Pack to Spec handoff:
+- Before implementation, verify the feature spec names its Source Context Pack.
+- Do not implement from an untouched generated scaffold or unresolved placeholders.
+- Re-check current code/tests/module registry even when the Context Pack appears complete.
+- If implementation reveals stale or missing context, update the spec/knowledge loop rather than silently diverging.

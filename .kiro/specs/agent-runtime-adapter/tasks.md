@@ -4,11 +4,11 @@
 - [x] Gather Loop 009 context
 - [x] Define runtime requirements
 - [x] Define adapter design
-- [ ] Implement runtime init/run
-- [ ] Add tests
-- [ ] Connect runtime evidence to Verification Gate
-- [ ] Add package commands
-- [ ] Update governance/docs
+- [x] Implement runtime init/run
+- [x] Add tests
+- [x] Connect runtime evidence to Verification Gate
+- [x] Add package commands
+- [x] Update governance/docs
 - [ ] Run PR CI
 - [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Record reusable learning

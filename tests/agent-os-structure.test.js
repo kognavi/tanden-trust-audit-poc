@@ -96,3 +96,13 @@ test("Spec Readiness Gate stays wired into implementation governance", () => {
   assert.match(architect, /Spec Readiness Gate/);
   assert.match(developer, /spec:ready/);
 });
+
+test("Implementation Handoff stays wired into developer and PR governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const developer = read(".kiro/agents/developer.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["impl:handoff"], "node scripts/create-implementation-handoff.js");
+  assert.match(rootAgents, /impl:handoff/);
+  assert.match(developer, /Implementation Handoff/);
+});

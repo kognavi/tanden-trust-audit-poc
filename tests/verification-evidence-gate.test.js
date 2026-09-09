@@ -33,6 +33,30 @@ function fixture(run) {
       path.join(specDir, "reviewer-review.md"),
       "# Reviewer Review\n\n- Status: PASS\n- Reviewed by: reviewer-agent\n"
     );
+    fs.writeFileSync(
+      path.join(specDir, "agent-task-graph.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        generatedAt: "2026-09-09T00:00:00.000Z",
+        updatedAt: "2026-09-09T00:02:00.000Z",
+        status: "ACTIVE",
+        maxRetries: 2,
+        retryCount: 0,
+        roles: {
+          builder: "builder-agent",
+          reviewer: "reviewer-agent",
+          securityReviewer: null
+        },
+        tasks: {
+          builder: { status: "PASS", actor: "builder-agent" },
+          reviewer: { status: "PASS", actor: "reviewer-agent" },
+          securityReviewer: { status: "SKIPPED", actor: null },
+          verification: { status: "READY", actor: "verification-gate" }
+        },
+        history: []
+      }, null, 2) + "\n"
+    );
     return run(root);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -93,6 +117,8 @@ test("conformance and structure PASS generate evidence pack", () =>
     assert.equal(result.evidence.payload.checks.reviewerReview, "PASS");
     assert.equal(result.evidence.payload.roles.builder, "builder-agent");
     assert.equal(result.evidence.payload.roles.reviewer, "reviewer-agent");
+    assert.equal(result.evidence.payload.orchestrator.status, "ACTIVE");
+    assert.equal(result.evidence.payload.orchestrator.tasks.verification.status, "READY");
     assert.equal(verifyEvidenceDocument(result.evidence), true);
   }));
 
@@ -168,6 +194,12 @@ test("sensitive changes pass with explicit security review", () =>
       path.join(specDir, "security-review.md"),
       "# Security Review\n\n- Status: PASS\n- Reviewed by: codex-security\n"
     );
+    const graphPath = path.join(specDir, "agent-task-graph.json");
+    const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    graph.roles.securityReviewer = "codex-security";
+    graph.tasks.securityReviewer = { status: "PASS", actor: "codex-security" };
+    graph.tasks.verification = { status: "READY", actor: "verification-gate" };
+    fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2) + "\n");
 
     const result = validateVerificationEvidenceGate(root, "feature", {
       conformanceResult: conformant({
@@ -224,4 +256,37 @@ test("delegation feature mismatch blocks verification", () =>
 
     assert.equal(result.verified, false);
     assert.ok(result.errors.some((error) => error.includes("delegation feature")));
+  }));
+
+
+test("verification is blocked unless Task Graph marks verification READY", () =>
+  fixture((root) => {
+    const graphPath = path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json");
+    const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    graph.tasks.verification.status = "BLOCKED";
+    fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2) + "\n");
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.some((error) => error.includes("Verification task is not READY")));
+  }));
+
+test("Task Graph role drift from delegation blocks verification", () =>
+  fixture((root) => {
+    const graphPath = path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json");
+    const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    graph.roles.reviewer = "other-reviewer";
+    fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2) + "\n");
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.some((error) => error.includes("role provenance differs")));
   }));

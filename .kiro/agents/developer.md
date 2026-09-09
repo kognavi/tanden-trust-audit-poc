@@ -49,3 +49,10 @@ Verification & Evidence Gate:
 - Treat `.kiro/specs/<feature>/verification-evidence.json` as the durable verification summary for the change.
 - Sensitive infra/workflow/IAM/KMS/Terraform/policy changes require `security-review.md` with `Status: PASS` and an explicit independent reviewer.
 - A green Verification & Evidence Gate records deterministic evidence; it does not replace semantic review, Human Approval, or production validation.
+
+Multi-Agent Delegation:
+- Act as Builder when assigned the Builder role.
+- Before implementation, require `agent-delegation.json` and verify Builder identity matches the assignment.
+- Do not author `reviewer-review.md` for your own implementation.
+- Do not author `security-review.md` for your own sensitive implementation.
+- Hand completed implementation to the delegated Reviewer before merge verification.

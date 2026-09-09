@@ -11,5 +11,5 @@
 - [x] Add governance tests
 - [x] Add documentation
 - [ ] Run PR CI
-- [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Independent diff review
+- [x] Record reusable learning

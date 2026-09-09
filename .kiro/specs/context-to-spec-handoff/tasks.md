@@ -1,0 +1,14 @@
+# Context Pack to Spec Handoff Tasks
+
+- [x] Capture Loop 003 idea
+- [x] Gather Loop 002 learning and current Kiro agent rules
+- [x] Define handoff requirements
+- [x] Define deterministic scaffold design
+- [ ] Implement spec scaffold generator
+- [ ] Add tests
+- [ ] Add package command
+- [ ] Update Kiro Architect / Developer handoff rules
+- [ ] Generate first handoff example
+- [ ] Run PR CI
+- [ ] Independent diff review
+- [ ] Record reusable learning

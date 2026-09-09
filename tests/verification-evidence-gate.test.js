@@ -34,6 +34,26 @@ function fixture(run) {
       "# Reviewer Review\n\n- Status: PASS\n- Reviewed by: reviewer-agent\n"
     );
     fs.writeFileSync(
+      path.join(specDir, "agent-runtime.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        generatedAt: "2026-09-09T00:00:00.000Z",
+        adapters: {
+          builder: { type: "dry-run", timeoutMs: 300000 },
+          reviewer: { type: "dry-run", timeoutMs: 300000 },
+          securityReviewer: { type: "dry-run", timeoutMs: 300000 },
+          verification: { type: "dry-run", timeoutMs: 300000 }
+        },
+        roles: {
+          builder: "builder-agent",
+          reviewer: "reviewer-agent",
+          securityReviewer: null
+        }
+      }, null, 2) + "\n"
+    );
+    fs.mkdirSync(path.join(specDir, "agent-runs"), { recursive: true });
+    fs.writeFileSync(
       path.join(specDir, "agent-task-graph.json"),
       JSON.stringify({
         schemaVersion: 1,
@@ -119,6 +139,8 @@ test("conformance and structure PASS generate evidence pack", () =>
     assert.equal(result.evidence.payload.roles.reviewer, "reviewer-agent");
     assert.equal(result.evidence.payload.orchestrator.status, "ACTIVE");
     assert.equal(result.evidence.payload.orchestrator.tasks.verification.status, "READY");
+    assert.equal(result.evidence.payload.runtime.adapters.builder.type, "dry-run");
+    assert.deepEqual(result.evidence.payload.runtime.runs, {});
     assert.equal(verifyEvidenceDocument(result.evidence), true);
   }));
 
@@ -289,4 +311,16 @@ test("Task Graph role drift from delegation blocks verification", () =>
 
     assert.equal(result.verified, false);
     assert.ok(result.errors.some((error) => error.includes("role provenance differs")));
+  }));
+
+
+test("missing Agent Runtime blocks verification", () =>
+  fixture((root) => {
+    fs.unlinkSync(path.join(root, ".kiro", "specs", "feature", "agent-runtime.json"));
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.some((error) => error.includes("agent-runtime.json is missing")));
   }));

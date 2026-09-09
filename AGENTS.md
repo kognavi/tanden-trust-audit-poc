@@ -151,4 +151,6 @@ npm run check:structure
 - Implementation Handoff generatorはgit branch/worktree/pushを自動実行しない。実Git操作はHuman/Developerが状態を確認して実行する。
 - implementation完了後かつPR作成前に `npm run impl:conform -- <feature-slug> [base-ref]` を実行し、changed filesがreview済みSpecのAffected Componentsとprovenanceに適合することを確認する。
 - Implementation Conformance Gateは意味的な要件適合を証明しない。scope drift/provenance driftを検出する補助Gateであり、independent reviewを代替しない。
+- Conformance通過後、merge判断前に `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、structure validation・conformance・sensitive-path security review signalを `verification-evidence.json` へ固定する。
+- Verification EvidenceのSHA-256 digestはintegrity signalでありdigital signatureではない。Gate PASSはsemantic correctness、Human Approval、production verificationを代替しない。
 - 詳細は `docs/ai-development-os.md` を参照する。

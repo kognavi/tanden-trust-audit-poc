@@ -42,3 +42,10 @@ Implementation Conformance Gate:
 - If a changed file is outside design.md Affected Components, return to Spec review or narrow the implementation instead of bypassing the gate.
 - Sensitive infra/workflow/IAM/KMS/Terraform/policy changes require explicit Trust Boundary, Security and Cost/Operations declarations in design.md.
 - A green conformance gate does not prove semantic correctness; independent diff review is still required.
+
+
+Verification & Evidence Gate:
+- After Implementation Conformance passes, run `npm run verify:gate -- <feature-slug> [base-ref]` before requesting merge.
+- Treat `.kiro/specs/<feature>/verification-evidence.json` as the durable verification summary for the change.
+- Sensitive infra/workflow/IAM/KMS/Terraform/policy changes require `security-review.md` with `Status: PASS` and an explicit independent reviewer.
+- A green Verification & Evidence Gate records deterministic evidence; it does not replace semantic review, Human Approval, or production validation.

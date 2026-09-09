@@ -13,7 +13,8 @@ test("AI Development OS required files exist", () => {
     "docs/context-to-spec-handoff.md",
     "docs/spec-readiness-gate.md",
     "docs/implementation-handoff.md",
-    "docs/implementation-conformance-gate.md",\n    "docs/verification-evidence-gate.md",
+    "docs/implementation-conformance-gate.md",
+    "docs/verification-evidence-gate.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -134,7 +135,6 @@ test("Implementation Conformance Gate stays wired into PR governance", () => {
   assert.match(developer, /Implementation Conformance Gate/);
   assert.match(template, /Conformance Gate/);
 });
-
 
 test("Verification & Evidence Gate stays wired into merge governance", () => {
   const rootAgents = read("AGENTS.md");

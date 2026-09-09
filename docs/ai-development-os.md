@@ -20,9 +20,10 @@
 7. `npm run impl:handoff -- <feature-slug>` でImplementation Handoffを生成し、provenanceと推奨branch/worktree planを確認する。
 8. Human/DeveloperがGit状態を確認してbranchまたはgit worktreeを作成し、最小変更を実装する。
 9. testsとsecurity checksを実行する。
-10. 実装担当とは別のAgentがdiffを批判的にreviewする。
-11. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
-12. Pull RequestへContext Pack / Spec / Readiness / Implementation Handoff provenanceを記録し、checksとHuman review後にmergeする。
+10. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
+11. 実装担当とは別のAgentがdiffを批判的にreviewする。
+12. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
+13. Pull RequestへContext Pack / Spec / Readiness / Implementation Handoff / Conformance provenanceを記録し、checksとHuman review後にmergeする。
 
 ## Persistent state
 

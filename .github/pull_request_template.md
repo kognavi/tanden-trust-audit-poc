@@ -9,6 +9,7 @@
 - Spec:
 - Spec Readiness: PASS / N/A
 - Implementation Handoff:
+- Conformance Gate: PASS / N/A
 - Branch / Worktree:
 
 ## Validation

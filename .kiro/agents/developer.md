@@ -36,3 +36,9 @@ Implementation Handoff:
 - Read the generated `implementation-handoff.md` before editing code.
 - Do not treat suggested git commands as auto-approved. Check local git state before creating branch/worktree.
 - Preserve Context Pack / Spec / Readiness / Handoff provenance in the PR.
+
+Implementation Conformance Gate:
+- After implementation and tests, run `npm run impl:conform -- <feature-slug> [base-ref]` before opening the PR.
+- If a changed file is outside design.md Affected Components, return to Spec review or narrow the implementation instead of bypassing the gate.
+- Sensitive infra/workflow/IAM/KMS/Terraform/policy changes require explicit Trust Boundary, Security and Cost/Operations declarations in design.md.
+- A green conformance gate does not prove semantic correctness; independent diff review is still required.

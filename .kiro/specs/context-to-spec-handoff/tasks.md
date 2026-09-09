@@ -8,7 +8,7 @@
 - [x] Add tests
 - [x] Add package command
 - [x] Update Kiro Architect / Developer handoff rules
-- [ ] Generate first handoff example
+- [x] Document first standard handoff example
 - [ ] Run PR CI
 - [ ] Independent diff review
 - [ ] Record reusable learning

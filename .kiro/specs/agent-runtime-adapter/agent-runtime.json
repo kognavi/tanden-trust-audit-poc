@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "feature": "agent-runtime-adapter",
+  "generatedAt": "2026-09-09T05:56:30.000Z",
+  "adapters": {
+    "builder": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    },
+    "reviewer": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    },
+    "securityReviewer": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    },
+    "verification": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    }
+  },
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "independent-reviewer",
+    "securityReviewer": null
+  },
+  "bootstrapNote": "Loop 010 introduced the Runtime Adapter after Builder work began; no retrospective dry-run is treated as PASS evidence."
+}

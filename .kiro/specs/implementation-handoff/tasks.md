@@ -4,12 +4,12 @@
 - [x] Gather Loop 004 context
 - [x] Define implementation handoff requirements
 - [x] Define provenance and safety design
-- [ ] Implement handoff generator
-- [ ] Add tests
-- [ ] Add package command
+- [x] Implement handoff generator
+- [x] Add tests
+- [x] Add package command
 - [ ] Add PR provenance template
-- [ ] Update Developer / AGENTS / AI Development OS rules
-- [ ] Add governance tests
+- [x] Update Developer / AGENTS / AI Development OS rules
+- [x] Add governance tests
 - [ ] Run PR CI
 - [ ] Independent diff review
 - [ ] Record reusable learning

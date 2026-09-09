@@ -28,7 +28,9 @@
     "impl:handoff": "node scripts/create-implementation-handoff.js",
     "impl:conform": "node scripts/check-implementation-conformance.js",
     "verify:gate": "node scripts/run-verification-evidence-gate.js",
-    "agent:delegate": "node scripts/create-agent-delegation.js"
+    "agent:delegate": "node scripts/create-agent-delegation.js",
+    "agent:graph:init": "node scripts/agent-task-graph.js init",
+    "agent:graph:event": "node scripts/agent-task-graph.js event"
   },
   "keywords": [
     "ai-agent",

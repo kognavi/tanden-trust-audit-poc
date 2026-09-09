@@ -12,6 +12,9 @@
 - Conformance Gate: PASS / N/A
 - Verification Evidence: PASS / N/A
 - Agent Delegation:
+- Agent Task Graph:
+- Orchestrator Status:
+- Retry Count:
 - Builder:
 - Reviewer:
 - Security Reviewer: N/A

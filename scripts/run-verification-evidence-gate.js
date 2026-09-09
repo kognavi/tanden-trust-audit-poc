@@ -84,6 +84,35 @@ function readDelegation(repositoryRoot, featureSlug) {
   }
 }
 
+function readTaskGraphState(repositoryRoot, featureSlug) {
+  const graphPath = path.join(
+    repositoryRoot,
+    ".kiro",
+    "specs",
+    featureSlug,
+    "agent-task-graph.json"
+  );
+  if (!fs.existsSync(graphPath)) {
+    return { valid: false, error: "agent-task-graph.json is missing" };
+  }
+
+  try {
+    const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    if (graph.feature !== featureSlug) {
+      return { valid: false, error: "task graph feature does not match requested feature" };
+    }
+    if (graph.status !== "ACTIVE") {
+      return { valid: false, error: "task graph must be ACTIVE before verification" };
+    }
+    if (!graph.tasks || !graph.tasks.verification || graph.tasks.verification.status !== "READY") {
+      return { valid: false, error: "Verification task is not READY in agent-task-graph.json" };
+    }
+    return { valid: true, graph };
+  } catch (error) {
+    return { valid: false, error: "agent-task-graph.json is invalid JSON" };
+  }
+}
+
 function runStructureValidation(repositoryRoot) {
   const command = process.platform === "win32" ? "npm.cmd" : "npm";
   try {
@@ -143,6 +172,20 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
   const delegation = options.delegationResult || readDelegation(root, featureSlug);
   if (!delegation.valid) {
     errors.push(delegation.error);
+  }
+
+  const taskGraph = options.taskGraphResult || readTaskGraphState(root, featureSlug);
+  if (!taskGraph.valid) {
+    errors.push(taskGraph.error);
+  }
+
+  if (delegation.valid && taskGraph.valid) {
+    const graphRoles = taskGraph.graph.roles || {};
+    for (const roleName of ["builder", "reviewer", "securityReviewer"]) {
+      if ((graphRoles[roleName] || null) !== (delegation.roles[roleName] || null)) {
+        errors.push("task graph role provenance differs from agent delegation: " + roleName);
+      }
+    }
   }
 
   let reviewerReview = { status: null, reviewedBy: null };
@@ -209,6 +252,7 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       conformance,
       structure,
       delegation,
+      taskGraph,
       reviewerReview,
       securityReview
     };
@@ -228,6 +272,12 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       specDir: conformance.specDir
     },
     roles: delegation.roles,
+    orchestrator: {
+      status: taskGraph.graph.status,
+      retryCount: taskGraph.graph.retryCount,
+      maxRetries: taskGraph.graph.maxRetries,
+      tasks: taskGraph.graph.tasks
+    },
     checks: {
       implementationConformance: "PASS",
       structureValidation: "PASS",
@@ -264,6 +314,7 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     conformance,
     structure,
     delegation,
+    taskGraph,
     reviewerReview,
     securityReview
   };
@@ -308,6 +359,7 @@ module.exports = {
   parseReviewArtifact,
   parseSecurityReview,
   readDelegation,
+  readTaskGraphState,
   runStructureValidation,
   stableStringify,
   validateVerificationEvidenceGate,

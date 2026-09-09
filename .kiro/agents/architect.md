@@ -26,3 +26,8 @@ Context Pack to Spec handoff:
 - Treat the Context Pack as supporting context only; verify current state against code, tests and `docs/module-registry.md`.
 - Generated requirements/design/tasks are scaffolds, not approved specs. Resolve placeholders and open questions before implementation.
 - Keep material architecture/security/cost changes behind Human Approval.
+
+Spec Readiness Gate:
+- Before handing a feature to implementation, run `npm run spec:ready -- <feature-slug>`.
+- A passing readiness gate confirms only structural completeness, not requirement correctness or design quality.
+- Resolve placeholders, Open Questions and Review Checklist items before marking the spec ready.

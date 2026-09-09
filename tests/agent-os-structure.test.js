@@ -11,6 +11,7 @@ test("AI Development OS required files exist", () => {
     "docs/ai-development-os.md",
     "docs/loop-engineering.md",
     "docs/context-to-spec-handoff.md",
+    "docs/spec-readiness-gate.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -82,4 +83,16 @@ test("Context Pack to Spec handoff stays wired into agent governance", () => {
   assert.match(rootAgents, /spec:scaffold/);
   assert.match(architect, /source Context Pack/i);
   assert.match(developer, /Source Context Pack/i);
+});
+
+test("Spec Readiness Gate stays wired into implementation governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const architect = read(".kiro/agents/architect.md");
+  const developer = read(".kiro/agents/developer.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["spec:ready"], "node scripts/check-spec-readiness.js");
+  assert.match(rootAgents, /spec:ready/);
+  assert.match(architect, /Spec Readiness Gate/);
+  assert.match(developer, /spec:ready/);
 });

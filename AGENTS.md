@@ -145,4 +145,6 @@ npm run check:structure
 - non-trivialな新規featureでは、原則として `knowledge/20-research/context-packs/` のContext PackをSpec handoff入力とする。
 - Context PackからSpecへ移る場合は `npm run spec:scaffold -- <context-pack-path> <feature-slug>` で3ファイルの標準骨格を作り、Kiro/Codexがcode/tests/module registryを照合して内容を確定する。
 - generated scaffoldは承認済み仕様ではない。placeholderを残したままimplementationへ進まない。
+- implementation開始前に `npm run spec:ready -- <feature-slug>` を実行し、Spec Readiness Gateがpassしていることを確認する。
+- Spec Readiness Gateは最低限の完成条件を検査するだけで、要件妥当性や設計品質のHuman/Agent reviewを代替しない。
 - 詳細は `docs/ai-development-os.md` を参照する。

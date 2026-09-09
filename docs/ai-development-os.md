@@ -16,11 +16,12 @@
 3. 必要な思考・仮説・調査事項を `knowledge/00-inbox/` へ置く。
 4. 関連するknowledge、code、tests、ADRを集めてContext Packとして文脈化する。
 5. Context Packをhandoff入力として `.kiro/specs/<feature>/` のrequirements/design/tasks scaffoldを生成し、code/tests/module registryと照合して仕様を確定する。
-6. branchまたはgit worktree上で最小変更を実装する。
-7. testsとsecurity checksを実行する。
-8. 実装担当とは別のAgentがdiffを批判的にreviewする。
-9. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
-10. Pull Requestを作成し、checksとHuman review後にmergeする。
+6. `npm run spec:ready -- <feature-slug>` を実行し、placeholder・未解決Open Questions・未完了Review Checklist・Source Context Pack不整合がないことを確認する。
+7. branchまたはgit worktree上で最小変更を実装する。
+8. testsとsecurity checksを実行する。
+9. 実装担当とは別のAgentがdiffを批判的にreviewする。
+10. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
+11. Pull Requestを作成し、checksとHuman review後にmergeする。
 
 ## Persistent state
 

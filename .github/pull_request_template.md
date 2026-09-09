@@ -10,6 +10,9 @@
 - Spec Readiness: PASS / N/A
 - Implementation Handoff:
 - Conformance Gate: PASS / N/A
+- Verification Evidence: PASS / N/A
+- Evidence Pack:
+- Evidence Digest:
 - Branch / Worktree:
 
 ## Validation

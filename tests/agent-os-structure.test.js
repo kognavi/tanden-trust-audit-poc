@@ -16,6 +16,7 @@ test("AI Development OS required files exist", () => {
     "docs/implementation-conformance-gate.md",
     "docs/verification-evidence-gate.md",
     "docs/multi-agent-delegation.md",
+    "docs/agent-orchestrator-task-graph.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -168,4 +169,24 @@ test("Multi-Agent Delegation stays wired into verification governance", () => {
   assert.match(securityReviewer, /agent-delegation\.json/);
   assert.match(template, /Agent Delegation/);
   assert.match(template, /Security Reviewer/);
+});
+
+
+test("Agent Orchestrator Task Graph stays wired into workflow governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const developer = read(".kiro/agents/developer.md");
+  const reviewer = read(".kiro/agents/reviewer.md");
+  const securityReviewer = read(".kiro/agents/security-reviewer.md");
+  const template = read(".github/pull_request_template.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["agent:graph:init"], "node scripts/agent-task-graph.js init");
+  assert.equal(pkg.scripts["agent:graph:event"], "node scripts/agent-task-graph.js event");
+  assert.match(rootAgents, /agent:graph:init/);
+  assert.match(rootAgents, /FAILED terminal state/);
+  assert.match(developer, /Agent Orchestrator \/ Task Graph/);
+  assert.match(reviewer, /Reviewer task is `READY`/);
+  assert.match(securityReviewer, /Security Reviewer task is `READY`/);
+  assert.match(template, /Agent Task Graph/);
+  assert.match(template, /Retry Count/);
 });

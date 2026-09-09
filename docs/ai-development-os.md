@@ -21,16 +21,16 @@
 8. `npm run agent:delegate -- <feature-slug> <builder-id> <reviewer-id> [security-reviewer-id]` でrole separationを固定する。
 9. `npm run agent:graph:init -- <feature-slug> [max-retries]` でdeterministic Task Graphを初期化する。
 10. `npm run agent:runtime:init -- <feature-slug>` でExecution Layerを初期化する。
-19. READY taskをRuntime Adapter経由で実行し、run evidenceを残す。default dry-runはworkflowを進めない。
-20. Builder taskがREADYであることを確認し、Human/Builderがbranchまたはgit worktreeで最小変更を実装する.
-11. testsとsecurity checksを実行し、`builder-pass` または `builder-fail` eventをTask Graphへ適用する。
-12. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
-13. Reviewer taskがREADYならdelegated Reviewerがdiffをreviewし、artifactと `reviewer-pass|reviewer-fail` eventを記録する。
-14. Security Reviewer taskがREADYなら独立security reviewと `security-pass|security-fail` eventを記録する。
-15. Verification taskがREADYなら `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、`verify-pass|verify-fail` eventを記録する。
-16. FAIL eventはBuilder retryへrouteし、maxRetries超過時はFAILEDとしてHuman判断へ戻す。
-17. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
-18. Task Graph COMPLETEとchecks/Human reviewを確認してmergeする。
+11. READY taskをRuntime Adapter経由で実行し、run evidenceを残す。default dry-runはworkflowを進めない。
+12. Builder taskがREADYであることを確認し、Human/Builderがbranchまたはgit worktreeで最小変更を実装する。
+13. testsとsecurity checksを実行し、`builder-pass` または `builder-fail` eventをTask Graphへ適用する。
+14. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
+15. Reviewer taskがREADYならdelegated Reviewerがdiffをreviewし、artifactと `reviewer-pass|reviewer-fail` eventを記録する。
+16. Security Reviewer taskがREADYなら独立security reviewと `security-pass|security-fail` eventを記録する。
+17. Verification taskがREADYなら `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、`verify-pass|verify-fail` eventを記録する。
+18. FAIL eventはBuilder retryへrouteし、maxRetries超過時はFAILEDとしてHuman判断へ戻す。
+19. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
+20. Task Graph COMPLETEとchecks/Human reviewを確認してmergeする。
 
 ## Persistent state
 

@@ -12,7 +12,7 @@ resources:
 permissions:
   rules:
     - capability: shell
-      match: ["git diff*", "npm run check:structure"]
+      match: ["git diff*", "npm run check:structure", "npm run agent:graph:event*", "npm run agent:runtime:*"]
       effect: allow
 ---
 

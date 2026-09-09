@@ -7,7 +7,7 @@
 - [x] Implement handoff generator
 - [x] Add tests
 - [x] Add package command
-- [ ] Add PR provenance template
+- [x] Add PR provenance template
 - [x] Update Developer / AGENTS / AI Development OS rules
 - [x] Add governance tests
 - [ ] Run PR CI

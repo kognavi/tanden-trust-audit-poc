@@ -51,7 +51,9 @@ COMPLETE      Builder READY (retry)
 ## Affected Components
 
 - `scripts/agent-task-graph.js`
+- `scripts/run-verification-evidence-gate.js`
 - `tests/agent-task-graph.test.js`
+- `tests/verification-evidence-gate.test.js`
 - `tests/agent-os-structure.test.js`
 - `package.json`
 - `AGENTS.md`

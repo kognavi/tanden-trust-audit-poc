@@ -9,12 +9,12 @@
 - [x] Gather Loop 006 context
 - [x] Define verification/evidence requirements
 - [x] Define Evidence Pack design
-- [ ] Implement Verification & Evidence Gate
-- [ ] Add deterministic tests
-- [ ] Add package command
-- [ ] Update PR template / Developer / AGENTS / AI Development OS
-- [ ] Add governance tests
-- [ ] Add documentation
+- [x] Implement Verification & Evidence Gate
+- [x] Add deterministic tests
+- [x] Add package command
+- [x] Update PR template / Developer / AGENTS / AI Development OS
+- [x] Add governance tests
+- [x] Add documentation
 - [ ] Run PR CI
 - [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Record reusable learning

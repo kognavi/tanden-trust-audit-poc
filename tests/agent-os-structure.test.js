@@ -121,3 +121,15 @@ test("PR template carries implementation provenance fields", () => {
     assert.match(template, new RegExp(label));
   }
 });
+
+test("Implementation Conformance Gate stays wired into PR governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const developer = read(".kiro/agents/developer.md");
+  const template = read(".github/pull_request_template.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["impl:conform"], "node scripts/check-implementation-conformance.js");
+  assert.match(rootAgents, /impl:conform/);
+  assert.match(developer, /Implementation Conformance Gate/);
+  assert.match(template, /Conformance Gate/);
+});

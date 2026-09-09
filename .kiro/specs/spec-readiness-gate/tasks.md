@@ -10,5 +10,5 @@
 - [x] Update Architect / Developer rules
 - [x] Update AI Development OS / governance tests
 - [ ] Run PR CI
-- [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Independent diff review
+- [x] Record reusable learning

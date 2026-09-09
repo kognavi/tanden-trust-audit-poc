@@ -24,7 +24,8 @@
     "validate:knowledge": "node scripts/validate-knowledge-metadata.js",
     "context:generate": "node scripts/generate-context-pack.js",
     "spec:scaffold": "node scripts/scaffold-spec-from-context.js",
-    "spec:ready": "node scripts/check-spec-readiness.js"
+    "spec:ready": "node scripts/check-spec-readiness.js",
+    "impl:handoff": "node scripts/create-implementation-handoff.js"
   },
   "keywords": [
     "ai-agent",

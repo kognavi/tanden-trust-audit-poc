@@ -65,6 +65,9 @@ function readDelegation(repositoryRoot, featureSlug) {
 
   try {
     const document = JSON.parse(fs.readFileSync(delegationPath, "utf8"));
+    if (document.feature !== featureSlug) {
+      return { valid: false, error: "delegation feature does not match requested feature" };
+    }
     const roles = document.roles || {};
     if (!roles.builder || !roles.reviewer) {
       return { valid: false, error: "delegation requires builder and reviewer identities" };

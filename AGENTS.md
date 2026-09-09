@@ -160,4 +160,7 @@ npm run check:structure
 - Multi-Agent Delegation後は `npm run agent:graph:init -- <feature-slug> [max-retries]` でTask Graphを初期化し、`npm run agent:graph:event -- <feature-slug> <event>` だけでstate transitionする。
 - Builder → Reviewer → Security Reviewer(optional) → Verificationの順序を飛び越えない。FAILはBuilder retryへrouteし、maxRetries超過でFAILED terminal stateにする。
 - `agent-task-graph.json` を手編集してGateを迂回しない。COMPLETE/FAILED terminal stateは自動で再開しない。
+- Task Graph初期化後は `npm run agent:runtime:init -- <feature-slug>` でprovider-neutral Runtimeを初期化し、READY taskだけを `npm run agent:runtime:run -- <feature-slug> <task-name> [scripted-result]` の実行対象にする。
+- default dry-run adapterはrun evidenceだけを残しGraphを進めない。scripted adapterはdeterministic validation用でありexternal provider実行ではない。
+- Runtime run evidenceは `.kiro/specs/<feature>/agent-runs/` に残し、Verification Evidenceへadapter/run summaryを接続する。
 - 詳細は `docs/ai-development-os.md` を参照する。

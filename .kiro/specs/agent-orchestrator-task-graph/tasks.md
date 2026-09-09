@@ -9,12 +9,12 @@
 - [x] Gather Loop 008 context
 - [x] Define Task Graph requirements
 - [x] Define state machine design
-- [ ] Implement graph init / event transition
-- [ ] Add deterministic tests
-- [ ] Add package commands
-- [ ] Update agents / AGENTS / PR template / AI Development OS
-- [ ] Add governance tests
-- [ ] Add documentation
+- [x] Implement graph init / event transition
+- [x] Add deterministic tests
+- [x] Add package commands
+- [x] Update agents / AGENTS / PR template / AI Development OS
+- [x] Add governance tests
+- [x] Add documentation
 - [ ] Run PR CI
 - [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Record reusable learning

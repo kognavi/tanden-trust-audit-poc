@@ -51,6 +51,7 @@ Human merge decision
 - `.github/pull_request_template.md`
 - `docs/ai-development-os.md`
 - `docs/multi-agent-delegation.md`
+- `docs/verification-evidence-gate.md`
 - `knowledge/00-inbox/loop-008-multi-agent-delegation.md`
 - `knowledge/20-research/loop-008-context.md`
 

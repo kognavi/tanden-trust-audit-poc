@@ -25,3 +25,8 @@ Context Pack to Spec handoff:
 - Do not implement from an untouched generated scaffold or unresolved placeholders.
 - Re-check current code/tests/module registry even when the Context Pack appears complete.
 - If implementation reveals stale or missing context, update the spec/knowledge loop rather than silently diverging.
+
+Spec Readiness Gate:
+- Do not begin implementation until `npm run spec:ready -- <feature-slug>` passes.
+- A green readiness gate is necessary but not sufficient; still inspect the finalized requirements/design and current code/tests/module registry.
+- If readiness fails, return to the Spec/Context loop instead of bypassing the gate.

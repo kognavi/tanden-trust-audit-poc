@@ -33,6 +33,7 @@ Task Graph event
 - `.github/pull_request_template.md`
 - `docs/ai-development-os.md`
 - `docs/agent-runtime-adapter.md`
+- `docs/verification-evidence-gate.md`
 - `knowledge/00-inbox/loop-010-agent-runtime-adapter.md`
 - `knowledge/20-research/loop-010-context.md`
 

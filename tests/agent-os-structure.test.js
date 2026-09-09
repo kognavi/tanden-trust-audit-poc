@@ -11,6 +11,7 @@ test("AI Development OS required files exist", () => {
     "docs/ai-development-os.md",
     "docs/loop-engineering.md",
     "docs/context-to-spec-handoff.md",
+    "docs/spec-readiness-gate.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",

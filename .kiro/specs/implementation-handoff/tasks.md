@@ -11,5 +11,5 @@
 - [x] Update Developer / AGENTS / AI Development OS rules
 - [x] Add governance tests
 - [ ] Run PR CI
-- [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Independent diff review
+- [x] Record reusable learning

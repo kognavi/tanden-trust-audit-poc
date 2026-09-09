@@ -10,5 +10,5 @@
 - [x] Update Kiro Architect / Developer handoff rules
 - [x] Document first standard handoff example
 - [ ] Run PR CI
-- [ ] Independent diff review
-- [ ] Record reusable learning
+- [x] Independent diff review
+- [x] Record reusable learning

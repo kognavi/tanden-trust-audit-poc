@@ -20,12 +20,14 @@ default base-refは `main` です。
 2. `npm run check:structure` がPASSすること
 3. `.kiro/specs/<feature>/agent-delegation.json` が存在し、BuilderとReviewerが分離されていること
 4. `.kiro/specs/<feature>/agent-task-graph.json` がACTIVEで、Verification taskがREADYであること
-5. `reviewer-review.md` が `Status: PASS` を持ち、`Reviewed by:` がdelegated Reviewer identityと一致すること
-6. sensitive path変更時、delegated Security Reviewerが存在すること
-7. sensitive path変更時、`security-review.md` が `Status: PASS` を持ち、`Reviewed by:` がdelegated Security Reviewer identityと一致すること
-8. Task Graphのrole provenanceがAgent Delegationと一致すること
-9. PASS結果を `verification-evidence.json` に記録すること
-10. Evidence payloadのSHA-256 digestが一致すること
+5. `.kiro/specs/<feature>/agent-runtime.json` が存在し、feature provenanceが一致すること
+6. `reviewer-review.md` が `Status: PASS` を持ち、`Reviewed by:` がdelegated Reviewer identityと一致すること
+7. sensitive path変更時、delegated Security Reviewerが存在すること
+8. sensitive path変更時、`security-review.md` が `Status: PASS` を持ち、`Reviewed by:` がdelegated Security Reviewer identityと一致すること
+9. Task Graphのrole provenanceがAgent Delegationと一致すること
+10. Runtime adapter configurationとrun summaryをEvidenceへ含めること
+11. PASS結果を `verification-evidence.json` に記録すること
+12. Evidence payloadのSHA-256 digestが一致すること
 
 ## Evidence Pack
 
@@ -47,6 +49,7 @@ PASS時に次を生成します。
 - structure validation result
 - Builder / Reviewer / Security Reviewer role provenance
 - orchestrator status / retry count / task states
+- runtime adapter configuration / per-task run summary
 - reviewer review status
 - security review status
 - generated timestamp

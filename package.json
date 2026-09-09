@@ -30,7 +30,9 @@
     "verify:gate": "node scripts/run-verification-evidence-gate.js",
     "agent:delegate": "node scripts/create-agent-delegation.js",
     "agent:graph:init": "node scripts/agent-task-graph.js init",
-    "agent:graph:event": "node scripts/agent-task-graph.js event"
+    "agent:graph:event": "node scripts/agent-task-graph.js event",
+    "agent:runtime:init": "node scripts/agent-runtime-adapter.js init",
+    "agent:runtime:run": "node scripts/agent-runtime-adapter.js run"
   },
   "keywords": [
     "ai-agent",

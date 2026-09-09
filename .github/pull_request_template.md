@@ -13,6 +13,8 @@
 - Verification Evidence: PASS / N/A
 - Agent Delegation:
 - Agent Task Graph:
+- Agent Runtime:
+- Runtime Runs:
 - Orchestrator Status:
 - Retry Count:
 - Builder:

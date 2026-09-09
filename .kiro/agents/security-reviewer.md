@@ -12,7 +12,7 @@ resources:
 permissions:
   rules:
     - capability: shell
-      match: ["git diff*", "npm run check:structure"]
+      match: ["git diff*", "npm run check:structure", "npm run agent:graph:event*", "npm run agent:runtime:*"]
       effect: allow
 ---
 
@@ -32,3 +32,9 @@ Agent Orchestrator / Task Graph:
 - Record PASS/FAIL evidence, then apply `security-pass` or `security-fail`.
 - Do not run when the task is `SKIPPED` or `BLOCKED`.
 - Stop if the graph is terminal.
+
+Agent Runtime Adapter:
+- Execute assigned READY work through the configured Runtime Adapter when Runtime execution is in scope.
+- Treat `agent-runs/*.json` as execution provenance, not as proof of semantic correctness.
+- Do not use dry-run as PASS evidence.
+- Do not bypass Task Graph ordering by editing runtime or graph artifacts by hand.

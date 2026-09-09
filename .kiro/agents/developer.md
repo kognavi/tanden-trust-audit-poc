@@ -11,7 +11,7 @@ resources:
 permissions:
   rules:
     - capability: shell
-      match: ["npm test", "npm run check:structure", "npm run check:circular", "npm run check:depcruise", "npm run validate:evidence", "npm run verify", "npm run agent:delegate*", "npm run agent:graph:*", "git status", "git diff*"]
+      match: ["npm test", "npm run check:structure", "npm run check:circular", "npm run check:depcruise", "npm run validate:evidence", "npm run verify", "npm run agent:delegate*", "npm run agent:graph:*", "npm run agent:runtime:*", "git status", "git diff*"]
       effect: allow
 ---
 
@@ -62,3 +62,9 @@ Agent Orchestrator / Task Graph:
 - After implementation/tests are complete, advance only through the orchestrator event contract; do not edit task graph state by hand.
 - On Reviewer/Security/Verification failure, accept reassignment only when the graph routes back to Builder `READY`.
 - Stop work when graph status is `FAILED` or `COMPLETE`.
+
+Agent Runtime Adapter:
+- Execute assigned READY work through the configured Runtime Adapter when Runtime execution is in scope.
+- Treat `agent-runs/*.json` as execution provenance, not as proof of semantic correctness.
+- Do not use dry-run as PASS evidence.
+- Do not bypass Task Graph ordering by editing runtime or graph artifacts by hand.

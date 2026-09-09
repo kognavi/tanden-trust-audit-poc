@@ -113,6 +113,54 @@ function readTaskGraphState(repositoryRoot, featureSlug) {
   }
 }
 
+function readRuntimeEvidenceSummary(repositoryRoot, featureSlug) {
+  const specDir = path.join(repositoryRoot, ".kiro", "specs", featureSlug);
+  const runtimePath = path.join(specDir, "agent-runtime.json");
+  if (!fs.existsSync(runtimePath)) {
+    return { valid: false, error: "agent-runtime.json is missing" };
+  }
+
+  try {
+    const config = JSON.parse(fs.readFileSync(runtimePath, "utf8"));
+    if (config.feature !== featureSlug) {
+      return { valid: false, error: "runtime feature does not match requested feature" };
+    }
+
+    const dir = path.join(specDir, "agent-runs");
+    const runs = fs.existsSync(dir)
+      ? fs.readdirSync(dir)
+          .filter((name) => name.endsWith(".json"))
+          .sort()
+          .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")))
+      : [];
+
+    const byTask = {};
+    for (const run of runs) {
+      if (run.feature !== featureSlug) {
+        return { valid: false, error: "runtime run feature provenance mismatch" };
+      }
+      if (!byTask[run.task]) byTask[run.task] = [];
+      byTask[run.task].push(run);
+    }
+
+    const summary = {};
+    for (const [taskName, taskRuns] of Object.entries(byTask)) {
+      const latest = taskRuns[taskRuns.length - 1];
+      summary[taskName] = {
+        runCount: taskRuns.length,
+        latestResult: latest.result,
+        latestAdapter: latest.adapter,
+        latestRunId: latest.runId,
+        latestGraphEvent: latest.graphEvent
+      };
+    }
+
+    return { valid: true, config, runs, summary };
+  } catch (error) {
+    return { valid: false, error: "Agent Runtime evidence is invalid JSON" };
+  }
+}
+
 function runStructureValidation(repositoryRoot) {
   const command = process.platform === "win32" ? "npm.cmd" : "npm";
   try {
@@ -188,6 +236,11 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     }
   }
 
+  const runtime = options.runtimeResult || readRuntimeEvidenceSummary(root, featureSlug);
+  if (!runtime.valid) {
+    errors.push(runtime.error);
+  }
+
   let reviewerReview = { status: null, reviewedBy: null };
   if (delegation.valid) {
     const reviewerReviewPath = path.join(
@@ -253,6 +306,7 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       structure,
       delegation,
       taskGraph,
+      runtime,
       reviewerReview,
       securityReview
     };
@@ -277,6 +331,10 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
       retryCount: taskGraph.graph.retryCount,
       maxRetries: taskGraph.graph.maxRetries,
       tasks: taskGraph.graph.tasks
+    },
+    runtime: {
+      adapters: runtime.config.adapters,
+      runs: runtime.summary
     },
     checks: {
       implementationConformance: "PASS",
@@ -315,6 +373,7 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     structure,
     delegation,
     taskGraph,
+    runtime,
     reviewerReview,
     securityReview
   };
@@ -360,6 +419,7 @@ module.exports = {
   parseSecurityReview,
   readDelegation,
   readTaskGraphState,
+  readRuntimeEvidenceSummary,
   runStructureValidation,
   stableStringify,
   validateVerificationEvidenceGate,

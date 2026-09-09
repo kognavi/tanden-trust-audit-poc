@@ -17,6 +17,7 @@ test("AI Development OS required files exist", () => {
     "docs/verification-evidence-gate.md",
     "docs/multi-agent-delegation.md",
     "docs/agent-orchestrator-task-graph.md",
+    "docs/agent-runtime-adapter.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -189,4 +190,24 @@ test("Agent Orchestrator Task Graph stays wired into workflow governance", () =>
   assert.match(securityReviewer, /Security Reviewer task is `READY`/);
   assert.match(template, /Agent Task Graph/);
   assert.match(template, /Retry Count/);
+});
+
+
+test("Agent Runtime Adapter stays wired into execution governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const developer = read(".kiro/agents/developer.md");
+  const reviewer = read(".kiro/agents/reviewer.md");
+  const securityReviewer = read(".kiro/agents/security-reviewer.md");
+  const template = read(".github/pull_request_template.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(pkg.scripts["agent:runtime:init"], "node scripts/agent-runtime-adapter.js init");
+  assert.equal(pkg.scripts["agent:runtime:run"], "node scripts/agent-runtime-adapter.js run");
+  assert.match(rootAgents, /agent:runtime:init/);
+  assert.match(rootAgents, /dry-run adapter/);
+  assert.match(developer, /Agent Runtime Adapter/);
+  assert.match(reviewer, /Agent Runtime Adapter/);
+  assert.match(securityReviewer, /Agent Runtime Adapter/);
+  assert.match(template, /Agent Runtime/);
+  assert.match(template, /Runtime Runs/);
 });

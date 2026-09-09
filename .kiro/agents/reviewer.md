@@ -28,3 +28,9 @@ Agent Orchestrator / Task Graph:
 - Record PASS/FAIL review evidence, then apply the matching `reviewer-pass` or `reviewer-fail` event.
 - Do not skip directly to Security Reviewer or Verification.
 - Stop if the graph is terminal.
+
+Agent Runtime Adapter:
+- Execute assigned READY work through the configured Runtime Adapter when Runtime execution is in scope.
+- Treat `agent-runs/*.json` as execution provenance, not as proof of semantic correctness.
+- Do not use dry-run as PASS evidence.
+- Do not bypass Task Graph ordering by editing runtime or graph artifacts by hand.

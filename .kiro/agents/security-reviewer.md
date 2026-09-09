@@ -26,3 +26,9 @@ Multi-Agent Delegation:
 - The delegated Security Reviewer identity must differ from the Builder identity.
 - Record the independent outcome in `security-review.md` using `Status: PASS|FAIL` and `Reviewed by: <delegated identity>`.
 - Do not modify implementation source while acting as Security Reviewer.
+
+Agent Orchestrator / Task Graph:
+- Begin security review only when the Security Reviewer task is `READY`.
+- Record PASS/FAIL evidence, then apply `security-pass` or `security-fail`.
+- Do not run when the task is `SKIPPED` or `BLOCKED`.
+- Stop if the graph is terminal.

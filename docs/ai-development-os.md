@@ -19,14 +19,16 @@
 6. `npm run spec:ready -- <feature-slug>` を実行し、placeholder・未解決Open Questions・未完了Review Checklist・Source Context Pack不整合がないことを確認する。
 7. `npm run impl:handoff -- <feature-slug>` でImplementation Handoffを生成し、provenanceと推奨branch/worktree planを確認する。
 8. `npm run agent:delegate -- <feature-slug> <builder-id> <reviewer-id> [security-reviewer-id]` でrole separationを固定する。
-9. Human/BuilderがGit状態を確認してbranchまたはgit worktreeを作成し、最小変更を実装する。
-10. testsとsecurity checksを実行する。
-11. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
-12. delegated Reviewerがdiffを批判的にreviewし、`reviewer-review.md` を記録する。
-13. sensitive changeではdelegated Security Reviewerが独立reviewし、`security-review.md` を記録する。
-14. `npm run verify:gate -- <feature-slug> [base-ref]` でrole provenanceを含むVerification Evidenceを生成する。
-15. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
-16. Pull RequestへContext Pack / Spec / Handoff / Delegation / Reviewer / Security Reviewer / Verification Evidence provenanceを記録し、checksとHuman review後にmergeする。
+9. `npm run agent:graph:init -- <feature-slug> [max-retries]` でdeterministic Task Graphを初期化する。
+10. Builder taskがREADYであることを確認し、Human/Builderがbranchまたはgit worktreeで最小変更を実装する。
+11. testsとsecurity checksを実行し、`builder-pass` または `builder-fail` eventをTask Graphへ適用する。
+12. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
+13. Reviewer taskがREADYならdelegated Reviewerがdiffをreviewし、artifactと `reviewer-pass|reviewer-fail` eventを記録する。
+14. Security Reviewer taskがREADYなら独立security reviewと `security-pass|security-fail` eventを記録する。
+15. Verification taskがREADYなら `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、`verify-pass|verify-fail` eventを記録する。
+16. FAIL eventはBuilder retryへrouteし、maxRetries超過時はFAILEDとしてHuman判断へ戻す。
+17. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
+18. Task Graph COMPLETEとchecks/Human reviewを確認してmergeする。
 
 ## Persistent state
 

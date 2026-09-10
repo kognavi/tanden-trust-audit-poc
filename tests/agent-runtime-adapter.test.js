@@ -10,7 +10,8 @@ const {
   extractCodexSessionId,
   initRuntime,
   listRunEvidence,
-  runTask
+  runTask,
+  runtimeLocalPath
 } = require("../scripts/agent-runtime-adapter");
 
 function fixture(run) {
@@ -176,6 +177,15 @@ test("configureCodexReviewer opts reviewer into real provider with read-only san
     assert.equal(result.config.adapters.reviewer.command, "codex-test");
     assert.equal(result.config.adapters.reviewer.sandbox, "read-only");
     assert.equal(result.config.adapters.reviewer.timeoutMs, 120000);
+    assert.equal(result.outputPath, runtimeLocalPath(root, "feature"));
+
+    const committed = JSON.parse(
+      fs.readFileSync(path.join(root, ".kiro", "specs", "feature", "agent-runtime.json"), "utf8")
+    );
+    assert.equal(committed.adapters.reviewer.type, "dry-run");
+
+    const local = JSON.parse(fs.readFileSync(result.outputPath, "utf8"));
+    assert.equal(local.adapters.reviewer.type, "codex-exec-review");
   }));
 
 test("real Codex reviewer PASS writes review artifact and advances reviewer-pass", () =>
@@ -344,20 +354,70 @@ test("Codex provider error records evidence but does not advance Task Graph", ()
     assert.equal(transitionCalled, false);
   }));
 
-test("codex-exec-review adapter rejects non-reviewer task", () =>
+test("codex-exec-review adapter rejects non-reviewer task even with local opt-in", () =>
   fixture((root, graph) => {
-    const runtime = initRuntime(root, "feature", { graph });
-    const config = JSON.parse(fs.readFileSync(runtime.outputPath, "utf8"));
-    config.adapters.builder = {
-      type: "codex-exec-review",
-      command: "codex",
-      timeoutMs: 300000,
-      baseRef: "main",
-      sandbox: "read-only"
-    };
-    fs.writeFileSync(runtime.outputPath, JSON.stringify(config, null, 2) + "\n");
+    initRuntime(root, "feature", { graph });
+    fs.writeFileSync(
+      runtimeLocalPath(root, "feature"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        adapters: {
+          builder: {
+            type: "codex-exec-review",
+            command: "codex",
+            timeoutMs: 300000,
+            baseRef: "main"
+          }
+        }
+      }, null, 2) + "\n"
+    );
     assert.throws(
       () => runTask(root, "feature", "builder", { graph }),
       /only supports reviewer task/
+    );
+  }));
+
+test("committed real provider config without local opt-in is rejected", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    const runtime = initRuntime(root, "feature", { graph: readyGraph });
+    const config = JSON.parse(fs.readFileSync(runtime.outputPath, "utf8"));
+    config.adapters.reviewer = {
+      type: "codex-exec-review",
+      command: "codex",
+      timeoutMs: 300000,
+      baseRef: "main"
+    };
+    fs.writeFileSync(runtime.outputPath, JSON.stringify(config, null, 2) + "\n");
+
+    assert.throws(
+      () => runTask(root, "feature", "reviewer", { graph: readyGraph }),
+      /task-specific local runtime opt-in/
+    );
+  }));
+
+test("tampered local sandbox cannot relax Codex read-only boundary", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature", { command: "codex-test" });
+
+    const localPath = runtimeLocalPath(root, "feature");
+    const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
+    local.adapters.reviewer.sandbox = "danger-full-access";
+    fs.writeFileSync(localPath, JSON.stringify(local, null, 2) + "\n");
+
+    assert.throws(
+      () => runTask(root, "feature", "reviewer", { graph: readyGraph }),
+      /sandbox must be read-only/
     );
   }));

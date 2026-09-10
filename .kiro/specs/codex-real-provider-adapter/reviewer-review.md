@@ -3,13 +3,13 @@
 - Status: FAIL
 - Reviewed by: codex-reviewer
 - Provider: codex-cli
-- Provider Session: 01a088e0-7cec-7060-8a39-2e6aceedaf9a
+- Provider Session: 01a088e6-ccb0-7280-a07f-8ea3c40e5aa3
 
 ## Summary
 
-Spec ReadinessはPASSし、read-only sandbox・local opt-in・provider verdict分離の修正も確認できました。しかし、main基準のImplementation Conformance Gateが多数のscope外変更を検出して失敗しており、必須governance gateと検証が未完了です。テスト実行失敗はread-only sandboxによるEPERMのため、それ自体は製品欠陥として扱っていません。
+origin/main を基準とした Implementation Conformance は PASS。read-only sandbox、Reviewer 限定、local opt-in、provider error 時の非遷移も仕様に沿っています。テストはread-only環境のEPERMで一部実行不能でしたが、欠陥扱いしていません。structured output のRuntime再検証にblocking issueが残ります。
 
 ## Findings
 
-- [HIGH] mainとの差分にFeature SpecのAffected Components外の多数の変更が含まれ、Implementation Conformance Gateが失敗する
-- [HIGH] PR CI再実行とVerification Evidence Gateが未完了で、現在のHEADに対する必須検証証跡がない
+- [HIGH] Runtime再検証がJSON Schemaの長さ制限を適用せず、Schema不適合outputをPASSとして受理する
+- [HIGH] PASS verdictとHIGH/CRITICAL findingsの矛盾を拒否せずreviewer-passへ遷移できる

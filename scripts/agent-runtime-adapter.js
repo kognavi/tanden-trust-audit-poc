@@ -107,7 +107,8 @@ function configureCodexReviewer(repositoryRoot, featureSlug, options = {}) {
         type: "codex-exec-review",
         command: options.command || "codex",
         timeoutMs,
-        baseRef: options.baseRef || "main"
+        baseRef: options.baseRef || "main",
+        sandbox: "read-only"
       }
     }
   };
@@ -142,6 +143,7 @@ function buildCodexReviewPrompt(featureSlug, baseRef) {
     "Read AGENTS.md and the feature specification under .kiro/specs/" + featureSlug + "/.",
     "Review the implementation diff against base ref " + baseRef + ".",
     "Check requirements coverage, scope drift, tests, maintainability, security-sensitive behavior, and silent behavior changes.",
+    "The reviewer sandbox is intentionally read-only. Do not treat inability to run write-producing tests as a product defect by itself; use existing CI evidence and static inspection when a command fails only because the sandbox prevents writes.",
     "Return only a final response conforming to the supplied JSON Schema.",
     "Use verdict PASS only when no blocking finding remains.",
     "Use verdict FAIL when any blocking correctness, security, governance, or specification issue remains.",

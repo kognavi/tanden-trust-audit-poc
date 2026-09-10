@@ -26,6 +26,8 @@ Loop 010のprovider-neutral Runtime Adapterに、最初のreal providerとして
 - invocationは `codex exec --json --ephemeral --ignore-user-config --sandbox read-only --output-schema schemas/codex-review-result.schema.json --output-last-message .kiro/specs/codex-real-provider-adapter/agent-runs/.codex-last-UUID.json -`
 - promptはstdinで渡す
 - promptにはfeature/spec/baseRef/review requirementsを含める
+- Reviewerのdefault baseRefは `origin/main` とし、stale local `main` を代用しない
+- Verification Evidence GateはReviewer PASS後のdownstream gateであり、未生成であること単独ではReviewer FAIL理由にしない
 - prompt/raw response/stdout/stderrはrun evidenceへ保存しない
 - prompt/stdout/stderrはSHA-256 digestのみ保存可能
 - output schemaはPASS/FAIL verdictを必須とし、Runtime側でもsummary/findings/severityを再検証する

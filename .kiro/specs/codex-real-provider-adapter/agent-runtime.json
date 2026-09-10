@@ -8,11 +8,8 @@
       "timeoutMs": 300000
     },
     "reviewer": {
-      "type": "codex-exec-review",
-      "command": "codex",
-      "timeoutMs": 300000,
-      "baseRef": "main",
-      "sandbox": "read-only"
+      "type": "dry-run",
+      "timeoutMs": 300000
     },
     "securityReviewer": {
       "type": "dry-run",
@@ -28,5 +25,5 @@
     "reviewer": "codex-reviewer",
     "securityReviewer": null
   },
-  "bootstrapNote": "Loop 011 is configured for real Codex review. No reviewer PASS is recorded until the real provider run succeeds with a validated PASS verdict."
+  "bootstrapNote": "Committed runtime remains dry-run. Real Codex Reviewer execution requires ignored agent-runtime.local.json opt-in."
 }

@@ -18,8 +18,41 @@ function runtimePath(repositoryRoot, featureSlug) {
   return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "agent-runtime.json");
 }
 
+function runtimeLocalPath(repositoryRoot, featureSlug) {
+  return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "agent-runtime.local.json");
+}
+
 function runsDir(repositoryRoot, featureSlug) {
   return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "agent-runs");
+}
+
+function readRuntimeConfig(repositoryRoot, featureSlug) {
+  const root = path.resolve(repositoryRoot);
+  const committedPath = runtimePath(root, featureSlug);
+  if (!fs.existsSync(committedPath)) throw new Error("agent-runtime.json is missing");
+
+  const committed = JSON.parse(fs.readFileSync(committedPath, "utf8"));
+  if (committed.feature !== featureSlug) {
+    throw new Error("runtime feature does not match requested feature");
+  }
+
+  const localPath = runtimeLocalPath(root, featureSlug);
+  if (!fs.existsSync(localPath)) {
+    return { config: committed, committedPath, localPath, localOverride: null };
+  }
+
+  const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
+  if (local.feature !== featureSlug) {
+    throw new Error("local runtime feature does not match requested feature");
+  }
+
+  const config = structuredClone(committed);
+  config.adapters = {
+    ...(committed.adapters || {}),
+    ...(local.adapters || {})
+  };
+
+  return { config, committedPath, localPath, localOverride: local };
 }
 
 function readGraph(repositoryRoot, featureSlug) {
@@ -58,26 +91,36 @@ function initRuntime(repositoryRoot, featureSlug, options = {}) {
 
 function configureCodexReviewer(repositoryRoot, featureSlug, options = {}) {
   const root = path.resolve(repositoryRoot);
-  const file = runtimePath(root, featureSlug);
-  if (!fs.existsSync(file)) throw new Error("agent-runtime.json is missing");
-
-  const config = JSON.parse(fs.readFileSync(file, "utf8"));
-  if (config.feature !== featureSlug) throw new Error("runtime feature does not match requested feature");
+  const baseline = readRuntimeConfig(root, featureSlug).config;
 
   const timeoutMs = options.timeoutMs === undefined ? 300000 : Number(options.timeoutMs);
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
     throw new Error("timeoutMs must be a positive integer");
   }
 
-  config.adapters.reviewer = {
-    type: "codex-exec-review",
-    command: options.command || "codex",
-    timeoutMs,
-    baseRef: options.baseRef || "main",
-    sandbox: "read-only"
+  const localConfig = {
+    schemaVersion: 1,
+    feature: featureSlug,
+    generatedAt: new Date().toISOString(),
+    adapters: {
+      reviewer: {
+        type: "codex-exec-review",
+        command: options.command || "codex",
+        timeoutMs,
+        baseRef: options.baseRef || "main"
+      }
+    }
   };
-  fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
-  return { config, outputPath: file };
+
+  const file = runtimeLocalPath(root, featureSlug);
+  fs.writeFileSync(file, JSON.stringify(localConfig, null, 2) + "\n");
+
+  const effective = structuredClone(baseline);
+  effective.adapters = {
+    ...(baseline.adapters || {}),
+    reviewer: localConfig.adapters.reviewer
+  };
+  return { config: effective, outputPath: file };
 }
 
 function normalizeScriptedResult(value) {
@@ -232,7 +275,7 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
     "--ephemeral",
     "--ignore-user-config",
     "--sandbox",
-    adapter.sandbox || "read-only",
+    "read-only",
     "--output-schema",
     schemaPath,
     "--output-last-message",
@@ -263,7 +306,7 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
     name: "codex-cli",
     sessionId: providerSessionId,
     command: adapter.command || "codex",
-    sandbox: adapter.sandbox || "read-only",
+    sandbox: "read-only",
     exitCode: Number.isInteger(processResult.status) ? processResult.status : null,
     promptDigest: sha256(prompt),
     stdoutDigest: sha256(stdout),
@@ -359,10 +402,8 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
     throw new Error(taskName + " task is not READY");
   }
 
-  const runtimeFile = runtimePath(root, featureSlug);
-  if (!fs.existsSync(runtimeFile)) throw new Error("agent-runtime.json is missing");
-  const config = JSON.parse(fs.readFileSync(runtimeFile, "utf8"));
-  if (config.feature !== featureSlug) throw new Error("runtime feature does not match requested feature");
+  const runtimeState = readRuntimeConfig(root, featureSlug);
+  const config = runtimeState.config;
   const adapter = config.adapters && config.adapters[taskName];
   if (!adapter) throw new Error("runtime adapter is missing for task: " + taskName);
 
@@ -378,6 +419,13 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
   let provider = null;
   let reviewerArtifact = null;
   let verdict = null;
+
+  if (adapter.type === "codex-exec-review" && !runtimeState.localOverride) {
+    throw new Error("real provider requires local runtime opt-in");
+  }
+  if (adapter.type === "codex-exec-review" && adapter.sandbox && adapter.sandbox !== "read-only") {
+    throw new Error("codex-exec-review sandbox must be read-only");
+  }
 
   if (adapter.type === "dry-run") {
     result = "DRY_RUN";
@@ -502,6 +550,8 @@ module.exports = {
   reviewerArtifactPath,
   runCodexReviewer,
   runTask,
+  readRuntimeConfig,
+  runtimeLocalPath,
   runtimePath,
   runsDir,
   sha256,

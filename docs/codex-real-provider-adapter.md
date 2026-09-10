@@ -33,13 +33,15 @@ The adapter launches the Codex CLI without a shell:
 ```text
 codex exec
   --json
+  --ephemeral
+  --ignore-user-config
   --sandbox read-only
   --output-schema schemas/codex-review-result.schema.json
   --output-last-message <temporary-file>
   -
 ```
 
-The generated review instructions are provided through stdin.
+The generated review instructions are provided through stdin. `--ephemeral` avoids persisting the Codex session rollout, while `--ignore-user-config` reduces user-level configuration drift; authentication remains the Codex CLI responsibility.
 
 ## Two separate outcomes
 

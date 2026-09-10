@@ -25,6 +25,7 @@
 - CLI不在/non-zero exit/invalid structured outputは `PROVIDER_ERROR`
 - PROVIDER_ERRORではTask Graphを進めない
 - run evidenceにprovider/name/sessionId/exitCode/result/verdict/digestsを含める
+- Verification Evidenceのruntime summaryにprovider名/session ID/execution statusを含める
 - credentials/API key/tokenをEvidenceへ保存しない
 - GitHub CIでは実Codexを呼ばずmock runnerでtestする
 - real provider実行はlocal opt-in configでのみ有効化する

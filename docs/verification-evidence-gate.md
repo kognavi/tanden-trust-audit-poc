@@ -50,6 +50,7 @@ PASS時に次を生成します。
 - Builder / Reviewer / Security Reviewer role provenance
 - orchestrator status / retry count / task states
 - runtime adapter configuration / per-task run summary
+- real provider name / provider session ID / provider execution status when present
 - reviewer review status
 - security review status
 - generated timestamp

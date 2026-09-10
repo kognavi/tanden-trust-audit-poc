@@ -83,6 +83,8 @@ Real Codex execution may consume the user's Codex/ChatGPT/API allowance dependin
 - environment variableだけでopt-in:設定の可読性とtask別adapter contractが弱くなるため、ignored local JSONを採用。
 - configurable sandbox:安全境界がconfig改変で緩和されるため却下。
 - Codex Builderから開始:書き込み副作用が大きいためReviewer-firstを採用。
+- local `main` をdefault baseRefにする: fetch後にstaleになり得るため却下し、`origin/main` をdefaultにする。
+- ReviewerがVerification Evidenceを要求する: Verificationはreviewer-pass後にREADYとなるため循環依存になるので却下。
 
 ## Validation Plan
 

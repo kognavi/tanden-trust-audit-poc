@@ -68,6 +68,8 @@ Product trust flow `Evidence → Schema → Sign → Store → Ledger` は変更
 - read-only Codex sandboxをコード側で強制
 - committed runtime configはreal providerを有効化しない
 - local override fileはgitignore対象
+- local overrideはReviewerのCodex opt-in専用で、他task adapter overrideを拒否
+- provider executableはRuntime側で `codex` に固定し、local設定から変更不可
 - prompt generated from repository paths, not user-controlled shell fragments
 - raw output excluded from persistent evidence
 - Runtime revalidates schema-relevant length/additionalProperties constraints

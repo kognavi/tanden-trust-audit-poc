@@ -153,3 +153,16 @@ test("missing implementation handoff fails", () =>
     });
     assert.ok(result.errors.some((error) => error.includes("implementation-handoff")));
   }));
+
+
+test("parseAffectedComponents accepts extensionless dotfiles", () => {
+  const markdown = [
+    "# Design",
+    "",
+    "## Affected Components",
+    "- `.gitignore`",
+    "- `.npmrc`"
+  ].join("\n");
+
+  assert.deepEqual(parseAffectedComponents(markdown), [".gitignore", ".npmrc"]);
+});

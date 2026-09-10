@@ -424,3 +424,105 @@ test("tampered local sandbox cannot relax Codex read-only boundary", () =>
       /sandbox must be read-only/
     );
   }));
+
+
+test("Codex runtime rejects schema-invalid length and extra properties", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature", { command: "codex-test" });
+
+    const invalidOutputs = [
+      {
+        verdict: "PASS",
+        summary: "x".repeat(2001),
+        findings: []
+      },
+      {
+        verdict: "FAIL",
+        summary: "Blocking issue.",
+        findings: [{ severity: "HIGH", title: "x".repeat(301) }]
+      },
+      {
+        verdict: "PASS",
+        summary: "Looks good.",
+        findings: [],
+        unexpected: true
+      },
+      {
+        verdict: "FAIL",
+        summary: "Blocking issue.",
+        findings: [{ severity: "HIGH", title: "Issue", extra: true }]
+      }
+    ];
+
+    for (const output of invalidOutputs) {
+      let transitionCalled = false;
+      const result = runTask(root, "feature", "reviewer", {
+        graph: readyGraph,
+        processRunner: (_command, args) => {
+          const outputIndex = args.indexOf("--output-last-message");
+          fs.writeFileSync(args[outputIndex + 1], JSON.stringify(output));
+          return {
+            status: 0,
+            stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-invalid" }) + "\n",
+            stderr: ""
+          };
+        },
+        transitionRunner: () => {
+          transitionCalled = true;
+        }
+      });
+
+      assert.equal(result.evidence.result, "PROVIDER_ERROR");
+      assert.equal(result.evidence.graphEvent, null);
+      assert.equal(result.evidence.provider.executionStatus, "INVALID_OUTPUT");
+      assert.equal(transitionCalled, false);
+    }
+  }));
+
+test("Codex runtime rejects PASS with HIGH or CRITICAL findings", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature", { command: "codex-test" });
+
+    for (const severity of ["HIGH", "CRITICAL"]) {
+      let transitionCalled = false;
+      const result = runTask(root, "feature", "reviewer", {
+        graph: readyGraph,
+        processRunner: (_command, args) => {
+          const outputIndex = args.indexOf("--output-last-message");
+          fs.writeFileSync(
+            args[outputIndex + 1],
+            JSON.stringify({
+              verdict: "PASS",
+              summary: "Contradictory output.",
+              findings: [{ severity, title: "Blocking finding" }]
+            })
+          );
+          return {
+            status: 0,
+            stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-contradictory" }) + "\n",
+            stderr: ""
+          };
+        },
+        transitionRunner: () => {
+          transitionCalled = true;
+        }
+      });
+
+      assert.equal(result.evidence.result, "PROVIDER_ERROR");
+      assert.equal(result.evidence.graphEvent, null);
+      assert.equal(result.evidence.provider.executionStatus, "INVALID_OUTPUT");
+      assert.equal(transitionCalled, false);
+    }
+  }));

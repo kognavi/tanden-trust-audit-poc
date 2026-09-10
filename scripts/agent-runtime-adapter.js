@@ -133,13 +133,19 @@ function parseCodexReviewVerdict(raw) {
   if (!Array.isArray(value.findings)) {
     throw new Error("Codex review output must contain findings array");
   }
+  const allowedSeverities = new Set(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+  const findings = value.findings.map((finding) => {
+    const severity = String(finding.severity || "").trim();
+    const title = String(finding.title || "").trim();
+    if (!allowedSeverities.has(severity) || !title) {
+      throw new Error("Codex review finding is invalid");
+    }
+    return { severity, title };
+  });
   return {
     verdict: value.verdict,
     summary: value.summary.trim(),
-    findings: value.findings.map((finding) => ({
-      severity: String(finding.severity || "").trim(),
-      title: String(finding.title || "").trim()
-    }))
+    findings
   };
 }
 
@@ -184,7 +190,8 @@ function createRunEvidence({
   startedAt,
   finishedAt,
   graphEvent,
-  provider
+  provider,
+  verdict
 }) {
   return {
     schemaVersion: 1,
@@ -197,15 +204,14 @@ function createRunEvidence({
     result,
     graphEvent: graphEvent || null,
     provider: provider || null,
+    verdict: verdict || null,
     startedAt,
     finishedAt
   };
 }
 
 function isTimeoutProcessResult(processResult) {
-  if (!processResult) return false;
-  if (processResult.error && processResult.error.code === "ETIMEDOUT") return true;
-  return processResult.status === null && Boolean(processResult.signal);
+  return Boolean(processResult?.error && processResult.error.code === "ETIMEDOUT");
 }
 
 function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options = {}) {
@@ -223,6 +229,8 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
   const args = [
     "exec",
     "--json",
+    "--ephemeral",
+    "--ignore-user-config",
     "--sandbox",
     adapter.sandbox || "read-only",
     "--output-schema",
@@ -369,6 +377,7 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
   let graphEvent = null;
   let provider = null;
   let reviewerArtifact = null;
+  let verdict = null;
 
   if (adapter.type === "dry-run") {
     result = "DRY_RUN";
@@ -384,6 +393,7 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
     graphEvent = providerResult.graphEvent;
     provider = providerResult.provider;
     reviewerArtifact = providerResult.reviewerArtifact;
+    verdict = providerResult.review?.verdict || null;
   } else {
     throw new Error("unsupported runtime adapter: " + adapter.type);
   }
@@ -398,7 +408,8 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
     startedAt,
     finishedAt,
     graphEvent,
-    provider
+    provider,
+    verdict
   });
 
   const dir = runsDir(root, featureSlug);

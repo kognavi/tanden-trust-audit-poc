@@ -5,11 +5,11 @@
 - [x] Verify current Codex CLI surface
 - [x] Define provider requirements
 - [x] Define design
-- [ ] Add structured review schema
-- [ ] Implement Codex reviewer adapter
-- [ ] Add provider tests
-- [ ] Update governance/docs
-- [ ] Dogfood Loop 011 governance
+- [x] Add structured review schema
+- [x] Implement Codex reviewer adapter
+- [x] Add provider tests
+- [x] Update governance/docs
+- [x] Dogfood Loop 011 governance
 - [ ] Run PR CI
 - [ ] Independent review
-- [ ] Record learning
+- [x] Record learning

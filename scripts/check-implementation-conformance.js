@@ -33,6 +33,7 @@ function parseAffectedComponents(designMarkdown) {
 
     if (
       cleaned.includes("/") ||
+      cleaned.startsWith(".") ||
       /\.(js|json|md|yml|yaml|ts|tsx|jsx|toml|tf|sh|mjs|cjs)$/i.test(cleaned)
     ) {
       entries.push(cleaned);

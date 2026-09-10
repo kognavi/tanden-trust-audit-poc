@@ -21,6 +21,7 @@
 - Codex JSONLからprovider session/thread IDを抽出する
 - process timeoutは `TIMEOUT` とし `reviewer-fail` へmapする
 - valid PASS/FAIL verdictはTask Graph eventへmapする
+- valid PASS/FAIL verdictから `reviewer-review.md` を生成し、Reviewed byをdelegated Reviewer identityと一致させる
 - CLI不在/non-zero exit/invalid structured outputは `PROVIDER_ERROR`
 - PROVIDER_ERRORではTask Graphを進めない
 - run evidenceにprovider/name/sessionId/exitCode/result/verdict/digestsを含める

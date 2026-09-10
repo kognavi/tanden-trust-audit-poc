@@ -23,7 +23,7 @@ Loop 010のprovider-neutral Runtime Adapterに、最初のreal providerとして
 - Task Graph Reviewer taskがREADYでなければ実行拒否
 - provider commandはshellを介さずargument arrayで起動する
 - command defaultは `codex`
-- invocationは `codex exec --json --ephemeral --ignore-user-config --sandbox read-only --output-schema schemas/codex-review-result.schema.json --output-last-message <file> -`
+- invocationは `codex exec --json --ephemeral --ignore-user-config --sandbox read-only --output-schema schemas/codex-review-result.schema.json --output-last-message .kiro/specs/codex-real-provider-adapter/agent-runs/.codex-last-UUID.json -`
 - promptはstdinで渡す
 - promptにはfeature/spec/baseRef/review requirementsを含める
 - prompt/raw response/stdout/stderrはrun evidenceへ保存しない

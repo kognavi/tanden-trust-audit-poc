@@ -170,11 +170,10 @@ test("configureCodexReviewer opts reviewer into real provider with read-only san
     initRuntime(root, "feature", { graph });
     const result = configureCodexReviewer(root, "feature", {
       timeoutMs: 120000,
-      command: "codex-test",
       baseRef: "origin/main"
     });
     assert.equal(result.config.adapters.reviewer.type, "codex-exec-review");
-    assert.equal(result.config.adapters.reviewer.command, "codex-test");
+    assert.equal(result.config.adapters.reviewer.command, "codex");
     assert.equal(result.config.adapters.reviewer.sandbox, "read-only");
     assert.equal(result.config.adapters.reviewer.timeoutMs, 120000);
     assert.equal(result.config.adapters.reviewer.baseRef, "origin/main");
@@ -197,11 +196,11 @@ test("real Codex reviewer PASS writes review artifact and advances reviewer-pass
       JSON.stringify(readyGraph, null, 2) + "\n"
     );
     initRuntime(root, "feature", { graph: readyGraph });
-    configureCodexReviewer(root, "feature", { command: "codex-test" });
+    configureCodexReviewer(root, "feature");
 
     let seenEvent = null;
     const processRunner = (command, args, options) => {
-      assert.equal(command, "codex-test");
+      assert.equal(command, "codex");
       assert.equal(options.shell, false);
       assert.equal(options.cwd, root);
       assert.match(options.input, /delegated independent Reviewer/);
@@ -263,7 +262,7 @@ test("real Codex reviewer FAIL advances reviewer-fail independently of process s
       JSON.stringify(readyGraph, null, 2) + "\n"
     );
     initRuntime(root, "feature", { graph: readyGraph });
-    configureCodexReviewer(root, "feature", { command: "codex-test" });
+    configureCodexReviewer(root, "feature");
 
     let seenEvent = null;
     const result = runTask(root, "feature", "reviewer", {
@@ -303,7 +302,7 @@ test("real Codex reviewer timeout maps to reviewer-fail", () =>
       JSON.stringify(readyGraph, null, 2) + "\n"
     );
     initRuntime(root, "feature", { graph: readyGraph });
-    configureCodexReviewer(root, "feature", { command: "codex-test" });
+    configureCodexReviewer(root, "feature");
 
     let seenEvent = null;
     const result = runTask(root, "feature", "reviewer", {
@@ -412,7 +411,7 @@ test("tampered local sandbox cannot relax Codex read-only boundary", () =>
       JSON.stringify(readyGraph, null, 2) + "\n"
     );
     initRuntime(root, "feature", { graph: readyGraph });
-    configureCodexReviewer(root, "feature", { command: "codex-test" });
+    configureCodexReviewer(root, "feature");
 
     const localPath = runtimeLocalPath(root, "feature");
     const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
@@ -434,7 +433,7 @@ test("Codex runtime rejects schema-invalid length and extra properties", () =>
       JSON.stringify(readyGraph, null, 2) + "\n"
     );
     initRuntime(root, "feature", { graph: readyGraph });
-    configureCodexReviewer(root, "feature", { command: "codex-test" });
+    configureCodexReviewer(root, "feature");
 
     const invalidOutputs = [
       {
@@ -493,7 +492,7 @@ test("Codex runtime rejects PASS with HIGH or CRITICAL findings", () =>
       JSON.stringify(readyGraph, null, 2) + "\n"
     );
     initRuntime(root, "feature", { graph: readyGraph });
-    configureCodexReviewer(root, "feature", { command: "codex-test" });
+    configureCodexReviewer(root, "feature");
 
     for (const severity of ["HIGH", "CRITICAL"]) {
       let transitionCalled = false;
@@ -525,4 +524,87 @@ test("Codex runtime rejects PASS with HIGH or CRITICAL findings", () =>
       assert.equal(result.evidence.provider.executionStatus, "INVALID_OUTPUT");
       assert.equal(transitionCalled, false);
     }
+  }));
+
+
+test("local runtime override cannot change provider command", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    const localPath = runtimeLocalPath(root, "feature");
+    const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
+    local.adapters.reviewer.command = "arbitrary-binary";
+    fs.writeFileSync(localPath, JSON.stringify(local, null, 2) + "\n");
+
+    let seenCommand = null;
+    runTask(root, "feature", "reviewer", {
+      graph: readyGraph,
+      processRunner: (command, args) => {
+        seenCommand = command;
+        const outputIndex = args.indexOf("--output-last-message");
+        fs.writeFileSync(
+          args[outputIndex + 1],
+          JSON.stringify({ verdict: "PASS", summary: "No blocking findings.", findings: [] })
+        );
+        return {
+          status: 0,
+          stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-command-fixed" }) + "\n",
+          stderr: ""
+        };
+      },
+      transitionRunner: () => ({ graph: { status: "ACTIVE" } })
+    });
+
+    assert.equal(seenCommand, "codex");
+  }));
+
+test("local runtime override rejects non-reviewer adapters", () =>
+  fixture((root, graph) => {
+    initRuntime(root, "feature", { graph });
+    fs.writeFileSync(
+      runtimeLocalPath(root, "feature"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        adapters: {
+          builder: { type: "scripted", timeoutMs: 300000 }
+        }
+      }, null, 2) + "\n"
+    );
+
+    assert.throws(
+      () => runTask(root, "feature", "builder", { graph, scriptedResult: "PASS" }),
+      /may only configure reviewer/
+    );
+  }));
+
+test("local reviewer override rejects non-Codex adapter type", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    fs.writeFileSync(
+      runtimeLocalPath(root, "feature"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        adapters: {
+          reviewer: { type: "scripted", timeoutMs: 300000 }
+        }
+      }, null, 2) + "\n"
+    );
+
+    assert.throws(
+      () => runTask(root, "feature", "reviewer", { graph: readyGraph, scriptedResult: "PASS" }),
+      /must use codex-exec-review/
+    );
   }));

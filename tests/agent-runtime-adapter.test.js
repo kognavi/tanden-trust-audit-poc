@@ -18,6 +18,20 @@ function fixture(run) {
   try {
     const specDir = path.join(root, ".kiro", "specs", "feature");
     fs.mkdirSync(specDir, { recursive: true });
+    const schemaDir = path.join(root, "schemas");
+    fs.mkdirSync(schemaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(schemaDir, "codex-review-result.schema.json"),
+      JSON.stringify({
+        type: "object",
+        required: ["verdict", "summary", "findings"],
+        properties: {
+          verdict: { enum: ["PASS", "FAIL"] },
+          summary: { type: "string" },
+          findings: { type: "array" }
+        }
+      }, null, 2) + "\n"
+    );
     const graph = {
       schemaVersion: 1,
       feature: "feature",

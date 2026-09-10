@@ -38,6 +38,8 @@ PROVIDER_ERROR → no transition
 
 ## Affected Components
 - `scripts/agent-runtime-adapter.js`
+- `scripts/check-implementation-conformance.js`
+- `tests/implementation-conformance.test.js`
 - `scripts/run-verification-evidence-gate.js`
 - `schemas/codex-review-result.schema.json`
 - `tests/agent-runtime-adapter.test.js`

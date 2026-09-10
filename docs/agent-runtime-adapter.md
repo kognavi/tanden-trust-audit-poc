@@ -87,7 +87,7 @@ Then, when Reviewer is READY:
 npm run agent:runtime:run -- <feature-slug> reviewer
 ```
 
-The adapter launches `codex exec` without a shell, uses a read-only sandbox, supplies a JSON output schema, and reads the final structured verdict separately from process exit status.
+The adapter launches `codex exec` without a shell, forces a read-only sandbox in code, supplies a JSON output schema, and reads the final structured verdict separately from process exit status. A tampered local sandbox value cannot relax the read-only boundary.
 
 Provider process success does not equal review PASS. A valid structured verdict controls the Task Graph transition.
 

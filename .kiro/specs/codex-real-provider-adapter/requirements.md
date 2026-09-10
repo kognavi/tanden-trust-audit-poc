@@ -30,7 +30,8 @@ Loop 010のprovider-neutral Runtime Adapterに、最初のreal providerとして
 - Verification Evidence GateはReviewer PASS後のdownstream gateであり、未生成であること単独ではReviewer FAIL理由にしない
 - prompt/raw response/stdout/stderrはrun evidenceへ保存しない
 - prompt/stdout/stderrはSHA-256 digestのみ保存可能
-- output schemaはPASS/FAIL verdictを必須とし、Runtime側でもsummary/findings/severityを再検証する
+- output schemaはPASS/FAIL verdictを必須とし、Runtime側でもSchemaのadditionalProperties・summary最大2000文字・finding title最大300文字・severityを再検証する
+- PASS verdictにHIGHまたはCRITICAL findingが含まれる矛盾outputはinvalid outputとして拒否する
 - Codex JSONLからprovider session/thread IDを抽出する
 - process timeoutは `TIMEOUT` とし `reviewer-fail` へmapする
 - valid PASS/FAIL verdictはTask Graph eventへmapする

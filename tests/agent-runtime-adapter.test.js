@@ -171,12 +171,13 @@ test("configureCodexReviewer opts reviewer into real provider with read-only san
     const result = configureCodexReviewer(root, "feature", {
       timeoutMs: 120000,
       command: "codex-test",
-      baseRef: "main"
+      baseRef: "origin/main"
     });
     assert.equal(result.config.adapters.reviewer.type, "codex-exec-review");
     assert.equal(result.config.adapters.reviewer.command, "codex-test");
     assert.equal(result.config.adapters.reviewer.sandbox, "read-only");
     assert.equal(result.config.adapters.reviewer.timeoutMs, 120000);
+    assert.equal(result.config.adapters.reviewer.baseRef, "origin/main");
     assert.equal(result.outputPath, runtimeLocalPath(root, "feature"));
 
     const committed = JSON.parse(
@@ -204,6 +205,8 @@ test("real Codex reviewer PASS writes review artifact and advances reviewer-pass
       assert.equal(options.shell, false);
       assert.equal(options.cwd, root);
       assert.match(options.input, /delegated independent Reviewer/);
+      assert.match(options.input, /origin\/main/);
+      assert.match(options.input, /Verification Evidence Gate/);
       assert.ok(args.includes("--json"));
       assert.ok(args.includes("--ephemeral"));
       assert.ok(args.includes("--ignore-user-config"));

@@ -22,7 +22,7 @@ Loop 010のprovider-neutral Runtime Adapterに、最初のreal providerとして
 - real providerはReviewer taskのみをサポートする
 - Task Graph Reviewer taskがREADYでなければ実行拒否
 - provider commandはshellを介さずargument arrayで起動する
-- command defaultは `codex`
+- provider commandはRuntime側で `codex` に固定し、local overrideから変更できない
 - invocationは `codex exec --json --ephemeral --ignore-user-config --sandbox read-only --output-schema schemas/codex-review-result.schema.json --output-last-message .kiro/specs/codex-real-provider-adapter/agent-runs/.codex-last-UUID.json -`
 - promptはstdinで渡す
 - promptにはfeature/spec/baseRef/review requirementsを含める
@@ -44,12 +44,15 @@ Loop 010のprovider-neutral Runtime Adapterに、最初のreal providerとして
 - GitHub CIでは実Codexを呼ばずmock runnerでtestする
 - committed `agent-runtime.json` はdry-run baselineを維持する
 - real provider opt-inはgitignore対象の `agent-runtime.local.json` にのみ保存する
+- `agent-runtime.local.json` はReviewerの `codex-exec-review` opt-in専用とし、Builder/Security/Verification adapter overrideを拒否する
 - Codex実行時のsandboxは設定値を信用せずコード側でread-onlyを強制する
 - merge/deployはHuman Approvalのまま
 
 ## Invariants
 
 - committed runtime configだけではreal providerを起動できない
+- local runtime overrideはReviewerのCodex opt-in以外のadapter権限を変更できない
+- local runtime overrideはCodex実行commandを変更できない
 - `codex-exec-review` はReviewer以外に使用できない
 - Codex process exit successをsemantic PASSとして扱わない
 - Provider errorはTask Graph stateを進めない

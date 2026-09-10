@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "feature": "codex-real-provider-adapter",
   "generatedAt": "2026-09-10T00:45:00.000Z",
-  "updatedAt": "2026-09-10T01:04:54.241Z",
+  "updatedAt": "2026-09-10T01:14:57.286Z",
   "status": "ACTIVE",
   "maxRetries": 2,
-  "retryCount": 1,
+  "retryCount": 2,
   "roles": {
     "builder": "chatgpt-builder",
     "reviewer": "codex-reviewer",
@@ -13,11 +13,11 @@
   },
   "tasks": {
     "builder": {
-      "status": "PASS",
+      "status": "READY",
       "actor": "chatgpt-builder"
     },
     "reviewer": {
-      "status": "READY",
+      "status": "BLOCKED",
       "actor": "codex-reviewer"
     },
     "securityReviewer": {
@@ -48,6 +48,13 @@
       "outcome": "ACTIVE",
       "retryCount": 1,
       "at": "2026-09-10T01:04:54.241Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "RETRY",
+      "retryCount": 2,
+      "at": "2026-09-10T01:14:57.286Z"
     }
   ]
 }

@@ -181,6 +181,8 @@ test("real Codex reviewer PASS writes review artifact and advances reviewer-pass
       assert.equal(options.cwd, root);
       assert.match(options.input, /delegated independent Reviewer/);
       assert.ok(args.includes("--json"));
+      assert.ok(args.includes("--ephemeral"));
+      assert.ok(args.includes("--ignore-user-config"));
       assert.ok(args.includes("read-only"));
       const outputIndex = args.indexOf("--output-last-message");
       fs.writeFileSync(
@@ -205,6 +207,7 @@ test("real Codex reviewer PASS writes review artifact and advances reviewer-pass
     });
 
     assert.equal(result.evidence.result, "PASS");
+    assert.equal(result.evidence.verdict, "PASS");
     assert.equal(result.evidence.graphEvent, "reviewer-pass");
     assert.equal(result.evidence.provider.name, "codex-cli");
     assert.equal(result.evidence.provider.sessionId, "codex-thread-1");

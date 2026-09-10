@@ -5,7 +5,7 @@
 - Source Context Pack: `knowledge/20-research/loop-011-context.md`
 - Context ID: `loop-011-context`
 - Spec directory: `.kiro/specs/codex-real-provider-adapter`
-- Spec Readiness: PASS
+- Spec Readiness: PASS (to be revalidated after Reviewer remediation)
 
 ## Implementation Intent
 

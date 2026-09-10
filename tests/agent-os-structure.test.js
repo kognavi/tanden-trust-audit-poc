@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const { validateSpecDirectory } = require("../scripts/check-spec-readiness");
 
 const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -234,4 +235,20 @@ test("Codex Real Provider Adapter stays wired into reviewer governance", () => {
   assert.match(template, /Provider Session/);
   assert.match(runtimeDocs, /codex-exec-review/);
   assert.deepEqual(schema.properties.verdict.enum, ["PASS", "FAIL"]);
+});
+
+
+test("Loop 011 spec remains ready after real-provider remediation", () => {
+  const result = validateSpecDirectory(root, "codex-real-provider-adapter");
+  assert.equal(result.ready, true, result.errors.join("; "));
+});
+
+test("Codex real provider remains local opt-in and committed runtime stays dry-run", () => {
+  const runtime = JSON.parse(
+    read(".kiro/specs/codex-real-provider-adapter/agent-runtime.json")
+  );
+  const ignore = read(".gitignore");
+
+  assert.equal(runtime.adapters.reviewer.type, "dry-run");
+  assert.match(ignore, /agent-runtime\.local\.json/);
 });

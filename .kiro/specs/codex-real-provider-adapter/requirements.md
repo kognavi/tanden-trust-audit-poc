@@ -12,12 +12,12 @@
 - Task Graph Reviewer taskがREADYでなければ実行拒否
 - provider commandはshellを介さずargument arrayで起動する
 - command defaultは `codex`
-- invocationは `codex exec --json --sandbox read-only --output-schema <schema> --output-last-message <file> -`
+- invocationは `codex exec --json --ephemeral --ignore-user-config --sandbox read-only --output-schema <schema> --output-last-message <file> -`
 - promptはstdinで渡す
 - promptにはfeature/spec/baseRef/review requirementsを含める
 - prompt/raw response/stdout/stderrはrun evidenceへ保存しない
 - prompt/stdout/stderrはSHA-256 digestのみ保存可能
-- output schemaはPASS/FAIL verdictを必須とする
+- output schemaはPASS/FAIL verdictを必須とし、Runtime側でもsummary/findings/severityを再検証する
 - Codex JSONLからprovider session/thread IDを抽出する
 - process timeoutは `TIMEOUT` とし `reviewer-fail` へmapする
 - valid PASS/FAIL verdictはTask Graph eventへmapする

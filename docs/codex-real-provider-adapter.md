@@ -14,7 +14,7 @@ Initialize the normal runtime first:
 npm run agent:runtime:init -- <feature-slug>
 ```
 
-Opt the Reviewer into Codex CLI:
+Opt the Reviewer into Codex CLI locally. The command writes `.kiro/specs/<feature>/agent-runtime.local.json`, which is ignored by Git:
 
 ```bash
 npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]
@@ -97,7 +97,9 @@ Verification still checks that Reviewed by matches the delegated Reviewer identi
 The initial real provider has:
 
 - Reviewer role only
-- read-only Codex sandbox
+- committed runtime remains dry-run
+- real provider requires ignored local override
+- read-only Codex sandbox is enforced in code
 - shell=false process launch
 - no merge or deploy authority
 - no automatic IAM/AWS changes

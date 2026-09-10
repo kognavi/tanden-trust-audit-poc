@@ -4,6 +4,17 @@
 - `knowledge/20-research/loop-011-context.md`
 - Context ID: `loop-011-context`
 
+## Purpose
+
+Loop 010のprovider-neutral Runtime Adapterに、最初のreal providerとしてReviewer専用Codex CLI Adapterを接続する。実Providerの副作用と設定ドリフトを抑えながら、provider executionとsemantic review verdictを監査可能に分離する。
+
+## Current Implementation Truth
+
+- Loop 010のcommitted `agent-runtime.json` はdry-run/scripted中心のprovider-neutral contractを持つ。
+- Task GraphはREADY task以外の実行を拒否する。
+- Verification Evidenceはruntime run summaryを取り込む。
+- Real Codex providerはまだcommitted defaultとして有効化しない。
+
 ## Requirements
 
 - Loop 010 Runtime contractを拡張する
@@ -28,8 +39,19 @@
 - Verification Evidenceのruntime summaryにprovider名/session ID/execution statusを含める
 - credentials/API key/tokenをEvidenceへ保存しない
 - GitHub CIでは実Codexを呼ばずmock runnerでtestする
-- real provider実行はlocal opt-in configでのみ有効化する
+- committed `agent-runtime.json` はdry-run baselineを維持する
+- real provider opt-inはgitignore対象の `agent-runtime.local.json` にのみ保存する
+- Codex実行時のsandboxは設定値を信用せずコード側でread-onlyを強制する
 - merge/deployはHuman Approvalのまま
+
+## Invariants
+
+- committed runtime configだけではreal providerを起動できない
+- `codex-exec-review` はReviewer以外に使用できない
+- Codex process exit successをsemantic PASSとして扱わない
+- Provider errorはTask Graph stateを進めない
+- Codex sandboxは常にread-only
+- raw provider contentや認証情報をpersistent run evidenceへ保存しない
 
 ## Acceptance Criteria
 
@@ -40,6 +62,9 @@
 - session/thread IDが抽出される
 - raw provider outputがrun evidenceに保存されない
 - non-reviewer taskはreal provider adapterを拒否する
+- committed baselineはdry-runのまま
+- local overrideがない状態でCodex providerは起動しない
+- local overrideにsandbox改変があってもread-only以外では起動しない
 - existing dry-run/scripted behavior remains compatible
 
 ## Open Questions

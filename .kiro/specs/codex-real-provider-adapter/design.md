@@ -17,7 +17,7 @@ spawnSync(codex, args, shell=false)
 JSONL stdout → thread/session provenance
 last-message JSON → verdict
         ↓
-run evidence (no raw content)
+reviewer-review.md + run evidence (no raw response)
         ↓
 PASS / FAIL / TIMEOUT → Task Graph
 PROVIDER_ERROR → no transition

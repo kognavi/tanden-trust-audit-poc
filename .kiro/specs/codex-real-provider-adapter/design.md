@@ -25,14 +25,17 @@ PROVIDER_ERROR → no transition
 
 ## Affected Components
 - `scripts/agent-runtime-adapter.js`
+- `scripts/run-verification-evidence-gate.js`
 - `schemas/codex-review-result.schema.json`
 - `tests/agent-runtime-adapter.test.js`
+- `tests/verification-evidence-gate.test.js`
 - `tests/agent-os-structure.test.js`
 - `package.json`
 - `AGENTS.md`
 - `.kiro/agents/reviewer.md`
 - `.github/pull_request_template.md`
 - `docs/agent-runtime-adapter.md`
+- `docs/verification-evidence-gate.md`
 - `docs/codex-real-provider-adapter.md`
 - `docs/ai-development-os.md`
 - `knowledge/00-inbox/loop-011-codex-real-provider-adapter.md`

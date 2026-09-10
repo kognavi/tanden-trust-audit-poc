@@ -164,6 +164,6 @@ npm run check:structure
 - default dry-run adapterはrun evidenceだけを残しGraphを進めない。scripted adapterはdeterministic validation用でありexternal provider実行ではない。
 - Runtime run evidenceは `.kiro/specs/<feature>/agent-runs/` に残し、Verification Evidenceへadapter/run summaryを接続する。
 - Real Providerを使う場合は `npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]` でReviewerだけをCodex CLIへopt-inする。defaultのdry-runを自動でreal providerへ昇格させない。
-- Codex Reviewer Adapterは `codex exec` をshellなし・read-only sandboxで起動し、structured verdictとprovider session provenanceを記録する。provider process successとsemantic review PASSを同一視しない。
+- Codex Reviewer Adapterのruntime typeは `codex-exec-review` とする。`codex exec` をshellなし・read-only sandboxで起動し、structured verdictとprovider session provenanceを記録する。provider process successとsemantic review PASSを同一視しない。
 - Codex CLI不在・provider error・invalid outputではTask Graphを進めない。timeoutのみreviewer-failとしてretry routingへ接続する。
 - 詳細は `docs/ai-development-os.md` を参照する。

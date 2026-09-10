@@ -41,7 +41,7 @@ codex exec
   -
 ```
 
-The generated review instructions are provided through stdin. `--ephemeral` avoids persisting the Codex session rollout, while `--ignore-user-config` reduces user-level configuration drift; authentication remains the Codex CLI responsibility.
+The generated review instructions are provided through stdin. The default review base is `origin/main` so a stale local `main` branch cannot distort conformance review. `--ephemeral` avoids persisting the Codex session rollout, while `--ignore-user-config` reduces user-level configuration drift; authentication remains the Codex CLI responsibility.
 
 ## Two separate outcomes
 
@@ -53,7 +53,7 @@ Process exit 0
 Review PASS
 ```
 
-A successful Codex process may still return a FAIL verdict if blocking findings exist.
+A successful Codex process may still return a FAIL verdict if blocking findings exist. Verification Evidence is intentionally downstream of Reviewer PASS, so missing verification evidence before `reviewer-pass` is not itself a blocking review finding.
 
 ## Result handling
 

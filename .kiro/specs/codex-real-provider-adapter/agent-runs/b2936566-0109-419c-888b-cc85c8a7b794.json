@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "runId": "b2936566-0109-419c-888b-cc85c8a7b794",
+  "feature": "codex-real-provider-adapter",
+  "task": "reviewer",
+  "actor": "codex-reviewer",
+  "adapter": "codex-exec-review",
+  "timeoutMs": 300000,
+  "result": "FAIL",
+  "graphEvent": "reviewer-fail",
+  "provider": {
+    "name": "codex-cli",
+    "sessionId": "01a088c8-bdbe-7850-81f2-b5878eef5048",
+    "command": "codex",
+    "sandbox": "read-only",
+    "exitCode": 0,
+    "promptDigest": "8169ad0f2cf7065b7d8236572921bbb75a912f4278c012698583fdd8e03e8686",
+    "stdoutDigest": "d1b4d0f5468377e3e4861fb550af46f2a819dd14e85539ecef54ee2c85543f33",
+    "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "executionStatus": "SUCCESS",
+    "finalMessageDigest": "00b82a7ac6cdfb79fbd060c1ae86dac19a3ea8001c1f7e57edfd03b29d46b95f"
+  },
+  "verdict": "FAIL",
+  "startedAt": "2026-09-10T00:47:28.781Z",
+  "finishedAt": "2026-09-10T00:49:02.206Z"
+}

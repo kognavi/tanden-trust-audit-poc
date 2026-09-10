@@ -46,10 +46,19 @@ function readRuntimeConfig(repositoryRoot, featureSlug) {
     throw new Error("local runtime feature does not match requested feature");
   }
 
+  const localAdapters = local.adapters || {};
+  const localAdapterNames = Object.keys(localAdapters);
+  if (localAdapterNames.some((name) => name !== "reviewer")) {
+    throw new Error("local runtime override may only configure reviewer");
+  }
+  if (localAdapters.reviewer && localAdapters.reviewer.type !== "codex-exec-review") {
+    throw new Error("local reviewer override must use codex-exec-review");
+  }
+
   const config = structuredClone(committed);
   config.adapters = {
     ...(committed.adapters || {}),
-    ...(local.adapters || {})
+    ...(localAdapters.reviewer ? { reviewer: localAdapters.reviewer } : {})
   };
 
   return { config, committedPath, localPath, localOverride: local };
@@ -105,7 +114,7 @@ function configureCodexReviewer(repositoryRoot, featureSlug, options = {}) {
     adapters: {
       reviewer: {
         type: "codex-exec-review",
-        command: options.command || "codex",
+        command: "codex",
         timeoutMs,
         baseRef: options.baseRef || "origin/main",
         sandbox: "read-only"
@@ -327,7 +336,7 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
   const runner = options.processRunner || childProcess.spawnSync;
   let processResult;
   try {
-    processResult = runner(adapter.command || "codex", args, {
+    processResult = runner("codex", args, {
       cwd: root,
       input: prompt,
       encoding: "utf8",
@@ -346,7 +355,7 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
   const providerBase = {
     name: "codex-cli",
     sessionId: providerSessionId,
-    command: adapter.command || "codex",
+    command: "codex",
     sandbox: "read-only",
     exitCode: Number.isInteger(processResult.status) ? processResult.status : null,
     promptDigest: sha256(prompt),

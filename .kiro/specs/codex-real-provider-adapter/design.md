@@ -70,6 +70,8 @@ Product trust flow `Evidence → Schema → Sign → Store → Ledger` は変更
 - local override fileはgitignore対象
 - prompt generated from repository paths, not user-controlled shell fragments
 - raw output excluded from persistent evidence
+- Runtime revalidates schema-relevant length/additionalProperties constraints
+- PASS with HIGH/CRITICAL findings is rejected as contradictory invalid output
 - provider auth remains Codex CLI responsibility
 - provider error does not masquerade as semantic FAIL/PASS
 

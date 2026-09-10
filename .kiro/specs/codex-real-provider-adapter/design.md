@@ -4,24 +4,37 @@
 - `knowledge/20-research/loop-011-context.md`
 - Context ID: `loop-011-context`
 
-## Flow
+## Current State
+
+Loop 010では `agent-runtime.json` がcommitted runtime baselineで、全taskがdefault dry-runとなる。Runtime run evidenceとTask Graphは接続済みだが、real provider executionはない。
+
+## Proposed Design
 
 ```text
-agent-runtime.json
- reviewer.type = codex-exec-review
+committed agent-runtime.json
+  reviewer = dry-run
+        +
+ignored agent-runtime.local.json
+  reviewer = codex-exec-review
+        ↓
+effective runtime config
         ↓
 Reviewer READY validation
         ↓
 spawnSync(codex, args, shell=false)
         ↓
+forced --sandbox read-only
+        ↓
 JSONL stdout → thread/session provenance
 last-message JSON → verdict
         ↓
-reviewer-review.md + run evidence (no raw response)
+reviewer-review.md + run evidence
         ↓
 PASS / FAIL / TIMEOUT → Task Graph
 PROVIDER_ERROR → no transition
 ```
+
+`agent-runtime.local.json` はlocal machine上だけのexplicit opt-inで、gitへcommitしない。コードはreal provider実行時にsandboxをread-onlyへ固定し、override値で緩和できない。
 
 ## Affected Components
 - `scripts/agent-runtime-adapter.js`
@@ -32,6 +45,7 @@ PROVIDER_ERROR → no transition
 - `tests/agent-os-structure.test.js`
 - `package.json`
 - `AGENTS.md`
+- `.gitignore`
 - `.kiro/agents/reviewer.md`
 - `.github/pull_request_template.md`
 - `docs/agent-runtime-adapter.md`
@@ -41,29 +55,52 @@ PROVIDER_ERROR → no transition
 - `knowledge/00-inbox/loop-011-codex-real-provider-adapter.md`
 - `knowledge/20-research/loop-011-context.md`
 
+## Trust Boundary Impact
+
+Product trust flow `Evidence → Schema → Sign → Store → Ledger` は変更しない。今回の変更はAI Development OSのexecution boundaryに限定される。Real Provider設定はlocal boundary、provider verdictはreview evidence boundaryとして扱う。
+
 ## Security
+
 - shell=false
 - Reviewer-only
-- read-only Codex sandbox
+- read-only Codex sandboxをコード側で強制
+- committed runtime configはreal providerを有効化しない
+- local override fileはgitignore対象
 - prompt generated from repository paths, not user-controlled shell fragments
 - raw output excluded from persistent evidence
 - provider auth remains Codex CLI responsibility
 - provider error does not masquerade as semantic FAIL/PASS
 
-## Cost
-Real Codex execution may consume the user's Codex/ChatGPT/API allowance depending on local authentication/configuration. Loop 011 never runs real Codex in CI by default.
+## Cost and Operations
 
-## Validation
+Real Codex execution may consume the user's Codex/ChatGPT/API allowance depending on local authentication/configuration. GitHub CIはreal Codexを呼ばない。通常のclone/pullだけではreal providerは有効にならない。
+
+## Alternatives Considered
+
+- committed `agent-runtime.json` でreal providerを有効化: clone直後から実Providerが起動可能になるため却下。
+- environment variableだけでopt-in:設定の可読性とtask別adapter contractが弱くなるため、ignored local JSONを採用。
+- configurable sandbox:安全境界がconfig改変で緩和されるため却下。
+- Codex Builderから開始:書き込み副作用が大きいためReviewer-firstを採用。
+
+## Validation Plan
+
+- Spec Readiness Gateを実行してPASSを確認
+- Implementation Conformance Gateを実行
 - unit tests with injected process runner
+- committed baselineがdry-runであることをtest
+- local overrideなしではreal providerが選択されないことをtest
+- sandbox改変を拒否/強制するtest
 - JSONL provenance parser tests
 - structured verdict parser tests
 - timeout/provider error tests
 - governance tests
-- GitHub CI
+- GitHub CI / Semgrep / CodeQL / Architecture Check
 
 ## Review Checklist
 - [x] Requirements aligned
 - [x] Provider/process vs semantic verdict separated
+- [x] Local opt-in boundary explicit
+- [x] Read-only sandbox enforced in code
 - [x] Security boundary explicit
 - [x] Cost boundary explicit
 - [x] Human Approval preserved

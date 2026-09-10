@@ -420,8 +420,12 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
   let reviewerArtifact = null;
   let verdict = null;
 
-  if (adapter.type === "codex-exec-review" && !runtimeState.localOverride) {
-    throw new Error("real provider requires local runtime opt-in");
+  const localTaskAdapter = runtimeState.localOverride?.adapters?.[taskName];
+  if (
+    adapter.type === "codex-exec-review" &&
+    (!localTaskAdapter || localTaskAdapter.type !== "codex-exec-review")
+  ) {
+    throw new Error("real provider requires task-specific local runtime opt-in");
   }
   if (adapter.type === "codex-exec-review" && adapter.sandbox && adapter.sandbox !== "read-only") {
     throw new Error("codex-exec-review sandbox must be read-only");

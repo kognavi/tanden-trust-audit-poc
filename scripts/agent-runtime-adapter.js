@@ -171,27 +171,64 @@ function extractCodexSessionId(stdout) {
 
 function parseCodexReviewVerdict(raw) {
   const value = JSON.parse(String(raw || ""));
-  if (!value || !["PASS", "FAIL"].includes(value.verdict)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Codex review output must be an object");
+  }
+
+  const allowedTopLevelKeys = new Set(["verdict", "summary", "findings"]);
+  for (const key of Object.keys(value)) {
+    if (!allowedTopLevelKeys.has(key)) {
+      throw new Error("Codex review output contains unexpected property: " + key);
+    }
+  }
+
+  if (!["PASS", "FAIL"].includes(value.verdict)) {
     throw new Error("Codex review output must contain verdict PASS or FAIL");
   }
-  if (typeof value.summary !== "string" || !value.summary.trim()) {
+
+  if (typeof value.summary !== "string") {
     throw new Error("Codex review output must contain summary");
   }
+  const summary = value.summary.trim();
+  if (!summary || summary.length > 2000) {
+    throw new Error("Codex review summary must be between 1 and 2000 characters");
+  }
+
   if (!Array.isArray(value.findings)) {
     throw new Error("Codex review output must contain findings array");
   }
+
   const allowedSeverities = new Set(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
   const findings = value.findings.map((finding) => {
+    if (!finding || typeof finding !== "object" || Array.isArray(finding)) {
+      throw new Error("Codex review finding is invalid");
+    }
+
+    const allowedFindingKeys = new Set(["severity", "title"]);
+    for (const key of Object.keys(finding)) {
+      if (!allowedFindingKeys.has(key)) {
+        throw new Error("Codex review finding contains unexpected property: " + key);
+      }
+    }
+
     const severity = String(finding.severity || "").trim();
     const title = String(finding.title || "").trim();
-    if (!allowedSeverities.has(severity) || !title) {
+    if (!allowedSeverities.has(severity) || !title || title.length > 300) {
       throw new Error("Codex review finding is invalid");
     }
     return { severity, title };
   });
+
+  if (
+    value.verdict === "PASS" &&
+    findings.some((finding) => finding.severity === "HIGH" || finding.severity === "CRITICAL")
+  ) {
+    throw new Error("Codex PASS verdict cannot contain HIGH or CRITICAL findings");
+  }
+
   return {
     verdict: value.verdict,
-    summary: value.summary.trim(),
+    summary,
     findings
   };
 }

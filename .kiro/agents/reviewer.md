@@ -34,3 +34,9 @@ Agent Runtime Adapter:
 - Treat `agent-runs/*.json` as execution provenance, not as proof of semantic correctness.
 - Do not use dry-run as PASS evidence.
 - Do not bypass Task Graph ordering by editing runtime or graph artifacts by hand.
+
+Real Codex Provider:
+- When the configured reviewer adapter is `codex-exec-review`, the runtime invokes Codex CLI as the delegated Reviewer.
+- The Codex invocation must remain read-only and must return a structured PASS/FAIL verdict.
+- Process exit success is not review approval; only the validated structured verdict controls `reviewer-pass` or `reviewer-fail`.
+- Provider/session metadata is provenance only and does not cryptographically prove identity.

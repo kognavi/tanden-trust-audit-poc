@@ -79,7 +79,7 @@ function readDelegation(repositoryRoot, featureSlug) {
       return { valid: false, error: "builder and securityReviewer identities must differ" };
     }
     return { valid: true, document, roles };
-  } catch (error) {
+  } catch {
     return { valid: false, error: "agent-delegation.json is invalid JSON" };
   }
 }
@@ -108,7 +108,7 @@ function readTaskGraphState(repositoryRoot, featureSlug) {
       return { valid: false, error: "Verification task is not READY in agent-task-graph.json" };
     }
     return { valid: true, graph };
-  } catch (error) {
+  } catch {
     return { valid: false, error: "agent-task-graph.json is invalid JSON" };
   }
 }
@@ -127,12 +127,24 @@ function readRuntimeEvidenceSummary(repositoryRoot, featureSlug) {
     }
 
     const dir = path.join(specDir, "agent-runs");
-    const runs = fs.existsSync(dir)
-      ? fs.readdirSync(dir)
-          .filter((name) => name.endsWith(".json"))
-          .sort()
-          .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")))
-      : [];
+   const runs = fs.existsSync(dir)
+  ? fs.readdirSync(dir)
+      .filter((name) => name.endsWith(".json"))
+      .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")))
+      .sort((a, b) => {
+        const finishedCompare = String(a.finishedAt || "").localeCompare(
+          String(b.finishedAt || "")
+        );
+        if (finishedCompare !== 0) return finishedCompare;
+
+        const startedCompare = String(a.startedAt || "").localeCompare(
+          String(b.startedAt || "")
+        );
+        if (startedCompare !== 0) return startedCompare;
+
+        return String(a.runId || "").localeCompare(String(b.runId || ""));
+      })
+  : [];
 
     const byTask = {};
     for (const run of runs) {
@@ -159,7 +171,7 @@ function readRuntimeEvidenceSummary(repositoryRoot, featureSlug) {
     }
 
     return { valid: true, config, runs, summary };
-  } catch (error) {
+  } catch {
     return { valid: false, error: "Agent Runtime evidence is invalid JSON" };
   }
 }

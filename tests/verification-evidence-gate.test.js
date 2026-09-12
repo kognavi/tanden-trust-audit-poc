@@ -369,3 +369,78 @@ test("Verification Evidence includes real provider session provenance", () =>
       "SUCCESS"
     );
   }));
+
+  test("runtime evidence selects latest run by timestamps instead of filename order", () =>
+  fixture((root) => {
+    const runsDir = path.join(root, ".kiro", "specs", "feature", "agent-runs");
+
+    fs.writeFileSync(
+      path.join(runsDir, "z-old.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        runId: "z-old",
+        feature: "feature",
+        task: "reviewer",
+        actor: "reviewer-agent",
+        adapter: "codex-exec-review",
+        timeoutMs: 300000,
+        result: "FAIL",
+        graphEvent: "reviewer-fail",
+        provider: {
+          name: "codex-cli",
+          sessionId: "thread-old",
+          executionStatus: "SUCCESS",
+          exitCode: 0
+        },
+        startedAt: "2026-09-10T00:00:00.000Z",
+        finishedAt: "2026-09-10T00:01:00.000Z"
+      }, null, 2) + "\n"
+    );
+
+    fs.writeFileSync(
+      path.join(runsDir, "a-new.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        runId: "a-new",
+        feature: "feature",
+        task: "reviewer",
+        actor: "reviewer-agent",
+        adapter: "codex-exec-review",
+        timeoutMs: 300000,
+        result: "PASS",
+        graphEvent: "reviewer-pass",
+        provider: {
+          name: "codex-cli",
+          sessionId: "thread-new",
+          executionStatus: "SUCCESS",
+          exitCode: 0
+        },
+        startedAt: "2026-09-10T00:02:00.000Z",
+        finishedAt: "2026-09-10T00:03:00.000Z"
+      }, null, 2) + "\n"
+    );
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: {
+        passed: true,
+        command: "npm run check:structure",
+        output: "ok"
+      },
+      now: "2026-09-10T00:04:00.000Z"
+    });
+
+    assert.equal(result.verified, true);
+    assert.equal(
+      result.evidence.payload.runtime.runs.reviewer.latestRunId,
+      "a-new"
+    );
+    assert.equal(
+      result.evidence.payload.runtime.runs.reviewer.latestResult,
+      "PASS"
+    );
+    assert.equal(
+      result.evidence.payload.runtime.runs.reviewer.latestProviderSessionId,
+      "thread-new"
+    );
+  }));

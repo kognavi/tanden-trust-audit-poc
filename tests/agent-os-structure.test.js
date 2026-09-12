@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const { validateSpecDirectory } = require("../scripts/check-spec-readiness");
 
 const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -18,6 +19,7 @@ test("AI Development OS required files exist", () => {
     "docs/multi-agent-delegation.md",
     "docs/agent-orchestrator-task-graph.md",
     "docs/agent-runtime-adapter.md",
+    "docs/codex-real-provider-adapter.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -210,4 +212,43 @@ test("Agent Runtime Adapter stays wired into execution governance", () => {
   assert.match(securityReviewer, /Agent Runtime Adapter/);
   assert.match(template, /Agent Runtime/);
   assert.match(template, /Runtime Runs/);
+});
+
+
+test("Codex Real Provider Adapter stays wired into reviewer governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const reviewer = read(".kiro/agents/reviewer.md");
+  const template = read(".github/pull_request_template.md");
+  const runtimeDocs = read("docs/agent-runtime-adapter.md");
+  const pkg = JSON.parse(read("package.json"));
+  const schema = JSON.parse(read("schemas/codex-review-result.schema.json"));
+
+  assert.equal(
+    pkg.scripts["agent:runtime:codex-review"],
+    "node scripts/agent-runtime-adapter.js configure-codex-review"
+  );
+  assert.match(rootAgents, /codex-exec-review/);
+  assert.match(rootAgents, /provider process success/i);
+  assert.match(reviewer, /Real Codex Provider/);
+  assert.match(reviewer, /structured PASS\/FAIL verdict/);
+  assert.match(template, /Real Provider/);
+  assert.match(template, /Provider Session/);
+  assert.match(runtimeDocs, /codex-exec-review/);
+  assert.deepEqual(schema.properties.verdict.enum, ["PASS", "FAIL"]);
+});
+
+
+test("Loop 011 spec remains ready after real-provider remediation", () => {
+  const result = validateSpecDirectory(root, "codex-real-provider-adapter");
+  assert.equal(result.ready, true, result.errors.join("; "));
+});
+
+test("Codex real provider remains local opt-in and committed runtime stays dry-run", () => {
+  const runtime = JSON.parse(
+    read(".kiro/specs/codex-real-provider-adapter/agent-runtime.json")
+  );
+  const ignore = read(".gitignore");
+
+  assert.equal(runtime.adapters.reviewer.type, "dry-run");
+  assert.match(ignore, /agent-runtime\.local\.json/);
 });

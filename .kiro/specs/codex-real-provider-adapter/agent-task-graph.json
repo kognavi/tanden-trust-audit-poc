@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "feature": "codex-real-provider-adapter",
+  "generatedAt": "2026-09-10T00:45:00.000Z",
+  "updatedAt": "2026-09-10T01:22:21.480Z",
+  "status": "FAILED",
+  "maxRetries": 2,
+  "retryCount": 2,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  },
+  "tasks": {
+    "builder": {
+      "status": "PASS",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "FAIL",
+      "actor": "codex-reviewer"
+    },
+    "securityReviewer": {
+      "status": "SKIPPED",
+      "actor": null
+    },
+    "verification": {
+      "status": "BLOCKED",
+      "actor": "verification-gate"
+    }
+  },
+  "history": [
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-10T00:46:00.000Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "RETRY",
+      "retryCount": 1,
+      "at": "2026-09-10T00:49:02.206Z"
+    },
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 1,
+      "at": "2026-09-10T01:04:54.241Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "RETRY",
+      "retryCount": 2,
+      "at": "2026-09-10T01:14:57.286Z"
+    },
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 2,
+      "at": "2026-09-10T01:19:30.652Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "FAILED_MAX_RETRIES",
+      "retryCount": 3,
+      "at": "2026-09-10T01:22:21.480Z"
+    }
+  ]
+}

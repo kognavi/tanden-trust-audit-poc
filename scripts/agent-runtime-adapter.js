@@ -2,6 +2,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const childProcess = require("node:child_process");
 
 const { validateFeatureSlug } = require("./scaffold-spec-from-context");
 const { graphPath, transitionGraph } = require("./agent-task-graph");
@@ -17,8 +18,50 @@ function runtimePath(repositoryRoot, featureSlug) {
   return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "agent-runtime.json");
 }
 
+function runtimeLocalPath(repositoryRoot, featureSlug) {
+  return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "agent-runtime.local.json");
+}
+
 function runsDir(repositoryRoot, featureSlug) {
   return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "agent-runs");
+}
+
+function readRuntimeConfig(repositoryRoot, featureSlug) {
+  const root = path.resolve(repositoryRoot);
+  const committedPath = runtimePath(root, featureSlug);
+  if (!fs.existsSync(committedPath)) throw new Error("agent-runtime.json is missing");
+
+  const committed = JSON.parse(fs.readFileSync(committedPath, "utf8"));
+  if (committed.feature !== featureSlug) {
+    throw new Error("runtime feature does not match requested feature");
+  }
+
+  const localPath = runtimeLocalPath(root, featureSlug);
+  if (!fs.existsSync(localPath)) {
+    return { config: committed, committedPath, localPath, localOverride: null };
+  }
+
+  const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
+  if (local.feature !== featureSlug) {
+    throw new Error("local runtime feature does not match requested feature");
+  }
+
+  const localAdapters = local.adapters || {};
+  const localAdapterNames = Object.keys(localAdapters);
+  if (localAdapterNames.some((name) => name !== "reviewer")) {
+    throw new Error("local runtime override may only configure reviewer; codex-exec-review adapter only supports reviewer task");
+  }
+  if (localAdapters.reviewer && localAdapters.reviewer.type !== "codex-exec-review") {
+    throw new Error("local reviewer override must use codex-exec-review");
+  }
+
+  const config = structuredClone(committed);
+  config.adapters = {
+    ...(committed.adapters || {}),
+    ...(localAdapters.reviewer ? { reviewer: localAdapters.reviewer } : {})
+  };
+
+  return { config, committedPath, localPath, localOverride: local };
 }
 
 function readGraph(repositoryRoot, featureSlug) {
@@ -55,6 +98,41 @@ function initRuntime(repositoryRoot, featureSlug, options = {}) {
   return { config, outputPath: file };
 }
 
+function configureCodexReviewer(repositoryRoot, featureSlug, options = {}) {
+  const root = path.resolve(repositoryRoot);
+  const baseline = readRuntimeConfig(root, featureSlug).config;
+
+  const timeoutMs = options.timeoutMs === undefined ? 300000 : Number(options.timeoutMs);
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new Error("timeoutMs must be a positive integer");
+  }
+
+  const localConfig = {
+    schemaVersion: 1,
+    feature: featureSlug,
+    generatedAt: new Date().toISOString(),
+    adapters: {
+      reviewer: {
+        type: "codex-exec-review",
+        command: "codex",
+        timeoutMs,
+        baseRef: options.baseRef || "origin/main",
+        sandbox: "read-only"
+      }
+    }
+  };
+
+  const file = runtimeLocalPath(root, featureSlug);
+  fs.writeFileSync(file, JSON.stringify(localConfig, null, 2) + "\n");
+
+  const effective = structuredClone(baseline);
+  effective.adapters = {
+    ...(baseline.adapters || {}),
+    reviewer: localConfig.adapters.reviewer
+  };
+  return { config: effective, outputPath: file };
+}
+
 function normalizeScriptedResult(value) {
   const result = String(value || "").trim().toUpperCase();
   if (!["PASS", "FAIL", "TIMEOUT"].includes(result)) {
@@ -63,7 +141,143 @@ function normalizeScriptedResult(value) {
   return result;
 }
 
-function createRunEvidence({ featureSlug, taskName, actor, adapter, result, startedAt, finishedAt, graphEvent }) {
+function sha256(value) {
+  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+}
+
+function sanitizeCodexEnvironment(source = {}) {
+  const allowedKeys = [
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "LC_ALL"
+  ];
+
+  const sanitized = {};
+  for (const key of allowedKeys) {
+    if (source[key] !== undefined) sanitized[key] = source[key];
+  }
+  return sanitized;
+}
+
+function buildCodexReviewPrompt(featureSlug, baseRef) {
+  return [
+    "Act as the delegated independent Reviewer for this repository.",
+    "Do not modify repository files.",
+    "Read AGENTS.md and the feature specification under .kiro/specs/" + featureSlug + "/.",
+    "Review the implementation diff against base ref " + baseRef + ".",
+    "Check requirements coverage, scope drift, tests, maintainability, security-sensitive behavior, and silent behavior changes.",
+    "Use the configured base ref exactly as provided for implementation conformance. Do not substitute a stale local main branch when the configured base ref is origin/main.",
+    "Reviewer approval is upstream of the Verification Evidence Gate. Do not fail the review merely because verification evidence has not been generated yet; verification is expected only after reviewer-pass makes the verification task READY.",
+    "The reviewer sandbox is intentionally read-only. Do not treat inability to run write-producing tests as a product defect by itself; use existing CI evidence and static inspection when a command fails only because the sandbox prevents writes.",
+    "Return only a final response conforming to the supplied JSON Schema.",
+    "Use verdict PASS only when no blocking finding remains.",
+    "Use verdict FAIL when any blocking correctness, security, governance, or specification issue remains.",
+    "Do not include secrets, credentials, raw prompts, or unnecessary sensitive data."
+  ].join("\n");
+}
+
+function extractCodexSessionId(stdout) {
+  for (const line of String(stdout || "").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const event = JSON.parse(trimmed);
+      if (event.type === "thread.started") {
+        return event.thread_id || event.threadId || event.thread?.id || event.id || null;
+      }
+    } catch (_error) {
+      // Ignore non-JSON lines. The provider process status is evaluated separately.
+    }
+  }
+  return null;
+}
+
+function parseCodexReviewVerdict(raw) {
+  const value = JSON.parse(String(raw || ""));
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Codex review output must be an object");
+  }
+
+  const allowedTopLevelKeys = new Set(["verdict", "summary", "findings"]);
+  for (const key of Object.keys(value)) {
+    if (!allowedTopLevelKeys.has(key)) {
+      throw new Error("Codex review output contains unexpected property: " + key);
+    }
+  }
+
+  if (!["PASS", "FAIL"].includes(value.verdict)) {
+    throw new Error("Codex review output must contain verdict PASS or FAIL");
+  }
+
+  if (typeof value.summary !== "string") {
+    throw new Error("Codex review output must contain summary");
+  }
+  const summary = value.summary.trim();
+  if (!summary || summary.length > 2000) {
+    throw new Error("Codex review summary must be between 1 and 2000 characters");
+  }
+
+  if (!Array.isArray(value.findings)) {
+    throw new Error("Codex review output must contain findings array");
+  }
+
+  const allowedSeverities = new Set(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+  const findings = value.findings.map((finding) => {
+    if (!finding || typeof finding !== "object" || Array.isArray(finding)) {
+      throw new Error("Codex review finding is invalid");
+    }
+
+    const allowedFindingKeys = new Set(["severity", "title"]);
+    for (const key of Object.keys(finding)) {
+      if (!allowedFindingKeys.has(key)) {
+        throw new Error("Codex review finding contains unexpected property: " + key);
+      }
+    }
+
+    const severity = String(finding.severity || "").trim();
+    const title = String(finding.title || "").trim();
+    if (!allowedSeverities.has(severity) || !title || title.length > 300) {
+      throw new Error("Codex review finding is invalid");
+    }
+    return { severity, title };
+  });
+
+  if (
+    value.verdict === "PASS" &&
+    findings.some((finding) => finding.severity === "HIGH" || finding.severity === "CRITICAL")
+  ) {
+    throw new Error("Codex PASS verdict cannot contain HIGH or CRITICAL findings");
+  }
+
+  return { verdict: value.verdict, summary, findings };
+}
+
+function reviewerArtifactPath(repositoryRoot, featureSlug) {
+  return path.join(repositoryRoot, ".kiro", "specs", featureSlug, "reviewer-review.md");
+}
+
+function writeReviewerArtifact(repositoryRoot, featureSlug, actor, review, providerSessionId) {
+  const lines = [
+    "# Reviewer Review", "",
+    "- Status: " + review.verdict,
+    "- Reviewed by: " + actor,
+    "- Provider: codex-cli",
+    "- Provider Session: " + (providerSessionId || "unavailable"), "",
+    "## Summary", "", review.summary, "", "## Findings", ""
+  ];
+  if (review.findings.length === 0) lines.push("- None");
+  else for (const finding of review.findings) lines.push("- [" + finding.severity + "] " + finding.title);
+  const file = reviewerArtifactPath(repositoryRoot, featureSlug);
+  fs.writeFileSync(file, lines.join("\n") + "\n");
+  return file;
+}
+
+function createRunEvidence({ featureSlug, taskName, actor, adapter, result, startedAt, finishedAt, graphEvent, provider, verdict }) {
   return {
     schemaVersion: 1,
     runId: crypto.randomUUID(),
@@ -74,9 +288,91 @@ function createRunEvidence({ featureSlug, taskName, actor, adapter, result, star
     timeoutMs: adapter.timeoutMs,
     result,
     graphEvent: graphEvent || null,
+    provider: provider || null,
+    verdict: verdict || null,
     startedAt,
     finishedAt
   };
+}
+
+function isTimeoutProcessResult(processResult) {
+  return Boolean(processResult?.error && processResult.error.code === "ETIMEDOUT");
+}
+
+function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options = {}) {
+  const root = path.resolve(repositoryRoot);
+  const dir = runsDir(root, featureSlug);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const tempId = crypto.randomUUID();
+  const lastMessagePath = path.join(dir, ".codex-last-" + tempId + ".json");
+  const schemaPath = path.join(root, "schemas", "codex-review-result.schema.json");
+  if (!fs.existsSync(schemaPath)) throw new Error("Codex review output schema is missing");
+
+  const baseRef = adapter.baseRef || "origin/main";
+  const prompt = buildCodexReviewPrompt(featureSlug, baseRef);
+  const args = ["exec", "--json", "--ephemeral", "--ignore-user-config", "--sandbox", "read-only", "--output-schema", schemaPath, "--output-last-message", lastMessagePath, "-"];
+
+  const runner = options.processRunner || childProcess.spawnSync;
+  let processResult;
+  try {
+    processResult = runner("codex", args, {
+      cwd: root,
+      input: prompt,
+      encoding: "utf8",
+      timeout: adapter.timeoutMs,
+      maxBuffer: 2 * 1024 * 1024,
+      shell: false,
+      env: sanitizeCodexEnvironment(options.env || process.env)
+    }) || {};
+  } catch (error) {
+    processResult = { status: null, stdout: "", stderr: "", error };
+  }
+
+  const stdout = String(processResult.stdout || "");
+  const stderr = String(processResult.stderr || "");
+  const providerSessionId = extractCodexSessionId(stdout);
+  const providerBase = {
+    name: "codex-cli",
+    sessionId: providerSessionId,
+    command: "codex",
+    sandbox: "read-only",
+    exitCode: Number.isInteger(processResult.status) ? processResult.status : null,
+    promptDigest: sha256(prompt),
+    stdoutDigest: sha256(stdout),
+    stderrDigest: sha256(stderr)
+  };
+
+  try {
+    if (isTimeoutProcessResult(processResult)) {
+      return { result: "TIMEOUT", graphEvent: "reviewer-fail", provider: { ...providerBase, executionStatus: "TIMEOUT" }, review: null, reviewerArtifact: null };
+    }
+    if (processResult.error || processResult.status !== 0) {
+      return { result: "PROVIDER_ERROR", graphEvent: null, provider: { ...providerBase, executionStatus: "ERROR", errorCode: processResult.error?.code || null }, review: null, reviewerArtifact: null };
+    }
+    if (!fs.existsSync(lastMessagePath)) {
+      return { result: "PROVIDER_ERROR", graphEvent: null, provider: { ...providerBase, executionStatus: "INVALID_OUTPUT" }, review: null, reviewerArtifact: null };
+    }
+
+    const reviewRaw = fs.readFileSync(lastMessagePath, "utf8");
+    let review;
+    try {
+      review = parseCodexReviewVerdict(reviewRaw);
+    } catch (_error) {
+      return { result: "PROVIDER_ERROR", graphEvent: null, provider: { ...providerBase, executionStatus: "INVALID_OUTPUT", finalMessageDigest: sha256(reviewRaw) }, review: null, reviewerArtifact: null };
+    }
+
+    const reviewerArtifact = writeReviewerArtifact(root, featureSlug, actor, review, providerSessionId);
+    return {
+      result: review.verdict,
+      graphEvent: review.verdict === "PASS" ? "reviewer-pass" : "reviewer-fail",
+      provider: { ...providerBase, executionStatus: "SUCCESS", finalMessageDigest: sha256(reviewRaw) },
+      review,
+      reviewerArtifact
+    };
+  } finally {
+    if (fs.existsSync(lastMessagePath)) fs.rmSync(lastMessagePath, { force: true });
+  }
 }
 
 function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
@@ -87,47 +383,48 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
   const graph = options.graph || readGraph(root, featureSlug);
   if (graph.status !== "ACTIVE") throw new Error("task graph must be ACTIVE");
   const graphTask = graph.tasks && graph.tasks[taskName];
-  if (!graphTask || graphTask.status !== "READY") {
-    throw new Error(taskName + " task is not READY");
-  }
+  if (!graphTask || graphTask.status !== "READY") throw new Error(taskName + " task is not READY");
 
-  const runtimeFile = runtimePath(root, featureSlug);
-  if (!fs.existsSync(runtimeFile)) throw new Error("agent-runtime.json is missing");
-  const config = JSON.parse(fs.readFileSync(runtimeFile, "utf8"));
-  if (config.feature !== featureSlug) throw new Error("runtime feature does not match requested feature");
+  const runtimeState = readRuntimeConfig(root, featureSlug);
+  const config = runtimeState.config;
   const adapter = config.adapters && config.adapters[taskName];
   if (!adapter) throw new Error("runtime adapter is missing for task: " + taskName);
 
   const actor = graphTask.actor || null;
   const configuredRole = config.roles && config.roles[taskName];
-  if (taskName !== "verification" && configuredRole !== actor) {
-    throw new Error("runtime actor provenance differs from Task Graph: " + taskName);
-  }
+  if (taskName !== "verification" && configuredRole !== actor) throw new Error("runtime actor provenance differs from Task Graph: " + taskName);
 
   const startedAt = options.startedAt || new Date().toISOString();
   let result;
   let graphEvent = null;
+  let provider = null;
+  let reviewerArtifact = null;
+  let verdict = null;
 
-  if (adapter.type === "dry-run") {
-    result = "DRY_RUN";
-  } else if (adapter.type === "scripted") {
-    result = normalizeScriptedResult(options.scriptedResult);
-    graphEvent = TASK_EVENTS[taskName][result];
-  } else {
-    throw new Error("unsupported runtime adapter: " + adapter.type);
+  const localTaskAdapter = runtimeState.localOverride?.adapters?.[taskName];
+  if (adapter.type === "codex-exec-review" && (!localTaskAdapter || localTaskAdapter.type !== "codex-exec-review")) {
+    throw new Error("real provider requires task-specific local runtime opt-in");
+  }
+  if (adapter.type === "codex-exec-review" && adapter.sandbox && adapter.sandbox !== "read-only") {
+    throw new Error("codex-exec-review sandbox must be read-only");
   }
 
+  if (adapter.type === "dry-run") result = "DRY_RUN";
+  else if (adapter.type === "scripted") {
+    result = normalizeScriptedResult(options.scriptedResult);
+    graphEvent = TASK_EVENTS[taskName][result];
+  } else if (adapter.type === "codex-exec-review") {
+    if (taskName !== "reviewer") throw new Error("codex-exec-review adapter only supports reviewer task");
+    const providerResult = runCodexReviewer(root, featureSlug, actor, adapter, options);
+    result = providerResult.result;
+    graphEvent = providerResult.graphEvent;
+    provider = providerResult.provider;
+    reviewerArtifact = providerResult.reviewerArtifact;
+    verdict = providerResult.review?.verdict || null;
+  } else throw new Error("unsupported runtime adapter: " + adapter.type);
+
   const finishedAt = options.finishedAt || new Date().toISOString();
-  const evidence = createRunEvidence({
-    featureSlug,
-    taskName,
-    actor,
-    adapter,
-    result,
-    startedAt,
-    finishedAt,
-    graphEvent
-  });
+  const evidence = createRunEvidence({ featureSlug, taskName, actor, adapter, result, startedAt, finishedAt, graphEvent, provider, verdict });
 
   const dir = runsDir(root, featureSlug);
   fs.mkdirSync(dir, { recursive: true });
@@ -141,7 +438,7 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
       : transitionGraph(root, featureSlug, graphEvent, { now: finishedAt });
   }
 
-  return { evidence, evidencePath, transition };
+  return { evidence, evidencePath, transition, reviewerArtifact };
 }
 
 function listRunEvidence(repositoryRoot, featureSlug) {
@@ -155,10 +452,10 @@ function listRunEvidence(repositoryRoot, featureSlug) {
 
 function runCli() {
   const repositoryRoot = path.resolve(__dirname, "..");
-  const [mode, featureSlug, taskName, scriptedResult] = process.argv.slice(2);
+  const [mode, featureSlug, taskName, value] = process.argv.slice(2);
 
   if (!mode || !featureSlug) {
-    console.error("Usage: node scripts/agent-runtime-adapter.js <init|run> <feature-slug> [task-name] [scripted-result]");
+    console.error("Usage: node scripts/agent-runtime-adapter.js <init|configure-codex-review|run> <feature-slug> [task-name|timeout-ms] [scripted-result]");
     process.exitCode = 2;
     return;
   }
@@ -169,19 +466,25 @@ function runCli() {
       console.log("Agent Runtime initialized: " + path.relative(repositoryRoot, result.outputPath));
       return;
     }
-
+    if (mode === "configure-codex-review") {
+      const result = configureCodexReviewer(repositoryRoot, featureSlug, { timeoutMs: taskName === undefined ? undefined : Number(taskName) });
+      console.log("Codex Reviewer Adapter configured: " + path.relative(repositoryRoot, result.outputPath));
+      console.log("- Adapter: codex-exec-review");
+      console.log("- Sandbox: read-only");
+      return;
+    }
     if (mode === "run") {
       if (!taskName) throw new Error("task-name is required");
-      const result = runTask(repositoryRoot, featureSlug, taskName, { scriptedResult });
+      const result = runTask(repositoryRoot, featureSlug, taskName, { scriptedResult: value });
       console.log("Agent Runtime run recorded: " + result.evidence.runId);
       console.log("- Task: " + result.evidence.task);
       console.log("- Adapter: " + result.evidence.adapter);
       console.log("- Result: " + result.evidence.result);
       console.log("- Graph event: " + (result.evidence.graphEvent || "none"));
+      if (result.evidence.provider?.sessionId) console.log("- Provider session: " + result.evidence.provider.sessionId);
       return;
     }
-
-    throw new Error("mode must be init or run");
+    throw new Error("mode must be init, configure-codex-review, or run");
   } catch (error) {
     console.error("Agent Runtime failed: " + error.message);
     process.exitCode = 1;
@@ -192,12 +495,23 @@ if (require.main === module) runCli();
 
 module.exports = {
   TASK_EVENTS,
+  buildCodexReviewPrompt,
+  configureCodexReviewer,
   createRunEvidence,
   createRuntimeConfig,
+  extractCodexSessionId,
   initRuntime,
   listRunEvidence,
   normalizeScriptedResult,
+  parseCodexReviewVerdict,
+  reviewerArtifactPath,
+  runCodexReviewer,
   runTask,
+  readRuntimeConfig,
+  runtimeLocalPath,
   runtimePath,
-  runsDir
+  runsDir,
+  sanitizeCodexEnvironment,
+  sha256,
+  writeReviewerArtifact
 };

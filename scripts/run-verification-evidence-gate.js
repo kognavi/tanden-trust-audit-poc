@@ -151,7 +151,10 @@ function readRuntimeEvidenceSummary(repositoryRoot, featureSlug) {
         latestResult: latest.result,
         latestAdapter: latest.adapter,
         latestRunId: latest.runId,
-        latestGraphEvent: latest.graphEvent
+        latestGraphEvent: latest.graphEvent,
+        latestProvider: latest.provider?.name || null,
+        latestProviderSessionId: latest.provider?.sessionId || null,
+        latestProviderExecutionStatus: latest.provider?.executionStatus || null
       };
     }
 

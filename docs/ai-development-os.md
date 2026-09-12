@@ -21,7 +21,7 @@
 8. `npm run agent:delegate -- <feature-slug> <builder-id> <reviewer-id> [security-reviewer-id]` でrole separationを固定する。
 9. `npm run agent:graph:init -- <feature-slug> [max-retries]` でdeterministic Task Graphを初期化する。
 10. `npm run agent:runtime:init -- <feature-slug>` でExecution Layerを初期化する。
-11. READY taskをRuntime Adapter経由で実行し、run evidenceを残す。default dry-runはworkflowを進めない。
+11. READY taskをRuntime Adapter経由で実行し、run evidenceを残す。default dry-runはworkflowを進めない。Reviewerを実Codexへ接続する場合は `npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]` で明示opt-inする。
 12. Builder taskがREADYであることを確認し、Human/Builderがbranchまたはgit worktreeで最小変更を実装する。
 13. testsとsecurity checksを実行し、`builder-pass` または `builder-fail` eventをTask Graphへ適用する。
 14. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。

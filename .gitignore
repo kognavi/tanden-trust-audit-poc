@@ -208,3 +208,6 @@ flattened.sol
 # AgentCore local deployment state
 agentcore/aws-targets.json
 agentcore/.env.local
+
+# Local AI provider runtime opt-in
+**/agent-runtime.local.json

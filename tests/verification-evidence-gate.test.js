@@ -324,3 +324,48 @@ test("missing Agent Runtime blocks verification", () =>
     assert.equal(result.verified, false);
     assert.ok(result.errors.some((error) => error.includes("agent-runtime.json is missing")));
   }));
+
+
+test("Verification Evidence includes real provider session provenance", () =>
+  fixture((root) => {
+    const runsDir = path.join(root, ".kiro", "specs", "feature", "agent-runs");
+    fs.writeFileSync(
+      path.join(runsDir, "review-run.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        runId: "review-run",
+        feature: "feature",
+        task: "reviewer",
+        actor: "reviewer-agent",
+        adapter: "codex-exec-review",
+        timeoutMs: 300000,
+        result: "PASS",
+        graphEvent: "reviewer-pass",
+        provider: {
+          name: "codex-cli",
+          sessionId: "thread-real-1",
+          executionStatus: "SUCCESS",
+          exitCode: 0
+        },
+        startedAt: "2026-09-10T00:00:00.000Z",
+        finishedAt: "2026-09-10T00:01:00.000Z"
+      }, null, 2) + "\n"
+    );
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" },
+      now: "2026-09-10T00:02:00.000Z"
+    });
+
+    assert.equal(result.verified, true);
+    assert.equal(result.evidence.payload.runtime.runs.reviewer.latestProvider, "codex-cli");
+    assert.equal(
+      result.evidence.payload.runtime.runs.reviewer.latestProviderSessionId,
+      "thread-real-1"
+    );
+    assert.equal(
+      result.evidence.payload.runtime.runs.reviewer.latestProviderExecutionStatus,
+      "SUCCESS"
+    );
+  }));

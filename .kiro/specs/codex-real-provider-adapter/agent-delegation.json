@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "feature": "codex-real-provider-adapter",
+  "generatedAt": "2026-09-10T00:45:00.000Z",
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  }
+}

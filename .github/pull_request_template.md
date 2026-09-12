@@ -15,6 +15,8 @@
 - Agent Task Graph:
 - Agent Runtime:
 - Runtime Runs:
+- Real Provider:
+- Provider Session:
 - Orchestrator Status:
 - Retry Count:
 - Builder:

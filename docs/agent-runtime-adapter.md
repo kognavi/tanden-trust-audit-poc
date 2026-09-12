@@ -71,6 +71,30 @@ Verification Evidence requires `agent-runtime.json` and includes adapter configu
 
 This connects control-plane state with execution-plane provenance without claiming that runtime metadata proves semantic correctness.
 
+## Real Provider: Codex Reviewer
+
+Loop 011 adds an opt-in `codex-exec-review` adapter for the Reviewer task.
+
+Configure it with:
+
+```bash
+npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]
+```
+
+Then, when Reviewer is READY:
+
+```bash
+npm run agent:runtime:run -- <feature-slug> reviewer
+```
+
+The adapter launches `codex exec` without a shell, forces a read-only sandbox in code, supplies a JSON output schema, and reads the final structured verdict separately from process exit status. A tampered local sandbox value cannot relax the read-only boundary.
+
+Provider process success does not equal review PASS. A valid structured verdict controls the Task Graph transition.
+
+Provider failures such as CLI absence, non-zero exit, or invalid structured output produce `PROVIDER_ERROR` and do not advance the Task Graph. Timeout produces `TIMEOUT` and routes to reviewer failure/retry.
+
+Run Evidence stores provider/session provenance and digests, not raw prompt/stdout/stderr/final response.
+
 ## Next evolution
 
-Future provider adapters can implement Kiro, Codex, Work or another runtime behind the same contract while keeping Task Graph semantics stable.
+Future provider adapters can add Builder execution, Kiro, Work, app-server sessions, or remote runners behind the same contract while keeping Task Graph semantics stable.

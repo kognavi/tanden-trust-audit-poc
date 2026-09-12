@@ -5,10 +5,13 @@ const os = require("node:os");
 const path = require("node:path");
 
 const {
+  configureCodexReviewer,
   createRuntimeConfig,
+  extractCodexSessionId,
   initRuntime,
   listRunEvidence,
-  runTask
+  runTask,
+  runtimeLocalPath
 } = require("../scripts/agent-runtime-adapter");
 
 function fixture(run) {
@@ -16,6 +19,20 @@ function fixture(run) {
   try {
     const specDir = path.join(root, ".kiro", "specs", "feature");
     fs.mkdirSync(specDir, { recursive: true });
+    const schemaDir = path.join(root, "schemas");
+    fs.mkdirSync(schemaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(schemaDir, "codex-review-result.schema.json"),
+      JSON.stringify({
+        type: "object",
+        required: ["verdict", "summary", "findings"],
+        properties: {
+          verdict: { enum: ["PASS", "FAIL"] },
+          summary: { type: "string" },
+          findings: { type: "array" }
+        }
+      }, null, 2) + "\n"
+    );
     const graph = {
       schemaVersion: 1,
       feature: "feature",
@@ -130,4 +147,464 @@ test("runtime actor drift from Task Graph is rejected", () =>
     config.roles.builder = "other-builder";
     fs.writeFileSync(runtime.outputPath, JSON.stringify(config, null, 2) + "\n");
     assert.throws(() => runTask(root, "feature", "builder", { graph }), /actor provenance/);
+  }));
+
+
+function makeReviewerReady(graph) {
+  const next = structuredClone(graph);
+  next.tasks.builder.status = "PASS";
+  next.tasks.reviewer.status = "READY";
+  return next;
+}
+
+test("Codex JSONL parser extracts provider thread id", () => {
+  const stdout = [
+    JSON.stringify({ type: "thread.started", thread_id: "thread-123" }),
+    JSON.stringify({ type: "turn.completed" })
+  ].join("\n");
+  assert.equal(extractCodexSessionId(stdout), "thread-123");
+});
+
+test("configureCodexReviewer opts reviewer into real provider with read-only sandbox", () =>
+  fixture((root, graph) => {
+    initRuntime(root, "feature", { graph });
+    const result = configureCodexReviewer(root, "feature", {
+      timeoutMs: 120000,
+      baseRef: "origin/main"
+    });
+    assert.equal(result.config.adapters.reviewer.type, "codex-exec-review");
+    assert.equal(result.config.adapters.reviewer.command, "codex");
+    assert.equal(result.config.adapters.reviewer.sandbox, "read-only");
+    assert.equal(result.config.adapters.reviewer.timeoutMs, 120000);
+    assert.equal(result.config.adapters.reviewer.baseRef, "origin/main");
+    assert.equal(result.outputPath, runtimeLocalPath(root, "feature"));
+
+    const committed = JSON.parse(
+      fs.readFileSync(path.join(root, ".kiro", "specs", "feature", "agent-runtime.json"), "utf8")
+    );
+    assert.equal(committed.adapters.reviewer.type, "dry-run");
+
+    const local = JSON.parse(fs.readFileSync(result.outputPath, "utf8"));
+    assert.equal(local.adapters.reviewer.type, "codex-exec-review");
+  }));
+
+test("real Codex reviewer PASS writes review artifact and advances reviewer-pass", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    let seenEvent = null;
+    const processRunner = (command, args, options) => {
+      assert.equal(command, "codex");
+      assert.equal(options.shell, false);
+      assert.equal(options.cwd, root);
+      assert.match(options.input, /delegated independent Reviewer/);
+      assert.match(options.input, /origin\/main/);
+      assert.match(options.input, /Verification Evidence Gate/);
+      assert.ok(args.includes("--json"));
+      assert.ok(args.includes("--ephemeral"));
+      assert.ok(args.includes("--ignore-user-config"));
+      assert.ok(args.includes("read-only"));
+      const outputIndex = args.indexOf("--output-last-message");
+      fs.writeFileSync(
+        args[outputIndex + 1],
+        JSON.stringify({ verdict: "PASS", summary: "No blocking findings.", findings: [] })
+      );
+      return {
+        status: 0,
+        signal: null,
+        stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-thread-1" }) + "\n",
+        stderr: ""
+      };
+    };
+
+    const result = runTask(root, "feature", "reviewer", {
+      graph: readyGraph,
+      processRunner,
+      transitionRunner: (_root, _feature, event) => {
+        seenEvent = event;
+        return { graph: { status: "ACTIVE" } };
+      }
+    });
+
+    assert.equal(result.evidence.result, "PASS");
+    assert.equal(result.evidence.verdict, "PASS");
+    assert.equal(result.evidence.graphEvent, "reviewer-pass");
+    assert.equal(result.evidence.provider.name, "codex-cli");
+    assert.equal(result.evidence.provider.sessionId, "codex-thread-1");
+    assert.equal(result.evidence.provider.executionStatus, "SUCCESS");
+    assert.equal(seenEvent, "reviewer-pass");
+    assert.equal(fs.existsSync(result.reviewerArtifact), true);
+
+    const review = fs.readFileSync(result.reviewerArtifact, "utf8");
+    assert.match(review, /Status: PASS/);
+    assert.match(review, /Reviewed by: reviewer-b/);
+    assert.match(review, /Provider Session: codex-thread-1/);
+
+    const persisted = JSON.parse(fs.readFileSync(result.evidencePath, "utf8"));
+    assert.equal(Object.hasOwn(persisted.provider, "stdout"), false);
+    assert.equal(Object.hasOwn(persisted.provider, "stderr"), false);
+    assert.equal(Object.hasOwn(persisted.provider, "prompt"), false);
+    assert.match(persisted.provider.stdoutDigest, /^[a-f0-9]{64}$/);
+    assert.match(persisted.provider.promptDigest, /^[a-f0-9]{64}$/);
+  }));
+
+test("real Codex reviewer FAIL advances reviewer-fail independently of process success", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    let seenEvent = null;
+    const result = runTask(root, "feature", "reviewer", {
+      graph: readyGraph,
+      processRunner: (_command, args) => {
+        const outputIndex = args.indexOf("--output-last-message");
+        fs.writeFileSync(
+          args[outputIndex + 1],
+          JSON.stringify({
+            verdict: "FAIL",
+            summary: "Blocking issue found.",
+            findings: [{ severity: "HIGH", title: "Requirement not implemented" }]
+          })
+        );
+        return {
+          status: 0,
+          stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-thread-2" }) + "\n",
+          stderr: ""
+        };
+      },
+      transitionRunner: (_root, _feature, event) => {
+        seenEvent = event;
+        return { graph: { status: "ACTIVE" } };
+      }
+    });
+
+    assert.equal(result.evidence.result, "FAIL");
+    assert.equal(result.evidence.provider.exitCode, 0);
+    assert.equal(seenEvent, "reviewer-fail");
+  }));
+
+test("real Codex reviewer timeout maps to reviewer-fail", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    let seenEvent = null;
+    const result = runTask(root, "feature", "reviewer", {
+      graph: readyGraph,
+      processRunner: () => ({
+        status: null,
+        signal: "SIGTERM",
+        stdout: "",
+        stderr: "",
+        error: Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })
+      }),
+      transitionRunner: (_root, _feature, event) => {
+        seenEvent = event;
+        return { graph: { status: "ACTIVE" } };
+      }
+    });
+
+    assert.equal(result.evidence.result, "TIMEOUT");
+    assert.equal(result.evidence.provider.executionStatus, "TIMEOUT");
+    assert.equal(seenEvent, "reviewer-fail");
+  }));
+
+test("Codex provider error records evidence but does not advance Task Graph", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature", { command: "missing-codex" });
+
+    let transitionCalled = false;
+    const result = runTask(root, "feature", "reviewer", {
+      graph: readyGraph,
+      processRunner: () => ({
+        status: null,
+        signal: null,
+        stdout: "",
+        stderr: "",
+        error: Object.assign(new Error("not found"), { code: "ENOENT" })
+      }),
+      transitionRunner: () => {
+        transitionCalled = true;
+      }
+    });
+
+    assert.equal(result.evidence.result, "PROVIDER_ERROR");
+    assert.equal(result.evidence.graphEvent, null);
+    assert.equal(result.evidence.provider.errorCode, "ENOENT");
+    assert.equal(transitionCalled, false);
+  }));
+
+test("codex-exec-review adapter rejects non-reviewer task even with local opt-in", () =>
+  fixture((root, graph) => {
+    initRuntime(root, "feature", { graph });
+    fs.writeFileSync(
+      runtimeLocalPath(root, "feature"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        adapters: {
+          builder: {
+            type: "codex-exec-review",
+            command: "codex",
+            timeoutMs: 300000,
+            baseRef: "main"
+          }
+        }
+      }, null, 2) + "\n"
+    );
+    assert.throws(
+      () => runTask(root, "feature", "builder", { graph }),
+      /only supports reviewer task/
+    );
+  }));
+
+test("committed real provider config without local opt-in is rejected", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    const runtime = initRuntime(root, "feature", { graph: readyGraph });
+    const config = JSON.parse(fs.readFileSync(runtime.outputPath, "utf8"));
+    config.adapters.reviewer = {
+      type: "codex-exec-review",
+      command: "codex",
+      timeoutMs: 300000,
+      baseRef: "main"
+    };
+    fs.writeFileSync(runtime.outputPath, JSON.stringify(config, null, 2) + "\n");
+
+    assert.throws(
+      () => runTask(root, "feature", "reviewer", { graph: readyGraph }),
+      /task-specific local runtime opt-in/
+    );
+  }));
+
+test("tampered local sandbox cannot relax Codex read-only boundary", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    const localPath = runtimeLocalPath(root, "feature");
+    const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
+    local.adapters.reviewer.sandbox = "danger-full-access";
+    fs.writeFileSync(localPath, JSON.stringify(local, null, 2) + "\n");
+
+    assert.throws(
+      () => runTask(root, "feature", "reviewer", { graph: readyGraph }),
+      /sandbox must be read-only/
+    );
+  }));
+
+
+test("Codex runtime rejects schema-invalid length and extra properties", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    const invalidOutputs = [
+      {
+        verdict: "PASS",
+        summary: "x".repeat(2001),
+        findings: []
+      },
+      {
+        verdict: "FAIL",
+        summary: "Blocking issue.",
+        findings: [{ severity: "HIGH", title: "x".repeat(301) }]
+      },
+      {
+        verdict: "PASS",
+        summary: "Looks good.",
+        findings: [],
+        unexpected: true
+      },
+      {
+        verdict: "FAIL",
+        summary: "Blocking issue.",
+        findings: [{ severity: "HIGH", title: "Issue", extra: true }]
+      }
+    ];
+
+    for (const output of invalidOutputs) {
+      let transitionCalled = false;
+      const result = runTask(root, "feature", "reviewer", {
+        graph: readyGraph,
+        processRunner: (_command, args) => {
+          const outputIndex = args.indexOf("--output-last-message");
+          fs.writeFileSync(args[outputIndex + 1], JSON.stringify(output));
+          return {
+            status: 0,
+            stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-invalid" }) + "\n",
+            stderr: ""
+          };
+        },
+        transitionRunner: () => {
+          transitionCalled = true;
+        }
+      });
+
+      assert.equal(result.evidence.result, "PROVIDER_ERROR");
+      assert.equal(result.evidence.graphEvent, null);
+      assert.equal(result.evidence.provider.executionStatus, "INVALID_OUTPUT");
+      assert.equal(transitionCalled, false);
+    }
+  }));
+
+test("Codex runtime rejects PASS with HIGH or CRITICAL findings", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    for (const severity of ["HIGH", "CRITICAL"]) {
+      let transitionCalled = false;
+      const result = runTask(root, "feature", "reviewer", {
+        graph: readyGraph,
+        processRunner: (_command, args) => {
+          const outputIndex = args.indexOf("--output-last-message");
+          fs.writeFileSync(
+            args[outputIndex + 1],
+            JSON.stringify({
+              verdict: "PASS",
+              summary: "Contradictory output.",
+              findings: [{ severity, title: "Blocking finding" }]
+            })
+          );
+          return {
+            status: 0,
+            stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-contradictory" }) + "\n",
+            stderr: ""
+          };
+        },
+        transitionRunner: () => {
+          transitionCalled = true;
+        }
+      });
+
+      assert.equal(result.evidence.result, "PROVIDER_ERROR");
+      assert.equal(result.evidence.graphEvent, null);
+      assert.equal(result.evidence.provider.executionStatus, "INVALID_OUTPUT");
+      assert.equal(transitionCalled, false);
+    }
+  }));
+
+
+test("local runtime override cannot change provider command", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    configureCodexReviewer(root, "feature");
+
+    const localPath = runtimeLocalPath(root, "feature");
+    const local = JSON.parse(fs.readFileSync(localPath, "utf8"));
+    local.adapters.reviewer.command = "arbitrary-binary";
+    fs.writeFileSync(localPath, JSON.stringify(local, null, 2) + "\n");
+
+    let seenCommand = null;
+    runTask(root, "feature", "reviewer", {
+      graph: readyGraph,
+      processRunner: (command, args) => {
+        seenCommand = command;
+        const outputIndex = args.indexOf("--output-last-message");
+        fs.writeFileSync(
+          args[outputIndex + 1],
+          JSON.stringify({ verdict: "PASS", summary: "No blocking findings.", findings: [] })
+        );
+        return {
+          status: 0,
+          stdout: JSON.stringify({ type: "thread.started", thread_id: "codex-command-fixed" }) + "\n",
+          stderr: ""
+        };
+      },
+      transitionRunner: () => ({ graph: { status: "ACTIVE" } })
+    });
+
+    assert.equal(seenCommand, "codex");
+  }));
+
+test("local runtime override rejects non-reviewer adapters", () =>
+  fixture((root, graph) => {
+    initRuntime(root, "feature", { graph });
+    fs.writeFileSync(
+      runtimeLocalPath(root, "feature"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        adapters: {
+          builder: { type: "scripted", timeoutMs: 300000 }
+        }
+      }, null, 2) + "\n"
+    );
+
+    assert.throws(
+      () => runTask(root, "feature", "builder", { graph, scriptedResult: "PASS" }),
+      /may only configure reviewer/
+    );
+  }));
+
+test("local reviewer override rejects non-Codex adapter type", () =>
+  fixture((root, graph) => {
+    const readyGraph = makeReviewerReady(graph);
+    fs.writeFileSync(
+      path.join(root, ".kiro", "specs", "feature", "agent-task-graph.json"),
+      JSON.stringify(readyGraph, null, 2) + "\n"
+    );
+    initRuntime(root, "feature", { graph: readyGraph });
+    fs.writeFileSync(
+      runtimeLocalPath(root, "feature"),
+      JSON.stringify({
+        schemaVersion: 1,
+        feature: "feature",
+        adapters: {
+          reviewer: { type: "scripted", timeoutMs: 300000 }
+        }
+      }, null, 2) + "\n"
+    );
+
+    assert.throws(
+      () => runTask(root, "feature", "reviewer", { graph: readyGraph, scriptedResult: "PASS" }),
+      /must use codex-exec-review/
+    );
   }));

@@ -49,7 +49,7 @@ function readRuntimeConfig(repositoryRoot, featureSlug) {
   const localAdapters = local.adapters || {};
   const localAdapterNames = Object.keys(localAdapters);
   if (localAdapterNames.some((name) => name !== "reviewer")) {
-    throw new Error("local runtime override may only configure reviewer");
+    throw new Error("local runtime override may only configure reviewer; codex-exec-review adapter only supports reviewer task");
   }
   if (localAdapters.reviewer && localAdapters.reviewer.type !== "codex-exec-review") {
     throw new Error("local reviewer override must use codex-exec-review");
@@ -145,6 +145,25 @@ function sha256(value) {
   return crypto.createHash("sha256").update(String(value || "")).digest("hex");
 }
 
+function sanitizeCodexEnvironment(source = {}) {
+  const allowedKeys = [
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "LC_ALL"
+  ];
+
+  const sanitized = {};
+  for (const key of allowedKeys) {
+    if (source[key] !== undefined) sanitized[key] = source[key];
+  }
+  return sanitized;
+}
+
 function buildCodexReviewPrompt(featureSlug, baseRef) {
   return [
     "Act as the delegated independent Reviewer for this repository.",
@@ -235,11 +254,7 @@ function parseCodexReviewVerdict(raw) {
     throw new Error("Codex PASS verdict cannot contain HIGH or CRITICAL findings");
   }
 
-  return {
-    verdict: value.verdict,
-    summary,
-    findings
-  };
+  return { verdict: value.verdict, summary, findings };
 }
 
 function reviewerArtifactPath(repositoryRoot, featureSlug) {
@@ -248,44 +263,21 @@ function reviewerArtifactPath(repositoryRoot, featureSlug) {
 
 function writeReviewerArtifact(repositoryRoot, featureSlug, actor, review, providerSessionId) {
   const lines = [
-    "# Reviewer Review",
-    "",
+    "# Reviewer Review", "",
     "- Status: " + review.verdict,
     "- Reviewed by: " + actor,
     "- Provider: codex-cli",
-    "- Provider Session: " + (providerSessionId || "unavailable"),
-    "",
-    "## Summary",
-    "",
-    review.summary,
-    "",
-    "## Findings",
-    ""
+    "- Provider Session: " + (providerSessionId || "unavailable"), "",
+    "## Summary", "", review.summary, "", "## Findings", ""
   ];
-  if (review.findings.length === 0) {
-    lines.push("- None");
-  } else {
-    for (const finding of review.findings) {
-      lines.push("- [" + finding.severity + "] " + finding.title);
-    }
-  }
+  if (review.findings.length === 0) lines.push("- None");
+  else for (const finding of review.findings) lines.push("- [" + finding.severity + "] " + finding.title);
   const file = reviewerArtifactPath(repositoryRoot, featureSlug);
   fs.writeFileSync(file, lines.join("\n") + "\n");
   return file;
 }
 
-function createRunEvidence({
-  featureSlug,
-  taskName,
-  actor,
-  adapter,
-  result,
-  startedAt,
-  finishedAt,
-  graphEvent,
-  provider,
-  verdict
-}) {
+function createRunEvidence({ featureSlug, taskName, actor, adapter, result, startedAt, finishedAt, graphEvent, provider, verdict }) {
   return {
     schemaVersion: 1,
     runId: crypto.randomUUID(),
@@ -319,19 +311,7 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
 
   const baseRef = adapter.baseRef || "origin/main";
   const prompt = buildCodexReviewPrompt(featureSlug, baseRef);
-  const args = [
-    "exec",
-    "--json",
-    "--ephemeral",
-    "--ignore-user-config",
-    "--sandbox",
-    "read-only",
-    "--output-schema",
-    schemaPath,
-    "--output-last-message",
-    lastMessagePath,
-    "-"
-  ];
+  const args = ["exec", "--json", "--ephemeral", "--ignore-user-config", "--sandbox", "read-only", "--output-schema", schemaPath, "--output-last-message", lastMessagePath, "-"];
 
   const runner = options.processRunner || childProcess.spawnSync;
   let processResult;
@@ -343,7 +323,7 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
       timeout: adapter.timeoutMs,
       maxBuffer: 2 * 1024 * 1024,
       shell: false,
-      env: options.env || process.env
+      env: sanitizeCodexEnvironment(options.env || process.env)
     }) || {};
   } catch (error) {
     processResult = { status: null, stdout: "", stderr: "", error };
@@ -365,37 +345,13 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
 
   try {
     if (isTimeoutProcessResult(processResult)) {
-      return {
-        result: "TIMEOUT",
-        graphEvent: "reviewer-fail",
-        provider: { ...providerBase, executionStatus: "TIMEOUT" },
-        review: null,
-        reviewerArtifact: null
-      };
+      return { result: "TIMEOUT", graphEvent: "reviewer-fail", provider: { ...providerBase, executionStatus: "TIMEOUT" }, review: null, reviewerArtifact: null };
     }
-
     if (processResult.error || processResult.status !== 0) {
-      return {
-        result: "PROVIDER_ERROR",
-        graphEvent: null,
-        provider: {
-          ...providerBase,
-          executionStatus: "ERROR",
-          errorCode: processResult.error?.code || null
-        },
-        review: null,
-        reviewerArtifact: null
-      };
+      return { result: "PROVIDER_ERROR", graphEvent: null, provider: { ...providerBase, executionStatus: "ERROR", errorCode: processResult.error?.code || null }, review: null, reviewerArtifact: null };
     }
-
     if (!fs.existsSync(lastMessagePath)) {
-      return {
-        result: "PROVIDER_ERROR",
-        graphEvent: null,
-        provider: { ...providerBase, executionStatus: "INVALID_OUTPUT" },
-        review: null,
-        reviewerArtifact: null
-      };
+      return { result: "PROVIDER_ERROR", graphEvent: null, provider: { ...providerBase, executionStatus: "INVALID_OUTPUT" }, review: null, reviewerArtifact: null };
     }
 
     const reviewRaw = fs.readFileSync(lastMessagePath, "utf8");
@@ -403,35 +359,14 @@ function runCodexReviewer(repositoryRoot, featureSlug, actor, adapter, options =
     try {
       review = parseCodexReviewVerdict(reviewRaw);
     } catch (_error) {
-      return {
-        result: "PROVIDER_ERROR",
-        graphEvent: null,
-        provider: {
-          ...providerBase,
-          executionStatus: "INVALID_OUTPUT",
-          finalMessageDigest: sha256(reviewRaw)
-        },
-        review: null,
-        reviewerArtifact: null
-      };
+      return { result: "PROVIDER_ERROR", graphEvent: null, provider: { ...providerBase, executionStatus: "INVALID_OUTPUT", finalMessageDigest: sha256(reviewRaw) }, review: null, reviewerArtifact: null };
     }
 
-    const reviewerArtifact = writeReviewerArtifact(
-      root,
-      featureSlug,
-      actor,
-      review,
-      providerSessionId
-    );
-
+    const reviewerArtifact = writeReviewerArtifact(root, featureSlug, actor, review, providerSessionId);
     return {
       result: review.verdict,
       graphEvent: review.verdict === "PASS" ? "reviewer-pass" : "reviewer-fail",
-      provider: {
-        ...providerBase,
-        executionStatus: "SUCCESS",
-        finalMessageDigest: sha256(reviewRaw)
-      },
+      provider: { ...providerBase, executionStatus: "SUCCESS", finalMessageDigest: sha256(reviewRaw) },
       review,
       reviewerArtifact
     };
@@ -448,9 +383,7 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
   const graph = options.graph || readGraph(root, featureSlug);
   if (graph.status !== "ACTIVE") throw new Error("task graph must be ACTIVE");
   const graphTask = graph.tasks && graph.tasks[taskName];
-  if (!graphTask || graphTask.status !== "READY") {
-    throw new Error(taskName + " task is not READY");
-  }
+  if (!graphTask || graphTask.status !== "READY") throw new Error(taskName + " task is not READY");
 
   const runtimeState = readRuntimeConfig(root, featureSlug);
   const config = runtimeState.config;
@@ -459,9 +392,7 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
 
   const actor = graphTask.actor || null;
   const configuredRole = config.roles && config.roles[taskName];
-  if (taskName !== "verification" && configuredRole !== actor) {
-    throw new Error("runtime actor provenance differs from Task Graph: " + taskName);
-  }
+  if (taskName !== "verification" && configuredRole !== actor) throw new Error("runtime actor provenance differs from Task Graph: " + taskName);
 
   const startedAt = options.startedAt || new Date().toISOString();
   let result;
@@ -471,48 +402,29 @@ function runTask(repositoryRoot, featureSlug, taskName, options = {}) {
   let verdict = null;
 
   const localTaskAdapter = runtimeState.localOverride?.adapters?.[taskName];
-  if (
-    adapter.type === "codex-exec-review" &&
-    (!localTaskAdapter || localTaskAdapter.type !== "codex-exec-review")
-  ) {
+  if (adapter.type === "codex-exec-review" && (!localTaskAdapter || localTaskAdapter.type !== "codex-exec-review")) {
     throw new Error("real provider requires task-specific local runtime opt-in");
   }
   if (adapter.type === "codex-exec-review" && adapter.sandbox && adapter.sandbox !== "read-only") {
     throw new Error("codex-exec-review sandbox must be read-only");
   }
 
-  if (adapter.type === "dry-run") {
-    result = "DRY_RUN";
-  } else if (adapter.type === "scripted") {
+  if (adapter.type === "dry-run") result = "DRY_RUN";
+  else if (adapter.type === "scripted") {
     result = normalizeScriptedResult(options.scriptedResult);
     graphEvent = TASK_EVENTS[taskName][result];
   } else if (adapter.type === "codex-exec-review") {
-    if (taskName !== "reviewer") {
-      throw new Error("codex-exec-review adapter only supports reviewer task");
-    }
+    if (taskName !== "reviewer") throw new Error("codex-exec-review adapter only supports reviewer task");
     const providerResult = runCodexReviewer(root, featureSlug, actor, adapter, options);
     result = providerResult.result;
     graphEvent = providerResult.graphEvent;
     provider = providerResult.provider;
     reviewerArtifact = providerResult.reviewerArtifact;
     verdict = providerResult.review?.verdict || null;
-  } else {
-    throw new Error("unsupported runtime adapter: " + adapter.type);
-  }
+  } else throw new Error("unsupported runtime adapter: " + adapter.type);
 
   const finishedAt = options.finishedAt || new Date().toISOString();
-  const evidence = createRunEvidence({
-    featureSlug,
-    taskName,
-    actor,
-    adapter,
-    result,
-    startedAt,
-    finishedAt,
-    graphEvent,
-    provider,
-    verdict
-  });
+  const evidence = createRunEvidence({ featureSlug, taskName, actor, adapter, result, startedAt, finishedAt, graphEvent, provider, verdict });
 
   const dir = runsDir(root, featureSlug);
   fs.mkdirSync(dir, { recursive: true });
@@ -543,9 +455,7 @@ function runCli() {
   const [mode, featureSlug, taskName, value] = process.argv.slice(2);
 
   if (!mode || !featureSlug) {
-    console.error(
-      "Usage: node scripts/agent-runtime-adapter.js <init|configure-codex-review|run> <feature-slug> [task-name|timeout-ms] [scripted-result]"
-    );
+    console.error("Usage: node scripts/agent-runtime-adapter.js <init|configure-codex-review|run> <feature-slug> [task-name|timeout-ms] [scripted-result]");
     process.exitCode = 2;
     return;
   }
@@ -556,17 +466,13 @@ function runCli() {
       console.log("Agent Runtime initialized: " + path.relative(repositoryRoot, result.outputPath));
       return;
     }
-
     if (mode === "configure-codex-review") {
-      const result = configureCodexReviewer(repositoryRoot, featureSlug, {
-        timeoutMs: taskName === undefined ? undefined : Number(taskName)
-      });
+      const result = configureCodexReviewer(repositoryRoot, featureSlug, { timeoutMs: taskName === undefined ? undefined : Number(taskName) });
       console.log("Codex Reviewer Adapter configured: " + path.relative(repositoryRoot, result.outputPath));
       console.log("- Adapter: codex-exec-review");
       console.log("- Sandbox: read-only");
       return;
     }
-
     if (mode === "run") {
       if (!taskName) throw new Error("task-name is required");
       const result = runTask(repositoryRoot, featureSlug, taskName, { scriptedResult: value });
@@ -575,12 +481,9 @@ function runCli() {
       console.log("- Adapter: " + result.evidence.adapter);
       console.log("- Result: " + result.evidence.result);
       console.log("- Graph event: " + (result.evidence.graphEvent || "none"));
-      if (result.evidence.provider?.sessionId) {
-        console.log("- Provider session: " + result.evidence.provider.sessionId);
-      }
+      if (result.evidence.provider?.sessionId) console.log("- Provider session: " + result.evidence.provider.sessionId);
       return;
     }
-
     throw new Error("mode must be init, configure-codex-review, or run");
   } catch (error) {
     console.error("Agent Runtime failed: " + error.message);
@@ -608,6 +511,7 @@ module.exports = {
   runtimeLocalPath,
   runtimePath,
   runsDir,
+  sanitizeCodexEnvironment,
   sha256,
   writeReviewerArtifact
 };

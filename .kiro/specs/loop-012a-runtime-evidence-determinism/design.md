@@ -25,6 +25,7 @@ The final element for each task remains the selected latest run. This preserves 
 
 - `scripts/run-verification-evidence-gate.js`
 - `tests/verification-evidence-gate.test.js`
+- `knowledge/20-research/context-packs/loop-012a-runtime-evidence-determinism-context.md`
 
 ## Trust Boundary Impact
 

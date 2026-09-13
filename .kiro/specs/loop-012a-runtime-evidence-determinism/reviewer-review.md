@@ -3,14 +3,12 @@
 - Status: FAIL
 - Reviewed by: codex-reviewer
 - Provider: codex-cli
-- Provider Session: 01a0982d-3d41-73a2-9fe3-6c3cd488857d
+- Provider Session: 01a09848-783e-7dd2-b20e-c66c185016d5
 
 ## Summary
 
-origin/mainをbase refとして確認しました。実装ロジックはtimestamp順のlatest-run選択を満たしていますが、mergeを妨げるgovernance/validation問題が残っています。focused testはread-only sandboxのEPERMで実行不能でしたが、これは欠陥扱いしていません。
+指定base ref `93d005e` で実装を確認しました。主要ロジックは仕様どおりですが、Implementation Conformance Gateがscope driftを検出しており、blocking findingが残っています。read-only sandboxによるテストのEPERMは欠陥として扱っていません。
 
 ## Findings
 
-- [HIGH] Implementation Conformance Gateがimplementation-handoff.md欠落により失敗する
-- [HIGH] check:structureがContext Packの未知のsupports note IDにより失敗する
-- [LOW] 変更箇所のインデント崩れと無関係なcatch binding削除が保守性とscope disciplineを低下させている
+- [HIGH] `npm run impl:conform -- loop-012a-runtime-evidence-determinism 93d005e` が、Context PackをSpecのAffected Components外の変更として検出し失敗する

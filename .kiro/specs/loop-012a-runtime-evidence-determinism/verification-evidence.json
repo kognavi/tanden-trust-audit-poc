@@ -1,0 +1,112 @@
+{
+  "payload": {
+    "schemaVersion": 1,
+    "gate": "verification-evidence-gate",
+    "feature": "loop-012a-runtime-evidence-determinism",
+    "generatedAt": "2026-09-13T01:09:07.797Z",
+    "baseRef": "93d005e",
+    "status": "PASS",
+    "provenance": {
+      "sourceContext": "knowledge/20-research/context-packs/loop-012a-runtime-evidence-determinism-context.md",
+      "contextId": "context-pack-loop-012a-runtime-evidence-determinism",
+      "specDir": ".kiro/specs/loop-012a-runtime-evidence-determinism"
+    },
+    "roles": {
+      "builder": "chatgpt-builder",
+      "reviewer": "codex-reviewer",
+      "securityReviewer": null
+    },
+    "orchestrator": {
+      "status": "ACTIVE",
+      "retryCount": 2,
+      "maxRetries": 2,
+      "tasks": {
+        "builder": {
+          "status": "PASS",
+          "actor": "chatgpt-builder"
+        },
+        "reviewer": {
+          "status": "PASS",
+          "actor": "codex-reviewer"
+        },
+        "securityReviewer": {
+          "status": "SKIPPED",
+          "actor": null
+        },
+        "verification": {
+          "status": "READY",
+          "actor": "verification-gate"
+        }
+      }
+    },
+    "runtime": {
+      "adapters": {
+        "builder": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "reviewer": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "securityReviewer": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "verification": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        }
+      },
+      "runs": {
+        "reviewer": {
+          "runCount": 3,
+          "latestResult": "PASS",
+          "latestAdapter": "codex-exec-review",
+          "latestRunId": "3c46d053-4f60-4e86-9e9b-44a42e2f5ba6",
+          "latestGraphEvent": "reviewer-pass",
+          "latestProvider": "codex-cli",
+          "latestProviderSessionId": "01a0984d-69b6-70b1-b391-9fad796f260e",
+          "latestProviderExecutionStatus": "SUCCESS"
+        }
+      }
+    },
+    "checks": {
+      "implementationConformance": "PASS",
+      "structureValidation": "PASS",
+      "reviewerReview": "PASS",
+      "securityReview": "N/A"
+    },
+    "commands": {
+      "structureValidation": "npm run check:structure"
+    },
+    "changedFiles": [
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/agent-delegation.json",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/agent-runs/3bd63bd3-5ffe-4351-9d04-b9531c497020.json",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/agent-runs/d3b0027b-62a3-48a1-a0e9-3e4ebc93efb9.json",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/agent-runtime.json",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/agent-task-graph.json",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/design.md",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/implementation-handoff.md",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/requirements.md",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/reviewer-review.md",
+      ".kiro/specs/loop-012a-runtime-evidence-determinism/tasks.md",
+      "knowledge/20-research/context-packs/loop-012a-runtime-evidence-determinism-context.md",
+      "scripts/run-verification-evidence-gate.js",
+      "tests/verification-evidence-gate.test.js"
+    ],
+    "sensitiveFiles": [],
+    "reviewerReview": {
+      "status": "PASS",
+      "reviewedBy": "codex-reviewer"
+    },
+    "securityReview": {
+      "status": "N/A",
+      "reviewedBy": null
+    }
+  },
+  "digest": {
+    "algorithm": "sha256",
+    "value": "73bfdb9ab784d73867805529ed2672a723004bec2693a2e3f4965c6b84f2ca2d"
+  }
+}

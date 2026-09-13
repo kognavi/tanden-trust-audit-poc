@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "runId": "d3b0027b-62a3-48a1-a0e9-3e4ebc93efb9",
+  "feature": "loop-012a-runtime-evidence-determinism",
+  "task": "reviewer",
+  "actor": "codex-reviewer",
+  "adapter": "codex-exec-review",
+  "timeoutMs": 300000,
+  "result": "FAIL",
+  "graphEvent": "reviewer-fail",
+  "provider": {
+    "name": "codex-cli",
+    "sessionId": "01a09848-783e-7dd2-b20e-c66c185016d5",
+    "command": "codex",
+    "sandbox": "read-only",
+    "exitCode": 0,
+    "promptDigest": "3849b846b11cdaaf0c3274785bf9d2b5cd9b57534d49ba010e9b0e4cdf8bda98",
+    "stdoutDigest": "dc4e351d6fa162ac9ac7a60137527811356539932bac58a68449b284b17e01b4",
+    "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "executionStatus": "SUCCESS",
+    "finalMessageDigest": "70a1f54e118db3745d09b343c8baa334e0931cd4d558aaa13c1ac0edceddfac9"
+  },
+  "verdict": "FAIL",
+  "startedAt": "2026-09-13T01:01:20.031Z",
+  "finishedAt": "2026-09-13T01:02:18.472Z"
+}

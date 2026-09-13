@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const { applyEvent } = require("../scripts/agent-task-graph");
 const { createEvidenceDocument } = require("../scripts/run-verification-evidence-gate");
+const { runTask } = require("../scripts/agent-runtime-adapter");
 const {
   bootstrapWorkOrchestration,
   getWorkOrchestrationStatus
@@ -105,6 +106,24 @@ test("bootstrap creates consistent default Work roles, graph, and dry-run Runtim
     const status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
     assert.equal(status.status, "ACTIVE");
     assert.equal(status.phase, "BUILD");
+    assert.deepEqual(status.runtimeRuns, {});
+  } finally {
+    cleanup(fixture.root);
+  }
+});
+
+test("status exposes the latest Runtime Evidence without advancing dry-run tasks", () => {
+  const fixture = createFixture();
+  try {
+    bootstrapWorkOrchestration(fixture.root, fixture.feature);
+    const run = runTask(fixture.root, fixture.feature, "builder", {
+      now: "2026-09-13T00:01:00.000Z"
+    });
+
+    const status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
+    assert.equal(status.readyTask, "builder");
+    assert.equal(status.runtimeRuns.builder.latestResult, "DRY_RUN");
+    assert.equal(status.runtimeRuns.builder.latestRunId, run.evidence.runId);
   } finally {
     cleanup(fixture.root);
   }

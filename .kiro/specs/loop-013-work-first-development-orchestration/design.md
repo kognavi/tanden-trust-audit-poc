@@ -35,7 +35,7 @@ BuilderとReviewerのdefault IDsはそれぞれ `chatgpt-builder` と `codex-rev
 `getWorkOrchestrationStatus(repositoryRoot, featureSlug)` はartifactを書き換えず、以下を返す。
 
 - `READY_TO_BOOTSTRAP`: Spec/Handoff valid、orchestration artifactなし。
-- `ACTIVE`: cross-artifact provenance validで、Task Graph上の唯一のREADY taskをphase/nextActionへmap。
+- `ACTIVE`: cross-artifact provenance validで、Task Graph上の唯一のREADY taskをphase/nextActionへmapし、既存Runtime Evidence summaryを表示。
 - `COMPLETE`: Verification PASS後。nextActionはHuman merge decision。
 - `FAILED`: retry exhausted。nextActionはHuman intervention。
 - `INCONSISTENT`: missing prerequisite、partial state、feature/role drift、複数または0 READY taskなど。nextActionなし。

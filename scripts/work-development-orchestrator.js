@@ -16,7 +16,10 @@ const {
   runsDir
 } = require("./agent-runtime-adapter");
 const { validateFeatureSlug } = require("./scaffold-spec-from-context");
-const { verifyEvidenceDocument } = require("./run-verification-evidence-gate");
+const {
+  readRuntimeEvidenceSummary,
+  verifyEvidenceDocument
+} = require("./run-verification-evidence-gate");
 
 const DEFAULT_BUILDER = "chatgpt-builder";
 const DEFAULT_REVIEWER = "codex-reviewer";
@@ -310,6 +313,8 @@ function getWorkOrchestrationStatus(repositoryRoot, featureSlug) {
     } catch (error) {
       errors.push(error.message);
     }
+    const runtimeEvidence = readRuntimeEvidenceSummary(root, featureSlug);
+    if (!runtimeEvidence.valid) errors.push(runtimeEvidence.error);
 
     if (!["ACTIVE", "COMPLETE", "FAILED"].includes(graph.status)) {
       errors.push("unsupported Task Graph status: " + graph.status);
@@ -363,6 +368,7 @@ function getWorkOrchestrationStatus(repositoryRoot, featureSlug) {
         nextCommands: [],
         errors: [],
         roles: delegation.roles,
+        runtimeRuns: runtimeEvidence.summary,
         retryCount: graph.retryCount,
         maxRetries: graph.maxRetries
       };
@@ -378,6 +384,7 @@ function getWorkOrchestrationStatus(repositoryRoot, featureSlug) {
         nextCommands: [],
         errors: [],
         roles: delegation.roles,
+        runtimeRuns: runtimeEvidence.summary,
         retryCount: graph.retryCount,
         maxRetries: graph.maxRetries
       };
@@ -403,6 +410,7 @@ function getWorkOrchestrationStatus(repositoryRoot, featureSlug) {
       nextCommands,
       errors: [],
       roles: delegation.roles,
+      runtimeRuns: runtimeEvidence.summary,
       retryCount: graph.retryCount,
       maxRetries: graph.maxRetries
     };

@@ -19,5 +19,6 @@
 - [x] Run focused tests, `npm test`, and `npm run check:structure`.
 - [x] Run Implementation Conformance Gate.
 - [ ] Hand implementation to independent Codex Reviewer.
-- [ ] Record Verification Evidence and reusable learning.
+- [x] Record reusable learning in `knowledge/30-learnings/`.
+- [ ] Record final Verification Evidence.
 - [ ] Open PR only after Task Graph and gates complete.

@@ -43,6 +43,7 @@ The command reads durable repository artifacts and returns JSON with:
 - the one READY task, when active;
 - the next permitted action and applicable repository commands;
 - role and retry provenance;
+- latest Runtime run result and provider/session provenance by task;
 - consistency errors, if any.
 
 Possible status values:

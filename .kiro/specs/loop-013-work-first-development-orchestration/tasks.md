@@ -17,7 +17,7 @@
 - [x] Run `npm run spec:ready -- loop-013-work-first-development-orchestration`.
 - [x] Generate and review Implementation Handoff.
 - [x] Run focused tests, `npm test`, and `npm run check:structure`.
-- [ ] Run Implementation Conformance Gate.
+- [x] Run Implementation Conformance Gate.
 - [ ] Hand implementation to independent Codex Reviewer.
 - [ ] Record Verification Evidence and reusable learning.
 - [ ] Open PR only after Task Graph and gates complete.

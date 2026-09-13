@@ -232,6 +232,24 @@ test("status rejects tampered Verification Evidence before recording PASS", () =
   }
 });
 
+test("status returns FAILED and hands control back to Human after retry exhaustion", () => {
+  const fixture = createFixture();
+  try {
+    bootstrapWorkOrchestration(fixture.root, fixture.feature, { maxRetries: 0 });
+    const graphPath = path.join(fixture.specDir, "agent-task-graph.json");
+    let graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    graph = applyEvent(graph, "builder-fail");
+    fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2) + "\n");
+
+    const status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
+    assert.equal(status.status, "FAILED");
+    assert.equal(status.phase, "HUMAN_INTERVENTION");
+    assert.equal(status.nextAction, "HUMAN_INTERVENTION");
+  } finally {
+    cleanup(fixture.root);
+  }
+});
+
 test("status fails closed on partial state, role drift, and invalid READY task count", () => {
   const partial = createFixture();
   try {

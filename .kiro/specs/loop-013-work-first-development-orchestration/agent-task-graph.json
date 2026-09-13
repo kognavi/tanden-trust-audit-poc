@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-013-work-first-development-orchestration",
+  "generatedAt": "2026-09-13T01:30:12.182Z",
+  "updatedAt": "2026-09-13T01:30:12.182Z",
+  "status": "ACTIVE",
+  "maxRetries": 2,
+  "retryCount": 0,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  },
+  "tasks": {
+    "builder": {
+      "status": "READY",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "BLOCKED",
+      "actor": "codex-reviewer"
+    },
+    "securityReviewer": {
+      "status": "SKIPPED",
+      "actor": null
+    },
+    "verification": {
+      "status": "BLOCKED",
+      "actor": "verification-gate"
+    }
+  },
+  "history": []
+}

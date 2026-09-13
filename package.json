@@ -33,7 +33,9 @@
     "agent:graph:event": "node scripts/agent-task-graph.js event",
     "agent:runtime:init": "node scripts/agent-runtime-adapter.js init",
     "agent:runtime:run": "node scripts/agent-runtime-adapter.js run",
-    "agent:runtime:codex-review": "node scripts/agent-runtime-adapter.js configure-codex-review"
+    "agent:runtime:codex-review": "node scripts/agent-runtime-adapter.js configure-codex-review",
+    "work:bootstrap": "node scripts/work-development-orchestrator.js bootstrap",
+    "work:status": "node scripts/work-development-orchestrator.js status"
   },
   "keywords": [
     "ai-agent",

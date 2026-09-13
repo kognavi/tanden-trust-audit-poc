@@ -18,19 +18,21 @@
 5. Context Packをhandoff入力として `.kiro/specs/<feature>/` のrequirements/design/tasks scaffoldを生成し、code/tests/module registryと照合して仕様を確定する。
 6. `npm run spec:ready -- <feature-slug>` を実行し、placeholder・未解決Open Questions・未完了Review Checklist・Source Context Pack不整合がないことを確認する。
 7. `npm run impl:handoff -- <feature-slug>` でImplementation Handoffを生成し、provenanceと推奨branch/worktree planを確認する。
-8. `npm run agent:delegate -- <feature-slug> <builder-id> <reviewer-id> [security-reviewer-id]` でrole separationを固定する。
-9. `npm run agent:graph:init -- <feature-slug> [max-retries]` でdeterministic Task Graphを初期化する。
-10. `npm run agent:runtime:init -- <feature-slug>` でExecution Layerを初期化する。
-11. READY taskをRuntime Adapter経由で実行し、run evidenceを残す。default dry-runはworkflowを進めない。Reviewerを実Codexへ接続する場合は `npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]` で明示opt-inする。
-12. Builder taskがREADYであることを確認し、Human/Builderがbranchまたはgit worktreeで最小変更を実装する。
-13. testsとsecurity checksを実行し、`builder-pass` または `builder-fail` eventをTask Graphへ適用する。
-14. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
-15. Reviewer taskがREADYならdelegated Reviewerがdiffをreviewし、artifactと `reviewer-pass|reviewer-fail` eventを記録する。
-16. Security Reviewer taskがREADYなら独立security reviewと `security-pass|security-fail` eventを記録する。
-17. Verification taskがREADYなら `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、`verify-pass|verify-fail` eventを記録する。
-18. FAIL eventはBuilder retryへrouteし、maxRetries超過時はFAILEDとしてHuman判断へ戻す。
-19. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
-20. Task Graph COMPLETEとchecks/Human reviewを確認してmergeする。
+8. ChatGPT Workをcontrol planeにする場合、`npm run work:bootstrap -- <feature-slug> [security-reviewer-id] [max-retries]` でHandoffを再検証し、Delegation / Task Graph / committed dry-run Runtimeを一度だけ初期化する。個別操作の場合は従来どおり次の3 stepを使う。
+9. `npm run agent:delegate -- <feature-slug> <builder-id> <reviewer-id> [security-reviewer-id]` でrole separationを固定する。
+10. `npm run agent:graph:init -- <feature-slug> [max-retries]` でdeterministic Task Graphを初期化する。
+11. `npm run agent:runtime:init -- <feature-slug>` でExecution Layerを初期化する。
+12. `npm run work:status -- <feature-slug>` または各artifactを確認し、READY taskと次に許可されたactionを確認する。
+13. READY taskをRuntime Adapter経由で実行し、run evidenceを残す。default dry-runはworkflowを進めない。Reviewerを実Codexへ接続する場合は `npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]` で明示opt-inする。
+14. Builder taskがREADYであることを確認し、Human/Builderがbranchまたはgit worktreeで最小変更を実装する。
+15. testsとsecurity checksを実行し、`builder-pass` または `builder-fail` eventをTask Graphへ適用する。
+16. `npm run impl:conform -- <feature-slug> [base-ref]` でchanged files、Affected Components、provenance、sensitive-path impact declarationを検証する。
+17. Reviewer taskがREADYならdelegated Reviewerがdiffをreviewし、artifactと `reviewer-pass|reviewer-fail` eventを記録する。
+18. Security Reviewer taskがREADYなら独立security reviewと `security-pass|security-fail` eventを記録する。
+19. Verification taskがREADYなら `npm run verify:gate -- <feature-slug> [base-ref]` を実行し、`verify-pass|verify-fail` eventを記録する。
+20. FAIL eventはBuilder retryへrouteし、maxRetries超過時はFAILEDとしてHuman判断へ戻す。
+21. 再利用価値のあるdecision / research / learningをknowledgeへappendする。
+22. Task Graph COMPLETEとchecks/Human reviewを確認してmergeする。
 
 ## Persistent state
 

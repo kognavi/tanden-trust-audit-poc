@@ -166,4 +166,7 @@ npm run check:structure
 - Real Providerを使う場合は `npm run agent:runtime:codex-review -- <feature-slug> [timeout-ms]` でReviewerだけをCodex CLIへopt-inする。このcommandはgitignore対象の `agent-runtime.local.json` にのみreal-provider設定を書き、committed `agent-runtime.json` はdry-run baselineのまま維持する。
 - Codex Reviewer Adapterのruntime typeは `codex-exec-review` とする。`codex exec` をshellなし・read-only sandboxで起動し、structured verdictとprovider session provenanceを記録する。provider process successとsemantic review PASSを同一視しない。
 - Codex CLI不在・provider error・invalid outputではTask Graphを進めない。timeoutのみreviewer-failとしてretry routingへ接続する。
+- ChatGPT Workをdevelopment control planeとして使う場合、review済みImplementation Handoff後に `npm run work:bootstrap -- <feature-slug> [security-reviewer-id] [max-retries]` でDelegation / Task Graph / committed dry-run Runtimeを一度だけ初期化する。
+- Work-first bootstrapは既存またはpartial orchestration stateを上書きしない。`npm run work:status -- <feature-slug>` でdurable artifactsの整合性、現在phase、次に許可されたactionを確認する。
+- Work-first layerはgit操作、provider execution、Task Graph event、tests、verification、merge、deployを自動実行しない。Codex real providerのReviewer-only / local opt-in / read-only境界とHuman Approvalを維持する。
 - 詳細は `docs/ai-development-os.md` を参照する。

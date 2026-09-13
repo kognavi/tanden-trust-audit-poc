@@ -16,6 +16,7 @@ This directory contains design, security, audit, and product-facing documentatio
 | `agentcore-runtime-preflight.md` | AWS-free Runtime TypeScript preflight |
 | `cost-guardrails.md` | Local-first / AWS-on-demand cost policy |
 | `verification-runbook.md` | Reviewer verification guide |
+| `work-first-development-orchestration.md` | ChatGPT Work control-plane bootstrap and status contract |
 
 ## Security and Audit
 

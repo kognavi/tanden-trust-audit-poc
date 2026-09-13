@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-012a-runtime-evidence-determinism",
+  "generatedAt": "2026-09-13T00:28:00.096Z",
+  "adapters": {
+    "builder": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    },
+    "reviewer": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    },
+    "securityReviewer": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    },
+    "verification": {
+      "type": "dry-run",
+      "timeoutMs": 300000
+    }
+  },
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  }
+}

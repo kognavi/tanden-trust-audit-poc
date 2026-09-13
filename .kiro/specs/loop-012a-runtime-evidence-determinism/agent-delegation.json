@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-012a-runtime-evidence-determinism",
+  "generatedAt": "2026-09-13T00:27:21.687Z",
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  }
+}

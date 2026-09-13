@@ -13,8 +13,7 @@ source:
   - tests/verification-evidence-gate.test.js
   - .kiro/specs/verification-evidence-gate/requirements.md
   - .kiro/specs/verification-evidence-gate/design.md
-supports:
-  - loop-012a-runtime-evidence-determinism
+supports: []
 contradicts: []
 supersedes: []
 reviewed_by: []

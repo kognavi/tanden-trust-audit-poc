@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-012a-runtime-evidence-determinism",
+  "generatedAt": "2026-09-13T00:27:48.304Z",
+  "updatedAt": "2026-09-13T00:32:44.406Z",
+  "status": "ACTIVE",
+  "maxRetries": 2,
+  "retryCount": 1,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  },
+  "tasks": {
+    "builder": {
+      "status": "READY",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "BLOCKED",
+      "actor": "codex-reviewer"
+    },
+    "securityReviewer": {
+      "status": "SKIPPED",
+      "actor": null
+    },
+    "verification": {
+      "status": "BLOCKED",
+      "actor": "verification-gate"
+    }
+  },
+  "history": [
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-13T00:28:57.320Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "RETRY",
+      "retryCount": 1,
+      "at": "2026-09-13T00:32:44.406Z"
+    }
+  ]
+}

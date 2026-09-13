@@ -127,24 +127,25 @@ function readRuntimeEvidenceSummary(repositoryRoot, featureSlug) {
     }
 
     const dir = path.join(specDir, "agent-runs");
-   const runs = fs.existsSync(dir)
-  ? fs.readdirSync(dir)
-      .filter((name) => name.endsWith(".json"))
-      .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")))
-      .sort((a, b) => {
-        const finishedCompare = String(a.finishedAt || "").localeCompare(
-          String(b.finishedAt || "")
-        );
-        if (finishedCompare !== 0) return finishedCompare;
+    const runs = fs.existsSync(dir)
+      ? fs
+          .readdirSync(dir)
+          .filter((name) => name.endsWith(".json"))
+          .map((name) => JSON.parse(fs.readFileSync(path.join(dir, name), "utf8")))
+          .sort((a, b) => {
+            const finishedCompare = String(a.finishedAt || "").localeCompare(
+              String(b.finishedAt || "")
+            );
+            if (finishedCompare !== 0) return finishedCompare;
 
-        const startedCompare = String(a.startedAt || "").localeCompare(
-          String(b.startedAt || "")
-        );
-        if (startedCompare !== 0) return startedCompare;
+            const startedCompare = String(a.startedAt || "").localeCompare(
+              String(b.startedAt || "")
+            );
+            if (startedCompare !== 0) return startedCompare;
 
-        return String(a.runId || "").localeCompare(String(b.runId || ""));
-      })
-  : [];
+            return String(a.runId || "").localeCompare(String(b.runId || ""));
+          })
+      : [];
 
     const byTask = {};
     for (const run of runs) {

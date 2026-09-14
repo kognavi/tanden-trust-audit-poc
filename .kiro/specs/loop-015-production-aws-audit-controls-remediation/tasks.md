@@ -12,8 +12,8 @@
 - [x] Finalize remediation-only Requirements and Design.
 - [x] Run Spec Readiness Gate.
 - [x] Generate and review Implementation Handoff with old graph/review SHA-256 provenance.
-- [ ] Bootstrap a new Work orchestration with independent Reviewer and Security Reviewer.
-- [ ] Record Builder runtime evidence without advancing the graph through dry-run output alone.
+- [x] Bootstrap a new Work orchestration with independent Reviewer and Security Reviewer.
+- [x] Record Builder runtime evidence without advancing the graph through dry-run output alone.
 - [ ] Correct the runbook `account-wide` phrase to the `home_region` boundary.
 - [ ] Map alert `eventId` from CloudTrail `$.detail.eventID` and reject EventBridge `$.id` in regression tests.
 - [ ] Run focused tests, `npm run check:structure`, Spec Readiness, Implementation Conformance, and `git diff --check`.

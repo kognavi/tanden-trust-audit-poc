@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "feature": "loop-016-external-ledger-anchoring",
   "generatedAt": "2026-09-14T13:22:22.091Z",
-  "updatedAt": "2026-09-14T13:36:13.222Z",
+  "updatedAt": "2026-09-14T13:39:49.080Z",
   "status": "ACTIVE",
   "maxRetries": 2,
   "retryCount": 1,
@@ -13,11 +13,11 @@
   },
   "tasks": {
     "builder": {
-      "status": "READY",
+      "status": "PASS",
       "actor": "chatgpt-builder"
     },
     "reviewer": {
-      "status": "BLOCKED",
+      "status": "READY",
       "actor": "codex-reviewer"
     },
     "securityReviewer": {
@@ -42,6 +42,12 @@
       "outcome": "RETRY",
       "retryCount": 1,
       "at": "2026-09-14T13:36:13.222Z"
+    },
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 1,
+      "at": "2026-09-14T13:39:49.080Z"
     }
   ]
 }

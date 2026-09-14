@@ -12,8 +12,8 @@
 - [x] Finalize requirements/design/tasks with Security Reviewer mandatory.
 - [x] Run Spec Readiness Gate.
 - [x] Generate and review Implementation Handoff.
-- [ ] Bootstrap Work-first Delegation, Task Graph, and Runtime.
-- [ ] Record Builder dry-run evidence without treating it as PASS.
+- [x] Bootstrap Work-first Delegation, Task Graph, and Runtime.
+- [x] Record Builder dry-run evidence without treating it as PASS.
 - [ ] Add trusted internal Ledger verification before all external calls.
 - [ ] Add normalized provider/network/transaction/internal-ledger provenance.
 - [ ] Preserve and extend fail-closed negative tests.

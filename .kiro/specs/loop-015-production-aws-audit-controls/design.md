@@ -53,12 +53,13 @@ Trailはdedicated bucket policyへdepends onし、CloudTrail LakeやCloudWatch L
 
 ### Detection and notification
 
-EventBridgeの`AWS API Call via CloudTrail`を4 rulesへ分類する。
+EventBridgeの`AWS API Call via CloudTrail`を5 rulesへ分類する。
 
 1. CloudTrail integrity: `StopLogging`, `DeleteTrail`, `UpdateTrail`, `PutEventSelectors`, `PutInsightSelectors`。
 2. KMS administration: `DisableKey`, `ScheduleKeyDeletion`, `PutKeyPolicy`, `CreateGrant`, `RetireGrant`, `RevokeGrant`, alias mutation。
-3. Evidence S3 controls: bucket policy/public access/Versioning/Object Lock/lifecycle changes。`requestParameters.bucketName`をEvidence bucket名へ限定する。
+3. Protected S3 controls: bucket policy/public access/Versioning/Object Lock/lifecycle changes。`requestParameters.bucketName`をEvidence bucketとCloudTrail log bucketへ限定する。
 4. IAM privilege changes: inline/managed policy attachment/version、role trust policy、role creation/deletion。account-wide low-volume control-plane eventsとして扱う。
+5. Notification path integrity: EventBridge ruleの無効化・削除・target除去、およびSNS topic削除・attribute変更。
 
 各ruleは同一SNS topicをtargetとする。SNS topic policyは`events.amazonaws.com`に`aws:SourceAccount`とcreated rule ARN条件付き`Publish`だけを許可する。subscriptionは定義しない。
 

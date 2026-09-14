@@ -71,7 +71,7 @@ Source inbox: `knowledge/00-inbox/loop-015-production-aws-audit-controls.md`
 - dedicated CloudTrail log bucketはVersioning、SSE-S3、BucketOwnerEnforced、public-access block、TLS-only deny、CloudTrail source ARN/account条件付きdelivery policy、bounded lifecycle retentionを持つ。`force_destroy`は使用しない。
 - CloudTrail trailはmulti-Region、global service events、log file validation、all read/write management events、KMS management events exclusionなし、Evidence bucketだけのS3 object data eventsを持つ。
 - detectionはCloudWatch Logs metric filtersではなくEventBridge rulesを第一候補とする。これによりCloudTrail-to-CloudWatch IAM roleとlog ingestion retentionをこのLoopから外し、control-plane dependencyと費用を抑える。
-- EventBridge rulesはCloudTrail tamper、KMS lifecycle/policy/grant、Evidence S3 bucket control、account-wide IAM privilege-policy changeを分類し、SNS topicへ送る。
+- EventBridge rulesはCloudTrail tamper、KMS lifecycle/policy/grant、Evidence/log S3 bucket control、account-wide IAM privilege-policy change、EventBridge/SNS notification-path changeを分類し、SNS topicへ送る。
 - SNS subscription、email、chat endpointは作らない。topic ARNをoutputし、通知先追加をHuman Approval phaseに残す。
 - local testsはTerraform text contractを検査し、critical propertyの削除やscope拡大を検知する。Terraform CLIが利用可能な環境では`terraform fmt -check`とAWS backend/APIを使わない`terraform validate`を追加で実施する。
 
@@ -120,7 +120,7 @@ Source inbox: `knowledge/00-inbox/loop-015-production-aws-audit-controls.md`
 - New module is not instantiated by an existing environment and cannot make live changes during tests.
 - CloudTrail is multi-Region, includes global services, enables log file validation, records all management events, and scopes S3 data events to the configured Evidence bucket.
 - Log bucket uses Versioning, SSE-S3, BucketOwnerEnforced, public-access block, TLS-only deny, constrained CloudTrail delivery, lifecycle retention, and no `force_destroy`.
-- EventBridge patterns cover CloudTrail tamper, KMS security administration, Evidence S3 controls, and IAM privilege-policy changes without embedding Evidence content.
+- EventBridge patterns cover CloudTrail tamper, KMS security administration, Evidence/log S3 controls, IAM privilege-policy changes, and notification-path changes without embedding Evidence content.
 - SNS topic has no subscriptions and permits publish only from the created EventBridge rules.
 - inputs reject malformed Evidence bucket ARN and unsafe retention values where Terraform validation can do so.
 - outputs expose trail, log bucket, notification topic, and event rule identifiers without secrets.

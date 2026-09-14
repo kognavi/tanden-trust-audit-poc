@@ -17,7 +17,7 @@ The current MVP provides:
 - deterministic JSON canonicalization
 - SHA-256 hash generation
 - hash verification
-- local ECDSA P-256 signing and sidecar signature verification
+- local ECDSA secp256k1 signing and sidecar signature verification
 - `AwsKmsProvider` for AWS KMS `ECC_SECG_P256K1` / `ECDSA_SHA_256` signing and verification
 - local and Amazon S3 JSON object-store adapters
 - `PgEvidenceStore` for versioned signed Evidence
@@ -28,18 +28,19 @@ The current MVP provides:
 - control mapping documentation
 - evidence lifecycle documentation
 - threat model documentation
+- an unapplied Terraform module for multi-Region CloudTrail, Evidence bucket data events, EventBridge security-control detection, and an SNS notification boundary
 
 The MVP currently does not provide:
 
 - deployed production IAM/KMS policies or separation-of-duties enforcement
 - S3 Object Lock or retention enforcement
-- centralized CloudTrail correlation and operational monitoring
+- deployed and operationally verified CloudTrail correlation and monitoring
 - DynamoDB metadata implementation; DynamoDB below is target/alternative architecture
 - production RDS/Aurora provisioning, hardened DB roles, backup, or HA
 - multi-account security boundaries
 - production relayer authorization, monitoring, and operational key controls for anchoring
 
-Current AWS/PostgreSQL modules are PoC adapters tested mainly with injected fakes. They do not make the reference architecture below a deployed production system.
+Current AWS/PostgreSQL modules are PoC adapters or unapplied Terraform definitions tested locally. They do not make the reference architecture below a deployed production system. See `docs/production-aws-audit-controls.md` for the implemented-but-not-deployed audit-control baseline and its residual risks.
 
 ## Target Architecture Goals
 
@@ -472,13 +473,13 @@ This document complements:
 Future versions may add:
 
 - additional deployment-level diagrams for multi-account and multi-region designs
-- Terraform or AWS CDK reference implementation
+- environment binding for the standalone Terraform audit-control module
 - API Gateway and Lambda ingestion prototype
 - production KMS/IAM/CloudTrail deployment and verification workflow
 - S3 Object Lock sample configuration
 - DynamoDB metadata schema
-- EventBridge lifecycle event examples
-- CloudTrail and Config monitoring examples
+- application lifecycle EventBridge examples
+- AWS Config monitoring examples
 - IAM least privilege policy examples
 - cost estimation
 - multi-account landing zone design

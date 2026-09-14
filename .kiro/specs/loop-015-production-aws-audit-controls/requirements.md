@@ -26,7 +26,7 @@ AWS上のEvidence運用に必要なdetective audit controlsを、未適用のTer
 - [x] log bucket policyはCloudTrail service principalのACL checkとlog deliveryだけを許可し、configured trail ARN、source account、AWSLogs account prefixへ制約する。
 - [x] trailはmulti-Region、global service events、log file validation、all read/write management eventsを有効化し、KMS management eventsを除外しない。
 - [x] trailはconfigured Evidence bucket object ARNだけをS3 data-event対象とし、all-bucket data event loggingを行わない。
-- [x] EventBridge rulesはCloudTrail停止・削除・selector変更、KMS key lifecycle/policy/grant変更、configured Evidence bucketのpolicy/public access/Versioning/Object Lock/lifecycle変更、account-wide IAM privilege-policy変更を検知する。
+- [x] EventBridge rulesはCloudTrail停止・削除・selector変更、KMS key lifecycle/policy/grant変更、configured Evidence bucketとCloudTrail log bucketのpolicy/public access/Versioning/Object Lock/lifecycle変更、account-wide IAM privilege-policy変更、EventBridge/SNS notification path変更を検知する。
 - [x] EventBridge rulesは単一SNS topicへ通知し、topic policyはcreated rulesからのpublishへ制約する。
 - [x] SNS subscription、email/chat endpoint、customer-managed KMS key、IAM role/policy、AWS Config、Security Hub、GuardDuty、Organizations/SCP、CloudTrail Lakeを作成しない。
 - [x] Terraform variable validationはaccount ID、Region、partition、S3 ARN、bucket name、retention rangeの明白な誤設定をfail earlyにする。
@@ -53,7 +53,7 @@ AWS上のEvidence運用に必要なdetective audit controlsを、未適用のTer
 - [x] moduleは既存environmentから未参照で、repository testがAWS APIを呼ばない。
 - [x] static testsがmulti-Region、global events、log validation、management events、KMS non-exclusion、Evidence bucket-scoped data eventsを検証する。
 - [x] static testsがlog bucket protection、CloudTrail delivery constraints、no-force-destroyを検証する。
-- [x] static testsが4分類のEventBridge event coverage、SNS target/policy、subscription不在を検証する。
+- [x] static testsが5分類のEventBridge event coverage、SNS target/policy、subscription不在を検証する。
 - [x] static testsがIAM/KMS resource作成、existing module変更、AWS apply commandの追加がないことを検証する。
 - [x] runbookがcurrent codeとdeployed stateを区別し、cost、residual risk、approval、post-deploy verificationを記載する。
 - [x] focused testsと`npm run check:structure`がPASSする。

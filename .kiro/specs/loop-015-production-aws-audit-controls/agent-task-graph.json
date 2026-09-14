@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "feature": "loop-015-production-aws-audit-controls",
   "generatedAt": "2026-09-14T01:40:43.094Z",
-  "updatedAt": "2026-09-14T10:35:50.491Z",
-  "status": "ACTIVE",
+  "updatedAt": "2026-09-14T10:39:11.040Z",
+  "status": "FAILED",
   "maxRetries": 2,
   "retryCount": 2,
   "roles": {
@@ -17,7 +17,7 @@
       "actor": "chatgpt-builder"
     },
     "reviewer": {
-      "status": "READY",
+      "status": "FAIL",
       "actor": "codex-reviewer"
     },
     "securityReviewer": {
@@ -61,6 +61,13 @@
       "outcome": "ACTIVE",
       "retryCount": 2,
       "at": "2026-09-14T10:35:50.491Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "FAILED_MAX_RETRIES",
+      "retryCount": 3,
+      "at": "2026-09-14T10:39:11.040Z"
     }
   ]
 }

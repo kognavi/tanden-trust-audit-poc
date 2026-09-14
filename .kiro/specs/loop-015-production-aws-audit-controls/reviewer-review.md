@@ -38,3 +38,17 @@ The first-attempt notification-path and `home_region` findings were remediated. 
 Residual risks remain: alert targets receive the CloudTrail event envelope unless a later approved deployment adds redaction/transformation; tests are text-contract checks rather than provider-schema validation; Terraform CLI is unavailable; same-account administration, no Object Lock/cross-account archive/SCP, and no subscriber are already documented.
 
 Validation: focused 7/7 PASS; full structure 348/348 PASS with the pre-existing `lib/audit-manager.js` orphan warning; Spec Ready PASS; Implementation Conformance PASS; `git diff --check origin/main...HEAD` PASS; clean worktree; no AWS mutation.
+
+## Review Attempt 3
+
+- Status: FAIL
+- Reviewed by: codex-reviewer
+- Provider: independent-chatgpt-agent
+- Provider Session: `/root/loop015_reviewer_final`
+
+The Regional detection boundary and minimized alert payload were accepted in principle. Two blocking MEDIUM inconsistencies remain:
+
+- `docs/production-aws-audit-controls.md` still contains one control-map claim of `account-wide policy/role change events`, contradicting the documented `home_region` boundary.
+- The alert transformer maps `eventId` from `$.id`, which is the EventBridge envelope ID rather than CloudTrail `$.detail.eventID`. The field must either use the CloudTrail event ID for investigation correlation or be renamed and documented as an EventBridge delivery ID, with a regression assertion.
+
+Validation: focused 7/7 PASS; full structure 348/348 PASS with the pre-existing `lib/audit-manager.js` orphan warning; Spec Ready PASS; Implementation Conformance PASS; `git diff --check origin/main...HEAD` PASS; clean worktree; Terraform CLI unavailable; no AWS mutation.

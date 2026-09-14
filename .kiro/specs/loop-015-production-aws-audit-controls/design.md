@@ -25,6 +25,8 @@
 
 AWS provider identity lookupに依存せず、`source_account_id`、`home_region`、`aws_partition`を明示inputとする。これによりvalidation/testでAWS credentialsを要求せず、bucket policy用trail ARNをdeterministically構築する。
 
+`home_region`はinherited AWS provider Regionと一致させることをdeployment preconditionとする。不一致の場合、構築したtrail ARNと実際のtrail ARNが異なり、log bucket policyの`aws:SourceArn`によりdeliveryが拒否され得るため、environment bindingとsaved plan reviewで確認する。
+
 ### Audit log bucket
 
 - dedicated bucket, `force_destroy`なし

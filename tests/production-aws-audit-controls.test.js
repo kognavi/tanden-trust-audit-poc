@@ -101,8 +101,19 @@ test("EventBridge rules cover the five reviewed security-control classes", () =>
   }
 
   assert.match(main, /bucketName\s*=\s*\[local\.evidence_bucket_name, var\.log_bucket_name\]/);
-  assert.match(main, /"DisableRule"/);
-  assert.match(main, /"DeleteTopic"/);
+  for (const notificationPathEvent of [
+    "DisableRule",
+    "PutTargets",
+    "RemoveTargets",
+    "DeleteTopic",
+    "SetTopicAttributes",
+    "Subscribe",
+    "Unsubscribe",
+    "AddPermission",
+    "RemovePermission"
+  ]) {
+    assert.match(main, new RegExp(`"${notificationPathEvent}"`));
+  }
   assert.match(main, /resource "aws_cloudwatch_event_target" "security_notifications"/);
   assert.match(main, /resource "aws_sns_topic_policy" "security_notifications"/);
   assert.match(main, /identifiers\s*=\s*\["events\.amazonaws\.com"\]/);
@@ -156,5 +167,7 @@ test("documentation preserves Human Approval and current-versus-deployed truth",
   assert.match(operationsRunbook, /explicit Human Approval/i);
   assert.match(operationsRunbook, /S3 data events are charged/i);
   assert.match(operationsRunbook, /does not prove/i);
+  assert.match(operationsRunbook, /home_region.*inherited AWS provider Region/i);
+  assert.match(moduleReadme, /home_region.*inherited AWS provider Region/i);
   assert.match(moduleReadme, /Do not run `terraform plan` or `terraform apply` as part of default CI/);
 });

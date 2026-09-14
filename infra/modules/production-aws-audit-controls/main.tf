@@ -89,9 +89,14 @@ locals {
           "DisableRule",
           "DeleteRule",
           "PutRule",
+          "PutTargets",
           "RemoveTargets",
           "DeleteTopic",
-          "SetTopicAttributes"
+          "SetTopicAttributes",
+          "Subscribe",
+          "Unsubscribe",
+          "AddPermission",
+          "RemovePermission"
         ]
       }
     }

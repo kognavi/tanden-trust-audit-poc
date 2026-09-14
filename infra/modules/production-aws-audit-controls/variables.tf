@@ -20,7 +20,7 @@ variable "source_account_id" {
 }
 
 variable "home_region" {
-  description = "AWS Region in which the trail, EventBridge rules, and SNS topic are managed."
+  description = "AWS Region in which the trail, EventBridge rules, and SNS topic are managed. Must match the inherited AWS provider Region."
   type        = string
 
   validation {

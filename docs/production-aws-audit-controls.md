@@ -34,6 +34,8 @@ Evidence → Schema → Sign → Store → Ledger
 | CloudTrail logs modified or deleted | Versioning, SSE-S3, public block, TLS-only policy | CloudTrail log file integrity validation | no Object Lock or cross-account archive |
 | Notification path disabled | source-constrained SNS publish policy | EventBridge/SNS administrative change events | deleting the target can prevent immediate delivery; CloudTrail remains the record plane |
 
+The notification-path rule covers EventBridge target replacement/removal and SNS topic, subscription, and topic-policy changes. It remains a detective control: an authorized administrator may still change the route before an alert is delivered, while CloudTrail remains the investigation record.
+
 ## Event correlation
 
 The intended audit investigation path is:
@@ -63,6 +65,7 @@ The following are separate human-controlled phases:
 ## Pre-deployment review checklist
 
 - Confirm whether an AWS Organizations trail already captures required management events.
+- Confirm that module `home_region` exactly matches the inherited AWS provider Region; otherwise the constructed CloudTrail SourceArn can cause log-bucket delivery denial.
 - Confirm that additional trail copies and S3 data events are economically justified.
 - Confirm the Evidence bucket ARN and that data events are not configured for all S3 buckets.
 - Confirm the log bucket name is globally unique and dedicated to CloudTrail.

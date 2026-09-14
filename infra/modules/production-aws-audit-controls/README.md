@@ -43,15 +43,18 @@ module "production_aws_audit_controls" {
 
 No example root configuration is committed because connecting the module to an environment is a deployment decision.
 
+`home_region` must exactly match the inherited AWS provider Region. The module uses it to construct the CloudTrail ARN allowed by the log-bucket policy; a mismatch can prevent CloudTrail delivery. Confirm the provider configuration and this input together during environment binding and saved-plan review.
+
 ## Required human decisions before use
 
 1. Inventory existing account and organization trails to avoid duplicate management-event copies and unexpected cost.
 2. Select a globally unique log bucket name and an approved retention period.
-3. Decide whether same-account storage is sufficient or a security log archive account is required.
-4. Decide whether Object Lock or SSE-KMS is required after legal, retention, recovery, and key-policy review.
-5. Select and approve SNS subscribers and incident ownership.
-6. Review a saved Terraform plan for replacement, deletion, public exposure, IAM/KMS change, and recurring cost.
-7. Obtain explicit Human Approval before apply.
+3. Confirm that `home_region` exactly matches the inherited AWS provider Region.
+4. Decide whether same-account storage is sufficient or a security log archive account is required.
+5. Decide whether Object Lock or SSE-KMS is required after legal, retention, recovery, and key-policy review.
+6. Select and approve SNS subscribers and incident ownership.
+7. Review a saved Terraform plan for replacement, deletion, public exposure, IAM/KMS change, and recurring cost.
+8. Obtain explicit Human Approval before apply.
 
 ## Validation without AWS mutation
 

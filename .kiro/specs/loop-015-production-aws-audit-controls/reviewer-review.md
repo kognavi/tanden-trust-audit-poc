@@ -23,3 +23,18 @@
 - `git diff --check origin/main...HEAD`: PASS
 - Terraform CLI: unavailable; `terraform fmt -check` / `terraform validate` not run
 - AWS API / plan / apply / deploy / IAM/KMS mutation: none
+
+## Review Attempt 2
+
+- Status: FAIL
+- Reviewed by: codex-reviewer
+- Provider: independent-chatgpt-agent
+- Provider Session: `/root/loop015_reviewer_retry`
+
+The first-attempt notification-path and `home_region` findings were remediated. The second review found one additional blocking issue:
+
+- MEDIUM: the multi-Region CloudTrail records events from all Regions, but EventBridge rules are Regional and are created only in `home_region`. The implementation therefore does not satisfy the Spec's account-wide detection wording for Regional KMS/S3/EventBridge/SNS events; IAM global-service delivery also depends on the partition's global-event Region. The production contract must not imply coverage that is not deployed in every required Region.
+
+Residual risks remain: alert targets receive the CloudTrail event envelope unless a later approved deployment adds redaction/transformation; tests are text-contract checks rather than provider-schema validation; Terraform CLI is unavailable; same-account administration, no Object Lock/cross-account archive/SCP, and no subscriber are already documented.
+
+Validation: focused 7/7 PASS; full structure 348/348 PASS with the pre-existing `lib/audit-manager.js` orphan warning; Spec Ready PASS; Implementation Conformance PASS; `git diff --check origin/main...HEAD` PASS; clean worktree; no AWS mutation.

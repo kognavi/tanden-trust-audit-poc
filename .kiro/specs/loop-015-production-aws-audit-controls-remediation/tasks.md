@@ -20,5 +20,5 @@
 - [x] Confirm the previous terminal graph and review evidence retain their recorded SHA-256 digests.
 - [x] Hand the remediation to an independent Reviewer and record PASS truthfully.
 - [x] Hand the remediation to an independent Security Reviewer after Reviewer PASS and record PASS.
-- [ ] Generate Verification Evidence only after both reviews PASS.
-- [ ] Stop at Human Merge Decision; do not push, create PR, merge, deploy, apply, or mutate AWS resources.
+- [x] Generate Verification Evidence only after both reviews PASS.
+- [x] Stop at Human Merge Decision; do not push, create PR, merge, deploy, apply, or mutate AWS resources.

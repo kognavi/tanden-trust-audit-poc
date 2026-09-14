@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "feature": "loop-014-kms-signing-api-contract-hardening",
   "generatedAt": "2026-09-14T00:49:25.030Z",
-  "updatedAt": "2026-09-14T00:57:34.938Z",
+  "updatedAt": "2026-09-14T01:05:59.340Z",
   "status": "ACTIVE",
   "maxRetries": 2,
   "retryCount": 0,
@@ -17,11 +17,11 @@
       "actor": "chatgpt-builder"
     },
     "reviewer": {
-      "status": "READY",
+      "status": "PASS",
       "actor": "codex-reviewer"
     },
     "securityReviewer": {
-      "status": "BLOCKED",
+      "status": "READY",
       "actor": "codex-security-reviewer"
     },
     "verification": {
@@ -35,6 +35,12 @@
       "outcome": "ACTIVE",
       "retryCount": 0,
       "at": "2026-09-14T00:57:34.938Z"
+    },
+    {
+      "event": "reviewer-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-14T01:05:59.340Z"
     }
   ]
 }

@@ -14,11 +14,11 @@
 - [x] Generate and review Implementation Handoff.
 - [x] Bootstrap Work-first Delegation, Task Graph, and Runtime.
 - [x] Record Builder dry-run evidence without treating it as PASS.
-- [ ] Add trusted internal Ledger verification before all external calls.
-- [ ] Add normalized provider/network/transaction/internal-ledger provenance.
-- [ ] Preserve and extend fail-closed negative tests.
-- [ ] Update CLI composition and current-state documentation without executing it.
-- [ ] Run focused/full tests, local Hardhat tests, conformance, and `git diff --check`.
+- [x] Add trusted internal Ledger verification before all external calls.
+- [x] Add normalized provider/network/transaction/internal-ledger provenance.
+- [x] Preserve and extend fail-closed negative tests.
+- [x] Update CLI composition and current-state documentation without executing it.
+- [x] Run focused/full tests, local Hardhat tests, conformance, and `git diff --check`.
 - [ ] Obtain independent Reviewer PASS.
 - [ ] Obtain independent Security Reviewer PASS.
 - [ ] Generate Verification Evidence and transition new Task Graph to COMPLETE.

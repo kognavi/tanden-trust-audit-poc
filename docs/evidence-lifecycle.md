@@ -172,9 +172,22 @@ After off-chain verification, a verified digest may be anchored outside the prim
 
 Current prototype:
 
-- Ethereum Sepolia
+- local Hardhat contract tests and an explicitly configured Ethereum-compatible adapter
 - `VerifiedAnchorService`
+- `PgInternalLedgerVerifier`
 - `TrustAnchor.sol`
+
+The anchor gate recomputes the Evidence digest, verifies signed sidecar metadata
+with a constructor-bound trusted key resolver, verifies the complete internal
+Ledger hash chain and exact `evidence.stored` event, and only then permits the
+external read/transaction adapter to receive the bytes32 digest. Caller-supplied
+verification flags, hashes, key resolvers, and public keys are not trusted inputs.
+
+Duplicate state, read failure, transaction failure, and invalid receipt output
+have distinct fail-closed semantics. Successful verification evidence records
+internal Ledger event/row hashes plus external provider, network, chain,
+contract, transaction, and block provenance. It contains no raw Evidence,
+signature, public key, wallet, RPC credential, or private key.
 
 This step is optional.
 
@@ -207,6 +220,7 @@ This state model is conceptual and not yet implemented as a persistent state mac
 - raw secrets should not be copied into evidence by default
 - references/digests require resolvers and retention guarantees
 - external anchors are optional
+- external anchor failure never rolls back or replaces internal Store/Ledger state
 
 ## Current Next Step
 

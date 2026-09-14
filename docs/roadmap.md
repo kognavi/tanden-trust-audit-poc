@@ -203,7 +203,7 @@ Key questions:
 
 ## Phase G: Optional External Trust Anchoring
 
-Status: Prototype exists
+Status: Locally hardened prototype implemented; deployment remains out of scope
 
 External anchoring remains optional.
 
@@ -214,6 +214,11 @@ Possible mechanisms:
 - trusted timestamp service
 
 Selection should be driven by customer trust requirements, not by technology preference.
+
+Loop 016 hardens the optional adapter with recomputed-digest, trusted-key,
+internal-Ledger, duplicate/failure, and provenance gates. All contract checks are
+local and deterministic. Real RPC use, contract deployment, wallet/key use, and
+funded transactions remain human-approved future operations.
 
 ## Current Priority Order
 

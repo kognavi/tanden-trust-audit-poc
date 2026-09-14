@@ -144,6 +144,16 @@ The contract does not prove:
 
 It only contributes an external proof about a digest.
 
+The optional adapter is downstream of the internal Ledger. Before any external
+client call, `VerifiedAnchorService` re-verifies the Evidence signature and
+digest with deployment-bound trust configuration, then requires
+`PgInternalLedgerVerifier` to validate the full hash chain and exact stored-event
+binding. The external call receives only that recomputed bytes32 digest.
+
+Provider, network, chain ID, contract address, transaction hash, block number,
+and the internal Ledger event/row hash are normalized as verification provenance.
+They are correlation evidence, not proof of source truth or a trusted timestamp.
+
 For that reason, blockchain is treated as an optional trust mechanism rather than the product core.
 
 ## Target AWS Architecture

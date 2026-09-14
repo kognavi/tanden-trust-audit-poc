@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "runId": "64e55161-89e7-4797-8d42-e557f311f1bd",
+  "feature": "loop-014-kms-signing-api-contract-hardening",
+  "task": "builder",
+  "actor": "chatgpt-builder",
+  "adapter": "dry-run",
+  "timeoutMs": 300000,
+  "result": "DRY_RUN",
+  "graphEvent": null,
+  "provider": null,
+  "verdict": null,
+  "startedAt": "2026-09-14T00:57:34.749Z",
+  "finishedAt": "2026-09-14T00:57:34.749Z"
+}

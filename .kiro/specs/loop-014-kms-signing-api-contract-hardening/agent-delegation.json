@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-014-kms-signing-api-contract-hardening",
+  "generatedAt": "2026-09-14T00:49:25.030Z",
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": "codex-security-reviewer"
+  }
+}

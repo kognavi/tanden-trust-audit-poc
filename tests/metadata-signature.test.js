@@ -98,6 +98,49 @@ test("verifySidecarMetadataSignature passes raw canonical payload bytes to the p
   assert.notEqual(receivedMessage.length, 32);
 });
 
+test('metadata signing prefers the canonical raw-message provider API', async () => {
+  const calls = [];
+  const provider = {
+    async signRawMessage(message) {
+      calls.push(['raw', message]);
+      return Buffer.alloc(64, 2);
+    },
+    async signDigest() {
+      calls.push(['legacy']);
+      return Buffer.alloc(64, 3);
+    },
+  };
+
+  await signSidecarMetadata(validMetadata, 'unused-key', provider);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'raw');
+  assert.ok(Buffer.isBuffer(calls[0][1]));
+});
+
+test('metadata verification prefers canonical API and rejects missing provider methods', async () => {
+  const provider = {
+    async verifyRawMessageSignature() {
+      return true;
+    },
+    async verifyDigestSignature() {
+      throw new Error('legacy method must not be called');
+    },
+  };
+
+  const result = await verifySidecarMetadataSignature(validMetadata, 'unused-key', provider);
+  assert.equal(result.valid, true);
+
+  await assert.rejects(
+    () => signSidecarMetadata(validMetadata, 'unused-key', {}),
+    /must implement signRawMessage/
+  );
+  await assert.rejects(
+    () => verifySidecarMetadataSignature(validMetadata, 'unused-key', {}),
+    /must implement verifyRawMessageSignature/
+  );
+});
+
 test("signSidecarMetadata replaces placeholder signature with base64url signature", async () => {
   const provider = new LocalEcdsaProvider();
   const { privateKey } = provider.generateEcKeyPair();

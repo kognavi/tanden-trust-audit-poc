@@ -84,6 +84,12 @@ test('Cross-provider contract parity: Local and KMS providers hash the identical
       'Local signature must validate under single-SHA256 ECDSA verification, ' +
       'proving no double-hash divergence from the KMS contract'
     );
+
+    const rawMessageSignature = localProvider.signRawMessage(expectedMessage, localPriv);
+    assert.equal(
+      localProvider.verifyRawMessageSignature(expectedMessage, rawMessageSignature, localPub),
+      true
+    );
   } finally {
     if (original === undefined) delete process.env.KMS_KEY_ID;
     else process.env.KMS_KEY_ID = original;

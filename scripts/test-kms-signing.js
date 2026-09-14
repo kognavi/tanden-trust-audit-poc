@@ -15,17 +15,17 @@ async function main() {
   const message = Buffer.from(JSON.stringify({ test: 'evidence-data', ts: Date.now() }));
   console.log('\n[2] メッセージに署名中...');
   console.log('メッセージ:', message.toString());
-  const signature = await provider.signDigest(message);
+  const signature = await provider.signRawMessage(message);
   console.log('署名成功。長さ:', signature.length, 'bytes（期待値: 64）');
   console.log('署名(hex):', signature.toString('hex'));
 
   console.log('\n[3] 署名を検証中...');
-  const isValid = await provider.verifyDigestSignature(message, signature);
+  const isValid = await provider.verifyRawMessageSignature(message, signature);
   console.log('検証結果:', isValid, '（期待値: true）');
 
   console.log('\n[4] 改ざん検知テスト（別メッセージで検証）...');
   const tamperedMessage = Buffer.from(JSON.stringify({ test: 'TAMPERED-data', ts: Date.now() }));
-  const isTamperedValid = await provider.verifyDigestSignature(tamperedMessage, signature);
+  const isTamperedValid = await provider.verifyRawMessageSignature(tamperedMessage, signature);
   console.log('改ざんデータの検証結果:', isTamperedValid, '（期待値: false）');
 
   console.log('\n=== 全テスト完了 ===');

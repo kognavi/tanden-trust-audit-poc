@@ -479,3 +479,46 @@ test('signDigest / verifyDigestSignature: backward-compatible return types after
     assert.equal(verifyResult, true);
   });
 });
+
+test('signRawMessage / verifyRawMessageSignature expose the canonical RAW API', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const r = Buffer.alloc(32, 0x31);
+    const s = Buffer.alloc(32, 0x32);
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      SignCommand: () => ({ Signature: derSig(r, s), KeyId: 'physical-key-arn' }),
+      VerifyCommand: () => ({ SignatureValid: true, KeyId: 'physical-key-arn' }),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+    const message = Buffer.from('canonical raw message');
+
+    const signature = await provider.signRawMessage(message);
+    const valid = await provider.verifyRawMessageSignature(message, signature);
+
+    assert.equal(signature.length, 64);
+    assert.equal(valid, true);
+    const sign = fakeClient.calls.find((call) => call.constructor.name === 'SignCommand');
+    const verify = fakeClient.calls.find((call) => call.constructor.name === 'VerifyCommand');
+    assert.equal(sign.input.MessageType, 'RAW');
+    assert.equal(verify.input.MessageType, 'RAW');
+    assert.equal(sign.input.SigningAlgorithm, 'ECDSA_SHA_256');
+    assert.equal(verify.input.SigningAlgorithm, 'ECDSA_SHA_256');
+    assert.deepEqual(sign.input.Message, message);
+    assert.deepEqual(verify.input.Message, message);
+  });
+});
+
+test('canonical KMS API rejects invalid input before any KMS command', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const fakeClient = new FakeKmsClient();
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    await assert.rejects(() => provider.signRawMessage('message'), /must be a Buffer/);
+    await assert.rejects(() => provider.signRawMessage(Buffer.alloc(0)), /must not be empty/);
+    assert.equal(
+      await provider.verifyRawMessageSignature(Buffer.from('message'), Buffer.alloc(63)),
+      false
+    );
+    assert.equal(fakeClient.calls.length, 0);
+  });
+});

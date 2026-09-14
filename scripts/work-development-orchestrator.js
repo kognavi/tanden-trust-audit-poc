@@ -8,7 +8,10 @@ const {
   isSensitivePath,
   parseAffectedComponents
 } = require("./check-implementation-conformance");
-const { createDelegationDocument } = require("./create-agent-delegation");
+const {
+  createDelegationDocument,
+  validateDelegationRoles
+} = require("./create-agent-delegation");
 const { createInitialGraph } = require("./agent-task-graph");
 const {
   createRuntimeConfig,
@@ -57,6 +60,59 @@ const NEXT_ACTIONS = new Map([
     nextCommands: ["npm run verify:gate"]
   }]
 ]);
+
+const TASK_NAMES = ["builder", "reviewer", "securityReviewer", "verification"];
+
+function validateTaskGraphState(graph) {
+  if (!graph.tasks || typeof graph.tasks !== "object" || Array.isArray(graph.tasks)) {
+    return ["Task Graph tasks are missing"];
+  }
+
+  const taskNames = Object.keys(graph.tasks);
+  if (
+    taskNames.length !== TASK_NAMES.length ||
+    TASK_NAMES.some((taskName) => !Object.hasOwn(graph.tasks, taskName))
+  ) {
+    return ["Task Graph must contain exactly the supported tasks"];
+  }
+
+  const statuses = TASK_NAMES.map((taskName) => graph.tasks[taskName]?.status).join(":");
+  const hasSecurityReviewer = Boolean(graph.roles?.securityReviewer);
+  const activeStates = hasSecurityReviewer
+    ? new Set([
+        "READY:BLOCKED:BLOCKED:BLOCKED",
+        "PASS:READY:BLOCKED:BLOCKED",
+        "PASS:PASS:READY:BLOCKED",
+        "PASS:PASS:PASS:READY"
+      ])
+    : new Set([
+        "READY:BLOCKED:SKIPPED:BLOCKED",
+        "PASS:READY:SKIPPED:BLOCKED",
+        "PASS:PASS:SKIPPED:READY"
+      ]);
+  const completeState = hasSecurityReviewer
+    ? "PASS:PASS:PASS:PASS"
+    : "PASS:PASS:SKIPPED:PASS";
+  const failedStates = hasSecurityReviewer
+    ? new Set([
+        "FAIL:BLOCKED:BLOCKED:BLOCKED",
+        "PASS:FAIL:BLOCKED:BLOCKED",
+        "PASS:PASS:FAIL:BLOCKED",
+        "PASS:PASS:PASS:FAIL"
+      ])
+    : new Set([
+        "FAIL:BLOCKED:SKIPPED:BLOCKED",
+        "PASS:FAIL:SKIPPED:BLOCKED",
+        "PASS:PASS:SKIPPED:FAIL"
+      ]);
+
+  const reachable =
+    (graph.status === "ACTIVE" && activeStates.has(statuses)) ||
+    (graph.status === "COMPLETE" && statuses === completeState) ||
+    (graph.status === "FAILED" && failedStates.has(statuses));
+
+  return reachable ? [] : ["Task Graph task statuses are not reachable for graph status " + graph.status];
+}
 
 function toSpecDir(repositoryRoot, featureSlug) {
   return path.join(path.resolve(repositoryRoot), ".kiro", "specs", featureSlug);
@@ -293,8 +349,36 @@ function getWorkOrchestrationStatus(repositoryRoot, featureSlug) {
     for (const [label, document] of [["delegation", delegation], ["Task Graph", graph], ["Runtime", runtime]]) {
       if (document.feature !== featureSlug) errors.push(label + " feature provenance mismatch");
     }
+    const roleValidation = validateDelegationRoles(
+      delegation.roles?.builder,
+      delegation.roles?.reviewer,
+      delegation.roles?.securityReviewer
+    );
+    if (!roleValidation.valid) {
+      errors.push(...roleValidation.errors.map((error) => "invalid delegation roles: " + error));
+    }
     if (!sameRoles(delegation.roles, graph.roles)) errors.push("delegation and Task Graph roles differ");
     if (!sameRoles(graph.roles, runtime.roles)) errors.push("Task Graph and Runtime roles differ");
+
+    if (graph.tasks?.builder?.actor !== graph.roles?.builder) {
+      errors.push("Builder task actor does not match Task Graph role");
+    }
+    if (graph.tasks?.reviewer?.actor !== graph.roles?.reviewer) {
+      errors.push("Reviewer task actor does not match Task Graph role");
+    }
+    if (graph.roles?.securityReviewer) {
+      if (graph.tasks?.securityReviewer?.actor !== graph.roles.securityReviewer) {
+        errors.push("Security Reviewer task actor does not match Task Graph role");
+      }
+    } else if (
+      graph.tasks?.securityReviewer?.actor !== null ||
+      graph.tasks?.securityReviewer?.status !== "SKIPPED"
+    ) {
+      errors.push("Undelegated Security Reviewer task must have null actor and SKIPPED status");
+    }
+    if (graph.tasks?.verification?.actor !== "verification-gate") {
+      errors.push("Verification task actor must be verification-gate");
+    }
 
     const committedAdapters = [
       ["builder", runtime.adapters?.builder],
@@ -319,9 +403,7 @@ function getWorkOrchestrationStatus(repositoryRoot, featureSlug) {
     if (!["ACTIVE", "COMPLETE", "FAILED"].includes(graph.status)) {
       errors.push("unsupported Task Graph status: " + graph.status);
     }
-    if (!graph.tasks || typeof graph.tasks !== "object") {
-      errors.push("Task Graph tasks are missing");
-    }
+    errors.push(...validateTaskGraphState(graph));
 
     const readyTasks = graph.tasks
       ? Object.entries(graph.tasks)

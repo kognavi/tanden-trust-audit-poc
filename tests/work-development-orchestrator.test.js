@@ -73,6 +73,23 @@ function cleanup(root) {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + "\n");
+}
+
+function mutateCoreArtifacts(fixture, mutate) {
+  for (const name of ["agent-delegation.json", "agent-task-graph.json", "agent-runtime.json"]) {
+    const filePath = path.join(fixture.specDir, name);
+    const document = readJson(filePath);
+    mutate(document, name);
+    writeJson(filePath, document);
+  }
+}
+
 test("status reports ready-to-bootstrap after reviewed Handoff", () => {
   const fixture = createFixture();
   try {
@@ -224,6 +241,121 @@ test("status follows Task Graph phases and terminal outcomes", () => {
     status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
     assert.equal(status.status, "COMPLETE");
     assert.equal(status.nextAction, "HUMAN_MERGE_DECISION");
+  } finally {
+    cleanup(fixture.root);
+  }
+});
+
+test("status accepts every reachable phase with a delegated Security Reviewer", () => {
+  const fixture = createFixture();
+  try {
+    bootstrapWorkOrchestration(fixture.root, fixture.feature, {
+      securityReviewer: "codex-security",
+      maxRetries: 0
+    });
+    const graphPath = path.join(fixture.specDir, "agent-task-graph.json");
+    let graph = readJson(graphPath);
+
+    assert.equal(getWorkOrchestrationStatus(fixture.root, fixture.feature).phase, "BUILD");
+
+    graph = applyEvent(graph, "builder-pass");
+    writeJson(graphPath, graph);
+    assert.equal(getWorkOrchestrationStatus(fixture.root, fixture.feature).phase, "REVIEW");
+
+    graph = applyEvent(graph, "reviewer-pass");
+    writeJson(graphPath, graph);
+    assert.equal(getWorkOrchestrationStatus(fixture.root, fixture.feature).phase, "SECURITY_REVIEW");
+
+    graph = applyEvent(graph, "security-pass");
+    writeJson(graphPath, graph);
+    assert.equal(getWorkOrchestrationStatus(fixture.root, fixture.feature).phase, "VERIFICATION");
+
+    write(
+      path.join(fixture.specDir, "verification-evidence.json"),
+      JSON.stringify(createEvidenceDocument({ feature: fixture.feature, status: "PASS" }))
+    );
+    graph = applyEvent(graph, "verify-pass");
+    writeJson(graphPath, graph);
+    assert.equal(getWorkOrchestrationStatus(fixture.root, fixture.feature).status, "COMPLETE");
+  } finally {
+    cleanup(fixture.root);
+  }
+
+  const failed = createFixture();
+  try {
+    bootstrapWorkOrchestration(failed.root, failed.feature, {
+      securityReviewer: "codex-security",
+      maxRetries: 0
+    });
+    const graphPath = path.join(failed.specDir, "agent-task-graph.json");
+    const graph = applyEvent(readJson(graphPath), "builder-fail");
+    writeJson(graphPath, graph);
+    assert.equal(getWorkOrchestrationStatus(failed.root, failed.feature).status, "FAILED");
+  } finally {
+    cleanup(failed.root);
+  }
+});
+
+test("status rejects invalid separation of duties even when all core artifacts agree", () => {
+  for (const invalidPair of ["reviewer", "securityReviewer"]) {
+    const fixture = createFixture();
+    try {
+      bootstrapWorkOrchestration(fixture.root, fixture.feature, {
+        securityReviewer: invalidPair === "securityReviewer" ? "codex-security" : undefined
+      });
+      mutateCoreArtifacts(fixture, (document) => {
+        document.roles[invalidPair] = document.roles.builder;
+        if (document.tasks) {
+          document.tasks[invalidPair].actor = document.roles.builder;
+        }
+      });
+
+      const status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
+      assert.equal(status.status, "INCONSISTENT");
+      assert.equal(status.nextAction, null);
+      assert.deepEqual(status.nextCommands, []);
+    } finally {
+      cleanup(fixture.root);
+    }
+  }
+});
+
+test("status rejects Task Graph actor drift for every governed task", () => {
+  for (const taskName of ["builder", "reviewer", "securityReviewer", "verification"]) {
+    const fixture = createFixture();
+    try {
+      bootstrapWorkOrchestration(fixture.root, fixture.feature, {
+        securityReviewer: "codex-security"
+      });
+      const graphPath = path.join(fixture.specDir, "agent-task-graph.json");
+      const graph = readJson(graphPath);
+      graph.tasks[taskName].actor = "drifted-actor";
+      writeJson(graphPath, graph);
+
+      const status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
+      assert.equal(status.status, "INCONSISTENT", taskName);
+      assert.equal(status.nextAction, null, taskName);
+      assert.deepEqual(status.nextCommands, [], taskName);
+    } finally {
+      cleanup(fixture.root);
+    }
+  }
+});
+
+test("status rejects an unreachable Task Graph state with exactly one READY task", () => {
+  const fixture = createFixture();
+  try {
+    bootstrapWorkOrchestration(fixture.root, fixture.feature);
+    const graphPath = path.join(fixture.specDir, "agent-task-graph.json");
+    const graph = readJson(graphPath);
+    graph.tasks.builder.status = "PASS";
+    graph.tasks.verification.status = "READY";
+    writeJson(graphPath, graph);
+
+    const status = getWorkOrchestrationStatus(fixture.root, fixture.feature);
+    assert.equal(status.status, "INCONSISTENT");
+    assert.equal(status.nextAction, null);
+    assert.deepEqual(status.nextCommands, []);
   } finally {
     cleanup(fixture.root);
   }

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "runId": "829b7b8f-50a1-4c88-a5ca-f0513edee92c",
+  "feature": "loop-013-work-first-development-orchestration",
+  "task": "reviewer",
+  "actor": "codex-reviewer",
+  "adapter": "codex-exec-review",
+  "timeoutMs": 300000,
+  "result": "FAIL",
+  "graphEvent": "reviewer-fail",
+  "provider": {
+    "name": "codex-cli",
+    "sessionId": "01a098ce-8faa-70f2-9ad9-b400904d5512",
+    "command": "codex",
+    "sandbox": "read-only",
+    "exitCode": 0,
+    "promptDigest": "2b28ef40ea7dcfc285c0821684bb3603a1286b6515a3e66e0b11643a7ff2cc69",
+    "stdoutDigest": "3cb839fd7aacda030c6ed4bed12fe96b2f488e53993422953f7bb7f3a42c11b1",
+    "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "executionStatus": "SUCCESS",
+    "finalMessageDigest": "630ad1f8245ec207999ca5240a5bc87390866ac5089b5a140612b80f92d3afdd"
+  },
+  "verdict": "FAIL",
+  "startedAt": "2026-09-13T03:27:47.637Z",
+  "finishedAt": "2026-09-13T03:29:19.965Z"
+}

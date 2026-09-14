@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-013-work-first-development-orchestration",
+  "generatedAt": "2026-09-13T01:30:12.182Z",
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": null
+  }
+}

@@ -20,6 +20,7 @@ test("AI Development OS required files exist", () => {
     "docs/agent-orchestrator-task-graph.md",
     "docs/agent-runtime-adapter.md",
     "docs/codex-real-provider-adapter.md",
+    "docs/work-first-development-orchestration.md",
     ".codex/config.toml",
     ".kiro/settings/mcp.json",
     ".kiro/agents/architect.md",
@@ -251,4 +252,25 @@ test("Codex real provider remains local opt-in and committed runtime stays dry-r
 
   assert.equal(runtime.adapters.reviewer.type, "dry-run");
   assert.match(ignore, /agent-runtime\.local\.json/);
+});
+
+test("Work-first orchestration stays wired into existing governance", () => {
+  const rootAgents = read("AGENTS.md");
+  const lifecycle = read("docs/ai-development-os.md");
+  const workDocs = read("docs/work-first-development-orchestration.md");
+  const pkg = JSON.parse(read("package.json"));
+
+  assert.equal(
+    pkg.scripts["work:bootstrap"],
+    "node scripts/work-development-orchestrator.js bootstrap"
+  );
+  assert.equal(
+    pkg.scripts["work:status"],
+    "node scripts/work-development-orchestrator.js status"
+  );
+  assert.match(rootAgents, /work:bootstrap/);
+  assert.match(rootAgents, /work:status/);
+  assert.match(lifecycle, /Workをcontrol plane/);
+  assert.match(workDocs, /does not create a branch\/worktree/);
+  assert.match(workDocs, /Reviewer-only, local opt-in, and read-only/);
 });

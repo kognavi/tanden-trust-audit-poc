@@ -14,7 +14,7 @@ The audit control plane supplies three capabilities that are separate from busin
 
 1. Record AWS management activity and Evidence S3 object access.
 2. Protect and validate delivered CloudTrail logs.
-3. Notify a separately approved operations channel about security-sensitive administrative changes.
+3. Provide a home-Region notification boundary for security-sensitive administrative changes.
 
 It does not change or bypass the repository invariant:
 
@@ -35,6 +35,10 @@ Evidence → Schema → Sign → Store → Ledger
 | Notification path disabled | source-constrained SNS publish policy | EventBridge/SNS administrative change events | deleting the target can prevent immediate delivery; CloudTrail remains the record plane |
 
 The notification-path rule covers EventBridge target replacement/removal and SNS topic, subscription, and topic-policy changes. It remains a detective control: an authorized administrator may still change the route before an alert is delivered, while CloudTrail remains the investigation record.
+
+CloudTrail is configured as a multi-Region record plane. EventBridge rules are Regional and this standalone module creates them only in `home_region`; it does not claim account-wide active detection. Events delivered to another Region—including IAM global-service events when the partition delivery Region differs—remain available in CloudTrail but do not trigger this SNS boundary. Production environment binding must inventory governed Regions and either accept this residual risk or introduce a separately reviewed Regional detection/aggregation topology.
+
+The EventBridge target uses an input transformer that forwards only account, event ID, event source/name/time, and Region. It omits the full CloudTrail envelope, request parameters, response elements, user identity, source IP, Evidence content, credentials, and unnecessary PII from the SNS alert payload.
 
 ## Event correlation
 
@@ -66,6 +70,7 @@ The following are separate human-controlled phases:
 
 - Confirm whether an AWS Organizations trail already captures required management events.
 - Confirm that module `home_region` exactly matches the inherited AWS provider Region; otherwise the constructed CloudTrail SourceArn can cause log-bucket delivery denial.
+- Inventory every governed Region and the partition Region that receives IAM global-service events; do not describe the home-Region rules as account-wide detection.
 - Confirm that additional trail copies and S3 data events are economically justified.
 - Confirm the Evidence bucket ARN and that data events are not configured for all S3 buckets.
 - Confirm the log bucket name is globally unique and dedicated to CloudTrail.
@@ -86,6 +91,7 @@ After a separately approved apply, an operator should verify without committing 
 - CloudTrail log and digest files arrive under the expected account prefix
 - bucket Versioning, ownership enforcement, SSE-S3, public block, TLS deny, and lifecycle are effective
 - each EventBridge rule is enabled and targets the expected SNS topic
+- active detection coverage is tested in every Region claimed by the approved deployment architecture
 - a controlled test event reaches an approved subscriber
 - CloudTrail log integrity validation succeeds for a bounded test period
 - cost telemetry is reviewed after representative Evidence volume

@@ -70,7 +70,7 @@ test("dedicated CloudTrail log bucket has the required protection baseline", () 
   assert.match(main, /noncurrent_version_expiration/);
 });
 
-test("EventBridge rules cover the five reviewed security-control classes", () => {
+test("home-Region EventBridge rules cover the five reviewed security-control classes", () => {
   for (const ruleName of [
     "cloudtrail-integrity",
     "kms-administration",
@@ -115,6 +115,11 @@ test("EventBridge rules cover the five reviewed security-control classes", () =>
     assert.match(main, new RegExp(`"${notificationPathEvent}"`));
   }
   assert.match(main, /resource "aws_cloudwatch_event_target" "security_notifications"/);
+  assert.match(main, /input_transformer\s*\{/);
+  assert.match(main, /event_name\s*=\s*"\$\.detail\.eventName"/);
+  assert.match(main, /input_template\s*=\s*<<-EOT/);
+  assert.doesNotMatch(main, /input_paths\s*=\s*\{[^}]*requestParameters/s);
+  assert.doesNotMatch(main, /input_paths\s*=\s*\{[^}]*userIdentity/s);
   assert.match(main, /resource "aws_sns_topic_policy" "security_notifications"/);
   assert.match(main, /identifiers\s*=\s*\["events\.amazonaws\.com"\]/);
   assert.match(main, /actions\s*=\s*\["sns:Publish"\]/);
@@ -168,6 +173,9 @@ test("documentation preserves Human Approval and current-versus-deployed truth",
   assert.match(operationsRunbook, /S3 data events are charged/i);
   assert.match(operationsRunbook, /does not prove/i);
   assert.match(operationsRunbook, /home_region.*inherited AWS provider Region/i);
+  assert.match(operationsRunbook, /EventBridge rules are Regional/i);
+  assert.match(operationsRunbook, /does not claim account-wide active detection/i);
   assert.match(moduleReadme, /home_region.*inherited AWS provider Region/i);
+  assert.match(moduleReadme, /does not provide multi-Region active alerting/i);
   assert.match(moduleReadme, /Do not run `terraform plan` or `terraform apply` as part of default CI/);
 });

@@ -26,12 +26,14 @@ AWS上のEvidence運用に必要なdetective audit controlsを、未適用のTer
 - [x] log bucket policyはCloudTrail service principalのACL checkとlog deliveryだけを許可し、configured trail ARN、source account、AWSLogs account prefixへ制約する。
 - [x] trailはmulti-Region、global service events、log file validation、all read/write management eventsを有効化し、KMS management eventsを除外しない。
 - [x] trailはconfigured Evidence bucket object ARNだけをS3 data-event対象とし、all-bucket data event loggingを行わない。
-- [x] EventBridge rulesはCloudTrail停止・削除・selector変更、KMS key lifecycle/policy/grant変更、configured Evidence bucketとCloudTrail log bucketのpolicy/public access/Versioning/Object Lock/lifecycle変更、account-wide IAM privilege-policy変更、EventBridge/SNS notification path変更を検知する。
+- [x] EventBridge rulesは`home_region`で、CloudTrail停止・削除・selector変更、KMS key lifecycle/policy/grant変更、configured Evidence bucketとCloudTrail log bucketのpolicy/public access/Versioning/Object Lock/lifecycle変更、IAM privilege-policy変更、EventBridge/SNS notification path変更を検知する。EventBridgeはRegionalであり、このmodule単体はaccount-wide active detectionを主張しない。
 - [x] EventBridge rulesは単一SNS topicへ通知し、topic policyはcreated rulesからのpublishへ制約する。
+- [x] EventBridge targetはallowlisted control metadataだけをSNSへ転送し、full CloudTrail envelope、request/response、user identity、source IP、Evidence content、credential、不要なPIIをalert payloadへ含めない。
 - [x] SNS subscription、email/chat endpoint、customer-managed KMS key、IAM role/policy、AWS Config、Security Hub、GuardDuty、Organizations/SCP、CloudTrail Lakeを作成しない。
 - [x] Terraform variable validationはaccount ID、Region、partition、S3 ARN、bucket name、retention rangeの明白な誤設定をfail earlyにする。
 - [x] module outputsはtrail ARN/name、log bucket ARN/name、SNS topic ARN、EventBridge rule ARNsを公開し、secretを含まない。
 - [x] runbookはplan/apply/rollback/verificationをHuman Approval stepsとして記述し、このLoopで未実行であることを明示する。
+- [x] runbookはmulti-Region CloudTrail record planeとhome-Region EventBridge detection planeを区別し、account-wide active detectionには別途Regional topology reviewが必要と明示する。
 - [x] local deterministic testsは重要control、scope、禁止resource、Human Approval boundaryをAWS credentialsなしで検査する。
 - [x] existing KMS key/key policy、Evidence bucket/policy/Object Lock、IAM principal、signing API、application processing codeを変更しない。
 

@@ -71,7 +71,7 @@ Source inbox: `knowledge/00-inbox/loop-015-production-aws-audit-controls.md`
 - dedicated CloudTrail log bucketはVersioning、SSE-S3、BucketOwnerEnforced、public-access block、TLS-only deny、CloudTrail source ARN/account条件付きdelivery policy、bounded lifecycle retentionを持つ。`force_destroy`は使用しない。
 - CloudTrail trailはmulti-Region、global service events、log file validation、all read/write management events、KMS management events exclusionなし、Evidence bucketだけのS3 object data eventsを持つ。
 - detectionはCloudWatch Logs metric filtersではなくEventBridge rulesを第一候補とする。これによりCloudTrail-to-CloudWatch IAM roleとlog ingestion retentionをこのLoopから外し、control-plane dependencyと費用を抑える。
-- EventBridge rulesはCloudTrail tamper、KMS lifecycle/policy/grant、Evidence/log S3 bucket control、account-wide IAM privilege-policy change、EventBridge/SNS notification-path changeを分類し、SNS topicへ送る。
+- EventBridge rulesはCloudTrail tamper、KMS lifecycle/policy/grant、Evidence/log S3 bucket control、IAM privilege-policy change、EventBridge/SNS notification-path changeを分類し、SNS topicへ送る。ただしrulesはRegional resourceで、このstandalone moduleのactive detectionは`home_region`に限定される。multi-Region/account-wide alertingにはgoverned Regionごとの別設計が必要である。
 - SNS subscription、email、chat endpointは作らない。topic ARNをoutputし、通知先追加をHuman Approval phaseに残す。
 - local testsはTerraform text contractを検査し、critical propertyの削除やscope拡大を検知する。Terraform CLIが利用可能な環境では`terraform fmt -check`とAWS backend/APIを使わない`terraform validate`を追加で実施する。
 
@@ -79,7 +79,7 @@ Source inbox: `knowledge/00-inbox/loop-015-production-aws-audit-controls.md`
 
 - EventBridge direct detectionを採用し、CloudWatch Logs metric filterとunusual signing-volume analyticsは後続Loopへ送る。
 - CloudTrail log bucketのObject Lockは、retention/legal requirementとrecovery procedureが未承認のため追加しない。Versioning、log validation、no-force-destroy、alertingをbaselineとし、immutable cross-account archiveをresidual riskとして明記する。
-- IAM policy-change alertsはaccount-wide event detectionとするが、IAM role/policy自体は変更しない。
+- IAM policy-change alertsは`home_region`へ配信されたglobal-service eventを対象とし、IAM role/policy自体は変更しない。partitionのglobal-event delivery Regionが異なる場合は別のRegional detection pathが必要である。
 - CloudTrail log encryptionはSSE-S3とし、新規KMS encryption key/key policyを作らない。
 - AWS Config、Security Hub、GuardDuty、Organizations/SCP、CloudTrail Lakeはaccount-wide prerequisite、cost、運用範囲が大きいためnon-goalとする。
 

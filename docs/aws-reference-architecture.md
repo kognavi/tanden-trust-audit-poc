@@ -28,7 +28,7 @@ The current MVP provides:
 - control mapping documentation
 - evidence lifecycle documentation
 - threat model documentation
-- an unapplied Terraform module for multi-Region CloudTrail, Evidence bucket data events, EventBridge security-control detection, and an SNS notification boundary
+- an unapplied Terraform module for multi-Region CloudTrail, Evidence bucket data events, home-Region EventBridge security-control detection, and a minimized SNS notification boundary
 
 The MVP currently does not provide:
 

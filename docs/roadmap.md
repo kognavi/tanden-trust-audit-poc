@@ -154,7 +154,7 @@ Priority items:
 - production IAM/key policy and separation of duties
 - S3 Object Lock deployment and retention operations
 - CloudTrail multi-Region/log-validation/Evidence data-event Terraform baseline implemented; live deployment and correlation verification pending
-- EventBridge security-control rules and SNS notification boundary implemented; subscriber and alert-path verification pending
+- home-Region EventBridge security-control rules and minimized SNS notification boundary implemented; multi-Region detection topology, subscriber, and alert-path verification pending
 - backup/HA and recovery
 - evidence retention lifecycle
 - operational alerts

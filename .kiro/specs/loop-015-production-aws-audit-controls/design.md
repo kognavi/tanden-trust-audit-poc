@@ -60,10 +60,12 @@ EventBridgeの`AWS API Call via CloudTrail`を5 rulesへ分類する。
 1. CloudTrail integrity: `StopLogging`, `DeleteTrail`, `UpdateTrail`, `PutEventSelectors`, `PutInsightSelectors`。
 2. KMS administration: `DisableKey`, `ScheduleKeyDeletion`, `PutKeyPolicy`, `CreateGrant`, `RetireGrant`, `RevokeGrant`, alias mutation。
 3. Protected S3 controls: bucket policy/public access/Versioning/Object Lock/lifecycle changes。`requestParameters.bucketName`をEvidence bucketとCloudTrail log bucketへ限定する。
-4. IAM privilege changes: inline/managed policy attachment/version、role trust policy、role creation/deletion。account-wide low-volume control-plane eventsとして扱う。
-5. Notification path integrity: EventBridge ruleの無効化・削除・target除去、およびSNS topic削除・attribute変更。
+4. IAM privilege changes: inline/managed policy attachment/version、role trust policy、role creation/deletion。`home_region`へ配信されたglobal-service eventsを扱う。
+5. Notification path integrity: EventBridge ruleの無効化・削除・target置換/除去、およびSNS topic、subscription、topic policy変更。
 
-各ruleは同一SNS topicをtargetとする。SNS topic policyは`events.amazonaws.com`に`aws:SourceAccount`とcreated rule ARN条件付き`Publish`だけを許可する。subscriptionは定義しない。
+各ruleは同一SNS topicをtargetとする。target input transformerはaccount、event ID、event source/name/time、Regionだけをallowlistし、full CloudTrail event、request/response、identity、source IPをSNS payloadへ渡さない。SNS topic policyは`events.amazonaws.com`に`aws:SourceAccount`とcreated rule ARN条件付き`Publish`だけを許可する。subscriptionは定義しない。
+
+CloudTrailはmulti-Region record planeだがEventBridge rulesはRegional resourceであり、このmoduleはinherited providerの`home_region`にだけrulesを作る。したがってmodule単体はaccount-wide active detectionを保証しない。live binding前にgoverned RegionsとpartitionのIAM global-event delivery Regionをinventoryし、必要なら別SpecでRegional rule deployment/aggregation topologyを設計する。
 
 ## Affected Components
 

@@ -347,6 +347,21 @@ resource "aws_cloudwatch_event_target" "security_notifications" {
 
   rule = each.value.name
   arn  = aws_sns_topic.security_notifications.arn
+
+  input_transformer {
+    input_paths = {
+      account      = "$.account"
+      event_id     = "$.id"
+      event_name   = "$.detail.eventName"
+      event_source = "$.detail.eventSource"
+      event_time   = "$.detail.eventTime"
+      region       = "$.region"
+    }
+
+    input_template = <<-EOT
+      {"account":<account>,"eventId":<event_id>,"eventName":<event_name>,"eventSource":<event_source>,"eventTime":<event_time>,"region":<region>}
+    EOT
+  }
 }
 
 data "aws_iam_policy_document" "security_notifications" {

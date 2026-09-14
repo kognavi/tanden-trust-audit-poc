@@ -26,6 +26,8 @@ reviewed_by: []
 - CloudTrail API event名はservice API名と一致しない場合がある。S3では`PutBucketLifecycleConfiguration`が`PutBucketLifecycle`、Object Lockとpublic-access changesもCloudTrail固有名を公式資料で確認する必要がある。
 - audit-controlの変更検知はEvidence bucketだけでなく、CloudTrail log bucket、EventBridge rules、SNS topic自身も対象にしないとblind spotになる。
 - explicit account/Region/partition inputsにすると、Terraform identity lookupなしでbucket policyのsource constraintsを構築でき、local validationをAWS credentialsから分離できる。
+- multi-Region CloudTrailとEventBridgeのcoverageは同義ではない。CloudTrailは各Regionのrecordを集約できるが、EventBridge ruleはRegionalであるため、active detection coverageはRegion inventoryと配置topologyを別途設計・検証する必要がある。
+- CloudTrail event全体をnotificationへ転送するとrequest/identity metadataまで拡散し得る。alert payloadは調査開始に必要なcontrol metadataへallowlistし、詳細は保護されたCloudTrail recordで追跡する方が境界を明確にできる。
 
 ## Accepted trade-offs
 

@@ -8,7 +8,7 @@ This standalone module defines a production-oriented AWS audit control plane. It
 - a multi-Region trail with global service events and log file validation
 - all management events, without excluding AWS KMS
 - Amazon S3 object data events scoped to one existing Evidence bucket
-- Amazon EventBridge rules for security-sensitive CloudTrail, KMS, Evidence S3, and IAM changes
+- home-Region Amazon EventBridge rules for security-sensitive CloudTrail, KMS, Evidence S3, IAM, and notification-path changes
 - an Amazon SNS notification topic and a source-constrained EventBridge publish policy
 
 It does not define subscriptions, IAM roles or policies, KMS keys or policies, AWS Config, Security Hub, GuardDuty, Organizations controls, CloudTrail Lake, or application resources.
@@ -45,16 +45,19 @@ No example root configuration is committed because connecting the module to an e
 
 `home_region` must exactly match the inherited AWS provider Region. The module uses it to construct the CloudTrail ARN allowed by the log-bucket policy; a mismatch can prevent CloudTrail delivery. Confirm the provider configuration and this input together during environment binding and saved-plan review.
 
+CloudTrail is multi-Region, but EventBridge rules are Regional. This module creates detection rules only in the inherited provider Region (`home_region`) and therefore does not provide multi-Region active alerting. Before claiming account-wide detection, a separately reviewed environment design must deploy an approved Regional detection/aggregation path in every governed Region and cover the partition Region that receives IAM global-service events. That expansion is outside Loop 015 and requires explicit Human Approval before any plan or apply.
+
 ## Required human decisions before use
 
 1. Inventory existing account and organization trails to avoid duplicate management-event copies and unexpected cost.
 2. Select a globally unique log bucket name and an approved retention period.
 3. Confirm that `home_region` exactly matches the inherited AWS provider Region.
-4. Decide whether same-account storage is sufficient or a security log archive account is required.
-5. Decide whether Object Lock or SSE-KMS is required after legal, retention, recovery, and key-policy review.
-6. Select and approve SNS subscribers and incident ownership.
-7. Review a saved Terraform plan for replacement, deletion, public exposure, IAM/KMS change, and recurring cost.
-8. Obtain explicit Human Approval before apply.
+4. Inventory all governed Regions and the partition Region receiving IAM global-service events; decide whether home-Region-only alerting is acceptable or a separate Regional detection/aggregation design is required.
+5. Decide whether same-account storage is sufficient or a security log archive account is required.
+6. Decide whether Object Lock or SSE-KMS is required after legal, retention, recovery, and key-policy review.
+7. Select and approve SNS subscribers and incident ownership.
+8. Review a saved Terraform plan for replacement, deletion, public exposure, IAM/KMS change, and recurring cost.
+9. Obtain explicit Human Approval before apply.
 
 ## Validation without AWS mutation
 
@@ -73,4 +76,5 @@ When Terraform CLI is available, formatting and offline configuration validation
 - The log bucket is versioned but does not use Object Lock. CloudTrail log file validation detects changed, deleted, or missing log files; it does not prevent deletion.
 - S3 data events incur additional CloudTrail charges. This module limits them to the configured Evidence bucket but records both reads and writes.
 - EventBridge detects discrete administrative calls; unusual KMS signing volume requires a separate metrics/analytics control.
+- EventBridge rules are created only in `home_region`; active alerts do not cover API events delivered to other Regions, including IAM global-service events when their delivery Region differs.
 - An SNS topic without a subscription has no human recipient. Subscription creation remains an explicit deployment approval step.

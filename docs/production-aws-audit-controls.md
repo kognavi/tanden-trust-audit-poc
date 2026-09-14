@@ -30,7 +30,7 @@ Evidence → Schema → Sign → Store → Ledger
 | Evidence object access hidden | data selector scoped to the Evidence bucket | S3 object data events | data-event cost; CloudTrail records activity, not business truth |
 | KMS governance changed | existing KMS separation-of-duties design remains external | KMS lifecycle/policy/grant/alias events | unusual `Sign` volume is not yet analyzed |
 | Evidence bucket controls weakened | existing bucket controls remain external | bucket policy/public access/Versioning/Object Lock/lifecycle events | EventBridge notification requires an approved subscriber |
-| IAM privilege expanded | existing IAM design remains external | account-wide policy/role change events | no SCP or automated remediation |
+| IAM privilege expanded | existing IAM design remains external | policy/role change events delivered in `home_region` | no SCP or automated remediation |
 | CloudTrail logs modified or deleted | Versioning, SSE-S3, public block, TLS-only policy | CloudTrail log file integrity validation | no Object Lock or cross-account archive |
 | Notification path disabled | source-constrained SNS publish policy | EventBridge/SNS administrative change events | deleting the target can prevent immediate delivery; CloudTrail remains the record plane |
 

@@ -116,6 +116,8 @@ test("home-Region EventBridge rules cover the five reviewed security-control cla
   }
   assert.match(main, /resource "aws_cloudwatch_event_target" "security_notifications"/);
   assert.match(main, /input_transformer\s*\{/);
+  assert.match(main, /event_id\s*=\s*"\$\.detail\.eventID"/);
+  assert.doesNotMatch(main, /event_id\s*=\s*"\$\.id"/);
   assert.match(main, /event_name\s*=\s*"\$\.detail\.eventName"/);
   assert.match(main, /input_template\s*=\s*<<-EOT/);
   assert.doesNotMatch(main, /input_paths\s*=\s*\{[^}]*requestParameters/s);

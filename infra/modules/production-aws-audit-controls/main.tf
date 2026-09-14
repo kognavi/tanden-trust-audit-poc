@@ -351,7 +351,7 @@ resource "aws_cloudwatch_event_target" "security_notifications" {
   input_transformer {
     input_paths = {
       account      = "$.account"
-      event_id     = "$.id"
+      event_id     = "$.detail.eventID"
       event_name   = "$.detail.eventName"
       event_source = "$.detail.eventSource"
       event_time   = "$.detail.eventTime"

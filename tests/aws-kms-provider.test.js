@@ -103,6 +103,39 @@ test('decodeDerSignatureToRaw: throws on malformed input', () => {
   assert.throws(() => decodeDerSignatureToRaw(Buffer.from([0x00, 0x01])));
 });
 
+test('decodeDerSignatureToRaw: rejects inconsistent lengths and trailing data', () => {
+  const r = Buffer.alloc(32, 0x11);
+  const s = Buffer.alloc(32, 0x22);
+  const valid = derSig(r, s);
+
+  assert.throws(
+    () => decodeDerSignatureToRaw(Buffer.concat([valid, Buffer.from([0x00])])),
+    /sequence length does not match input/
+  );
+  assert.throws(
+    () => decodeDerSignatureToRaw(Buffer.from([0x30, 0x81])),
+    /invalid long-form length/
+  );
+  assert.throws(
+    () => decodeDerSignatureToRaw('not-a-buffer'),
+    /must be a Buffer/
+  );
+});
+
+test('decodeDerSignatureToRaw: rejects oversized or negative INTEGER values', () => {
+  const oversized = derSeq(Buffer.concat([
+    derInt(Buffer.alloc(34, 0x01)),
+    derInt(Buffer.alloc(32, 0x02)),
+  ]));
+  const negative = derSeq(Buffer.concat([
+    derInt(Buffer.concat([Buffer.from([0x80]), Buffer.alloc(31)])),
+    derInt(Buffer.alloc(32, 0x02)),
+  ]));
+
+  assert.throws(() => decodeDerSignatureToRaw(oversized), /invalid INTEGER length/);
+  assert.throws(() => decodeDerSignatureToRaw(negative), /INTEGER must be unsigned/);
+});
+
 test('AwsKmsProvider: throws if KMS_KEY_ID not set', async () => {
   await withKmsKeyId(undefined, async () => {
     assert.throws(() => new AwsKmsProvider(), /KMS_KEY_ID/);
@@ -456,8 +489,8 @@ test('signDigest / verifyDigestSignature: backward-compatible return types after
   // signDigest は Buffer のみ、verifyDigestSignature は boolean のみを返すこと
   // （resolvedKeyId が漏れ出ていないこと）を確認する回帰テスト。
   await withKmsKeyId('test-key', async () => {
-    const r = Buffer.alloc(32, 0xab);
-    const s = Buffer.alloc(32, 0xcd);
+    const r = Buffer.alloc(32, 0x2b);
+    const s = Buffer.alloc(32, 0x4d);
     const fakeClient = new FakeKmsClient({
       GetPublicKeyCommand: validKeySpecHandler(),
       SignCommand: () => ({ Signature: derSig(r, s), KeyId: PHYSICAL_KEY_ARN }),

@@ -21,7 +21,7 @@
 - [x] Run focused tests and `npm run check:structure`.
 - [x] Run Implementation Conformance Gate.
 - [x] Hand implementation to independent Reviewer.
-- [ ] Hand implementation to independent Security Reviewer after Reviewer PASS.
+- [x] Hand implementation to independent Security Reviewer after Reviewer PASS.
 - [x] Record reusable learning in `knowledge/30-learnings/`.
 - [ ] Generate Verification Evidence only after both independent reviews PASS.
 - [ ] Leave merge, deploy, AWS apply, IAM, and KMS changes to explicit Human Approval.

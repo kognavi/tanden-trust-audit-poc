@@ -143,6 +143,26 @@ test("caller-forged booleans and arbitrary hashes are rejected before trusted ga
   assert.deepEqual(client.calls, []);
 });
 
+test("valid request fields cannot override constructor-bound trust dependencies", async () => {
+  const fixture = await createFixture();
+  const client = makeClient();
+  const ledger = makeLedgerVerifier();
+  let attackerCalled = false;
+  const service = makeService(client, [[fixture.metadata.keyId, fixture.keyPair.publicKey]], ledger);
+  await service.anchorVerifiedEvidence({
+    evidence,
+    metadata: fixture.metadata,
+    ledgerEventId,
+    trustedKeyResolver: { resolvePublicKey: () => { attackerCalled = true; } },
+    internalLedgerVerifier: { verifyRecordedEvidence: () => { attackerCalled = true; } },
+    anchorClient: { anchorDigest: () => { attackerCalled = true; } },
+    provenance: { provider: "attacker" },
+  });
+  assert.equal(attackerCalled, false);
+  assert.equal(ledger.calls.length, 1);
+  assert.equal(client.calls.length, 2);
+});
+
 test("unknown or wrong keys, caller overrides, and tampering fail before ledger/external calls", async (t) => {
   const trusted = new LocalEcdsaProvider().generateEcKeyPair();
   const unknown = await createFixture({ keyId: "unknown-key" });
@@ -237,6 +257,14 @@ test("duplicate, RPC, transaction, and invalid receipt semantics are explicit", 
       );
     });
   }
+  await t.test("malformed anchor state", async () => {
+    const client = makeClient({ anchoredAt: "not-an-integer" });
+    await assert.rejects(
+      () => makeService(client, entries).anchorVerifiedEvidence({ evidence, metadata: fixture.metadata, ledgerEventId }),
+      (error) => error.code === "INVALID_ANCHOR_STATE"
+    );
+    assert.deepEqual(client.calls.map(({ method }) => method), ["getAnchoredAt"]);
+  });
 });
 
 test("constructor-bound dependencies and provenance are validated", async () => {

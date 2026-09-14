@@ -30,9 +30,9 @@ No request field selects a digest, key, resolver, verifier, provider, network, c
 
 ### Trusted internal Ledger verifier
 
-Add `PgInternalLedgerVerifier` around `PgSigningLogger`. It first runs `verifyChainIntegrity()`, then calls new read-only `getEventById(eventId)`. It confirms event type `evidence.stored` and exact payload `evidenceId`/`digestHex`, returning only confirmation, event ID, and row hash. Missing/mismatch/invalid chain returns a structured unconfirmed result; infrastructure errors are wrapped by `VerifiedAnchorService` as `InternalLedgerVerificationError`.
+Add `PgInternalLedgerVerifier` around `PgSigningLogger`. It calls `verifyChainIntegrityAndGetEvent(eventId)`, which verifies the full chain and selects the target from one query result. It confirms event type `evidence.stored` and exact payload `evidenceId`/`digestHex`, returning only confirmation, event ID, and row hash. Missing/mismatch/invalid chain returns a structured unconfirmed result; infrastructure errors are wrapped by `VerifiedAnchorService` as `InternalLedgerVerificationError`.
 
-`PgSigningLogger.getEventById()` validates a non-empty event ID, uses a parameterized query, and maps the row with the existing event shape. It does not alter schema or append behavior.
+`PgSigningLogger.verifyChainIntegrityAndGetEvent()` validates the event ID, uses one ordered full-ledger query, and maps the selected row with the existing event shape. It does not alter schema or append behavior. `getEventById()` remains a non-security convenience read.
 
 ### Provenance and error contract
 
@@ -59,6 +59,7 @@ Update `scripts/anchor-evidence.js` composition to require internal Ledger conne
 - `tests/verified-anchor-service.test.js`
 - `tests/internal-ledger-verifier.test.js`
 - `tests/pg-signing-logger.test.js`
+- `tests/anchor-evidence-script.test.js`
 - `scripts/anchor-evidence.js`
 - `docs/module-registry.md`
 - `docs/evidence-lifecycle.md`

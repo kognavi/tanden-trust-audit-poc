@@ -25,6 +25,7 @@ reviewed_by: []
 - Caller-supplied booleans, digests, public keys, resolvers, or provider metadata cannot be security decisions. Trust dependencies and external provenance belong to deployment composition.
 - Duplicate pre-checks do not eliminate races. A contract duplicate after a successful read needs the same explicit already-anchored classification.
 - Read failures, submit failures, and malformed transaction results require separate machine-testable operation labels.
+- A chain result and security-critical event lookup must come from one consistent row set; separate READ COMMITTED queries do not prove snapshot identity.
 
 ## Accepted trade-offs
 

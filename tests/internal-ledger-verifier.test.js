@@ -15,20 +15,17 @@ function makeLogger({ integrity = { valid: true }, event } = {}) {
   const calls = [];
   return {
     calls,
-    async verifyChainIntegrity() {
-      calls.push("verifyChainIntegrity");
-      return integrity;
-    },
-    async getEventById(eventId) {
-      calls.push(["getEventById", eventId]);
-      return event === undefined
-        ? {
+    async verifyChainIntegrityAndGetEvent(eventId) {
+      calls.push(["verifyChainIntegrityAndGetEvent", eventId]);
+      return {
+        integrity,
+        event: event === undefined ? {
             eventId: ledgerEventId,
             eventType: "evidence.stored",
             payload: { evidenceId, digestHex },
             rowHash,
-          }
-        : event;
+          } : event,
+      };
     },
   };
 }
@@ -43,20 +40,17 @@ test("confirms an exact evidence.stored row only after full-chain verification",
   });
 
   assert.deepEqual(result, { confirmed: true, eventId: ledgerEventId, rowHash });
-  assert.deepEqual(pgLogger.calls, [
-    "verifyChainIntegrity",
-    ["getEventById", ledgerEventId],
-  ]);
+  assert.deepEqual(pgLogger.calls, [["verifyChainIntegrityAndGetEvent", ledgerEventId]]);
 });
 
-test("invalid chain fails before event lookup", async () => {
+test("invalid chain rejects the event returned from the same snapshot", async () => {
   const pgLogger = makeLogger({ integrity: { valid: false } });
   const verifier = new PgInternalLedgerVerifier({ pgLogger });
   assert.deepEqual(
     await verifier.verifyRecordedEvidence({ ledgerEventId, evidenceId, digestHex }),
     { confirmed: false, reason: "LEDGER_CHAIN_INVALID" }
   );
-  assert.deepEqual(pgLogger.calls, ["verifyChainIntegrity"]);
+  assert.deepEqual(pgLogger.calls, [["verifyChainIntegrityAndGetEvent", ledgerEventId]]);
 });
 
 test("missing, wrong-type, mismatched, and invalid-hash rows fail closed", async (t) => {

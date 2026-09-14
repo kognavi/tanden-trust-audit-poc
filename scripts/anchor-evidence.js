@@ -28,19 +28,12 @@ async function main() {
 
   const pool = new Pool({ connectionString: databaseUrl });
   try {
-    const contract = await hre.ethers.getContractAt("TrustAnchor", contractAddress);
-    const anchorClient = {
-      provenance: { provider: "ethereum", network, chainId, contractAddress },
-      getAnchoredAt: (digestBytes32) => contract.anchoredAt(digestBytes32),
-      async anchorDigest(digestBytes32) {
-        const transaction = await contract.anchor(digestBytes32);
-        const receipt = await transaction.wait();
-        return {
-          transactionHash: transaction.hash,
-          blockNumber: receipt.blockNumber,
-        };
-      },
-    };
+    const anchorClient = createLazyAnchorClient({
+      ethers: hre.ethers,
+      contractAddress,
+      network,
+      chainId,
+    });
     const internalLedgerVerifier = new PgInternalLedgerVerifier({
       pgLogger: new PgSigningLogger({ pool }),
     });
@@ -57,6 +50,25 @@ async function main() {
   } finally {
     await pool.end();
   }
+}
+
+function createLazyAnchorClient({ ethers, contractAddress, network, chainId }) {
+  let contractPromise;
+  const getContract = () => {
+    contractPromise ??= ethers.getContractAt("TrustAnchor", contractAddress);
+    return contractPromise;
+  };
+  return {
+    provenance: { provider: "ethereum", network, chainId, contractAddress },
+    async getAnchoredAt(digestBytes32) {
+      return (await getContract()).anchoredAt(digestBytes32);
+    },
+    async anchorDigest(digestBytes32) {
+      const transaction = await (await getContract()).anchor(digestBytes32);
+      const receipt = await transaction.wait();
+      return { transactionHash: transaction.hash, blockNumber: receipt.blockNumber };
+    },
+  };
 }
 
 function loadTrustedKeyResolver(keyringFilePath) {
@@ -84,7 +96,11 @@ function requireEnvironment(name) {
   return value;
 }
 
-main().catch((error) => {
-  console.error(`Anchoring failed [${error.code ?? error.name}]: ${error.message}`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`Anchoring failed [${error.code ?? error.name}]: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { createLazyAnchorClient };

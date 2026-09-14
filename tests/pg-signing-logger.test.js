@@ -349,3 +349,17 @@ test("getEventById validates the UUID and returns only the requested immutable r
   );
   await assert.rejects(() => logger.getEventById("not-a-uuid"), /valid UUID/);
 });
+
+test("verifyChainIntegrityAndGetEvent uses one row snapshot for both decisions", async () => {
+  const { logger, pool } = makeLogger();
+  const first = await logger.appendEvent({ eventType: "t1", payload: { n: 1 }, signature: "s1" });
+  await logger.appendEvent({ eventType: "t2", payload: { n: 2 }, signature: "s2" });
+  const queryCount = pool.callLog.length;
+
+  const result = await logger.verifyChainIntegrityAndGetEvent(first.eventId);
+  assert.equal(result.integrity.valid, true);
+  assert.equal(result.event.eventId, first.eventId);
+  assert.equal(result.event.rowHash, first.rowHash);
+  assert.equal(pool.callLog.length, queryCount + 1);
+  assert.match(pool.callLog.at(-1), /ORDER BY sequence ASC/);
+});

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "feature": "loop-014-kms-signing-api-contract-hardening",
   "generatedAt": "2026-09-14T00:49:25.030Z",
-  "updatedAt": "2026-09-14T01:09:22.129Z",
-  "status": "ACTIVE",
+  "updatedAt": "2026-09-14T01:09:55.013Z",
+  "status": "COMPLETE",
   "maxRetries": 2,
   "retryCount": 0,
   "roles": {
@@ -25,7 +25,7 @@
       "actor": "codex-security-reviewer"
     },
     "verification": {
-      "status": "READY",
+      "status": "PASS",
       "actor": "verification-gate"
     }
   },
@@ -47,6 +47,12 @@
       "outcome": "ACTIVE",
       "retryCount": 0,
       "at": "2026-09-14T01:09:22.129Z"
+    },
+    {
+      "event": "verify-pass",
+      "outcome": "COMPLETE",
+      "retryCount": 0,
+      "at": "2026-09-14T01:09:55.013Z"
     }
   ]
 }

@@ -20,7 +20,7 @@
 - [x] Add deterministic local regression tests for security, scope, and no-live-mutation guarantees.
 - [x] Run focused tests and `npm run check:structure`.
 - [x] Run Terraform formatting/validation if Terraform CLI is available; record unavailable tooling truthfully.
-- [ ] Run Implementation Conformance Gate.
+- [x] Run Implementation Conformance Gate.
 - [ ] Hand implementation to independent Reviewer.
 - [ ] Hand implementation to independent Security Reviewer after Reviewer PASS.
 - [x] Record reusable learning in `knowledge/30-learnings/`.

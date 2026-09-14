@@ -1,0 +1,145 @@
+{
+  "payload": {
+    "schemaVersion": 1,
+    "gate": "verification-evidence-gate",
+    "feature": "loop-014-kms-signing-api-contract-hardening",
+    "generatedAt": "2026-09-14T01:09:38.259Z",
+    "baseRef": "origin/main",
+    "status": "PASS",
+    "provenance": {
+      "sourceContext": "knowledge/20-research/context-packs/loop-014-kms-signing-api-contract-hardening-context.md",
+      "contextId": "context-pack-loop-014-kms-signing-api-contract-hardening",
+      "specDir": ".kiro/specs/loop-014-kms-signing-api-contract-hardening"
+    },
+    "roles": {
+      "builder": "chatgpt-builder",
+      "reviewer": "codex-reviewer",
+      "securityReviewer": "codex-security-reviewer"
+    },
+    "orchestrator": {
+      "status": "ACTIVE",
+      "retryCount": 0,
+      "maxRetries": 2,
+      "tasks": {
+        "builder": {
+          "status": "PASS",
+          "actor": "chatgpt-builder"
+        },
+        "reviewer": {
+          "status": "PASS",
+          "actor": "codex-reviewer"
+        },
+        "securityReviewer": {
+          "status": "PASS",
+          "actor": "codex-security-reviewer"
+        },
+        "verification": {
+          "status": "READY",
+          "actor": "verification-gate"
+        }
+      }
+    },
+    "runtime": {
+      "adapters": {
+        "builder": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "reviewer": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "securityReviewer": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "verification": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        }
+      },
+      "runs": {
+        "builder": {
+          "runCount": 1,
+          "latestResult": "DRY_RUN",
+          "latestAdapter": "dry-run",
+          "latestRunId": "64e55161-89e7-4797-8d42-e557f311f1bd",
+          "latestGraphEvent": null,
+          "latestProvider": null,
+          "latestProviderSessionId": null,
+          "latestProviderExecutionStatus": null
+        }
+      }
+    },
+    "checks": {
+      "implementationConformance": "PASS",
+      "structureValidation": "PASS",
+      "reviewerReview": "PASS",
+      "securityReview": "PASS"
+    },
+    "commands": {
+      "structureValidation": "npm run check:structure"
+    },
+    "changedFiles": [
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-delegation.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-runs/64e55161-89e7-4797-8d42-e557f311f1bd.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-runtime.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-task-graph.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/design.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/implementation-handoff.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/requirements.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/reviewer-review.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/security-review.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/tasks.md",
+      "docs/aws-kms-signing-design.md",
+      "docs/module-registry.md",
+      "docs/signature-provider-design.md",
+      "knowledge/00-inbox/loop-014-kms-signing-api-contract-hardening.md",
+      "knowledge/20-research/context-packs/loop-014-kms-signing-api-contract-hardening-context.md",
+      "knowledge/30-learnings/loop-014-kms-signing-api-contract-hardening.md",
+      "lib/aws-kms-provider.js",
+      "lib/local-ecdsa-provider.js",
+      "lib/metadata-signature.js",
+      "lib/signature.js",
+      "lib/signing-contract.js",
+      "scripts/test-kms-signing.js",
+      "tests/aws-kms-provider.test.js",
+      "tests/cross-provider-parity.test.js",
+      "tests/local-ecdsa-provider.test.js",
+      "tests/metadata-signature.test.js",
+      "tests/signature.test.js",
+      "tests/signing-contract.test.js"
+    ],
+    "sensitiveFiles": [
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-delegation.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-runs/64e55161-89e7-4797-8d42-e557f311f1bd.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-runtime.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/agent-task-graph.json",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/design.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/implementation-handoff.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/requirements.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/reviewer-review.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/security-review.md",
+      ".kiro/specs/loop-014-kms-signing-api-contract-hardening/tasks.md",
+      "docs/aws-kms-signing-design.md",
+      "knowledge/00-inbox/loop-014-kms-signing-api-contract-hardening.md",
+      "knowledge/20-research/context-packs/loop-014-kms-signing-api-contract-hardening-context.md",
+      "knowledge/30-learnings/loop-014-kms-signing-api-contract-hardening.md",
+      "lib/aws-kms-provider.js",
+      "scripts/test-kms-signing.js",
+      "tests/aws-kms-provider.test.js"
+    ],
+    "reviewerReview": {
+      "status": "PASS",
+      "reviewedBy": "codex-reviewer"
+    },
+    "securityReview": {
+      "status": "PASS",
+      "reviewedBy": "codex-security-reviewer"
+    }
+  },
+  "digest": {
+    "algorithm": "sha256",
+    "value": "2f4edba4905f7eb42fd5dd57785228b24220a0aa147c67d07199913182c8a8fa"
+  }
+}

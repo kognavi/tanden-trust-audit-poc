@@ -107,14 +107,39 @@ test('LocalEcdsaProvider returns invalid when verified with a different public k
   assert.equal(verified.valid, false);
 });
 
-test('LocalEcdsaProvider.verifyDigestSignature returns false (not throw) for wrong-length signature buffer', () => {
+test('LocalEcdsaProvider returns false for a wrong-length signature without verifying it', () => {
   const provider = new LocalEcdsaProvider();
   const { publicKey } = provider.generateEcKeyPair();
   const digest = crypto.createHash('sha256').update('test').digest();
 
   const malformedSignature = Buffer.from('too-short-sig');
-  const result = provider.verifyDigestSignature(digest, malformedSignature, publicKey);
-
-  assert.equal(result, false);
+  assert.equal(
+    provider.verifyRawMessageSignature(digest, malformedSignature, publicKey),
+    false
+  );
 });
 
+test('LocalEcdsaProvider rejects a non-secp256k1 key', () => {
+  const provider = new LocalEcdsaProvider();
+  const { privateKey } = crypto.generateKeyPairSync('ec', {
+    namedCurve: 'prime256v1',
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+  });
+
+  assert.throws(
+    () => provider.signRawMessage(Buffer.from('message'), privateKey),
+    /Expected secp256k1/
+  );
+});
+
+test('LocalEcdsaProvider keeps legacy raw-message aliases compatible', () => {
+  const provider = new LocalEcdsaProvider();
+  const { publicKey, privateKey } = provider.generateEcKeyPair();
+  const message = Buffer.from('legacy raw message');
+
+  const signature = provider.signDigest(message, privateKey);
+
+  assert.equal(provider.verifyRawMessageSignature(message, signature, publicKey), true);
+  assert.equal(provider.verifyDigestSignature(message, signature, publicKey), true);
+});

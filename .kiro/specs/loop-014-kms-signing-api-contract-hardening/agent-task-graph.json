@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-014-kms-signing-api-contract-hardening",
+  "generatedAt": "2026-09-14T00:49:25.030Z",
+  "updatedAt": "2026-09-14T01:09:55.013Z",
+  "status": "COMPLETE",
+  "maxRetries": 2,
+  "retryCount": 0,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": "codex-security-reviewer"
+  },
+  "tasks": {
+    "builder": {
+      "status": "PASS",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "PASS",
+      "actor": "codex-reviewer"
+    },
+    "securityReviewer": {
+      "status": "PASS",
+      "actor": "codex-security-reviewer"
+    },
+    "verification": {
+      "status": "PASS",
+      "actor": "verification-gate"
+    }
+  },
+  "history": [
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-14T00:57:34.938Z"
+    },
+    {
+      "event": "reviewer-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-14T01:05:59.340Z"
+    },
+    {
+      "event": "security-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-14T01:09:22.129Z"
+    },
+    {
+      "event": "verify-pass",
+      "outcome": "COMPLETE",
+      "retryCount": 0,
+      "at": "2026-09-14T01:09:55.013Z"
+    }
+  ]
+}

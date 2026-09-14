@@ -9,11 +9,13 @@
 - `KMS_KEY_ID`をkey ID、ARN、またはaliasとして受け取る
 - `GetPublicKey`で`ECC_SECG_P256K1`をfail-fast確認し、public keyをcacheする
 - RFC 8785 JCS canonical EvidenceのUTF-8 bytesを`MessageType: RAW`、`ECDSA_SHA_256`でSign/Verifyする
+- 正規の低レベルAPIは`signRawMessage` / `verifyRawMessageSignature`であり、precomputed digestを受け取らない
+- 旧`signDigest` / `verifyDigestSignature`はraw-message semanticsを維持するdeprecated aliasである
 - AWS KMSが返すDER signatureとprovider共通の64-byte raw `r || s`形式を相互変換する
 - KMS responseのphysical key ARNを`kmsKeyId`として返し、key rotation時のtraceabilityを支援する
 - AWS KMS RAW messageの4,096-byte上限を事前検査する
 
-Local providerはECDSA P-256、AWS providerはsecp256k1であり、curveは異なります。共通なのはEvidence-level provider interfaceとSHA-256 signing semanticsです。
+Local providerとAWS providerはともに`secp256k1`を使用します。両者は同じraw message bytesをSHA-256で一度だけhashし、64-byte IEEE P1363 signatureをprovider共通形式とします。32-byte入力をdigestと自動判定せず、`MessageType: DIGEST`は公開しません。
 
 ## Current Test Coverage
 

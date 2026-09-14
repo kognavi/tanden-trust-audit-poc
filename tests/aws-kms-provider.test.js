@@ -103,6 +103,39 @@ test('decodeDerSignatureToRaw: throws on malformed input', () => {
   assert.throws(() => decodeDerSignatureToRaw(Buffer.from([0x00, 0x01])));
 });
 
+test('decodeDerSignatureToRaw: rejects inconsistent lengths and trailing data', () => {
+  const r = Buffer.alloc(32, 0x11);
+  const s = Buffer.alloc(32, 0x22);
+  const valid = derSig(r, s);
+
+  assert.throws(
+    () => decodeDerSignatureToRaw(Buffer.concat([valid, Buffer.from([0x00])])),
+    /sequence length does not match input/
+  );
+  assert.throws(
+    () => decodeDerSignatureToRaw(Buffer.from([0x30, 0x81])),
+    /invalid long-form length/
+  );
+  assert.throws(
+    () => decodeDerSignatureToRaw('not-a-buffer'),
+    /must be a Buffer/
+  );
+});
+
+test('decodeDerSignatureToRaw: rejects oversized or negative INTEGER values', () => {
+  const oversized = derSeq(Buffer.concat([
+    derInt(Buffer.alloc(34, 0x01)),
+    derInt(Buffer.alloc(32, 0x02)),
+  ]));
+  const negative = derSeq(Buffer.concat([
+    derInt(Buffer.concat([Buffer.from([0x80]), Buffer.alloc(31)])),
+    derInt(Buffer.alloc(32, 0x02)),
+  ]));
+
+  assert.throws(() => decodeDerSignatureToRaw(oversized), /invalid INTEGER length/);
+  assert.throws(() => decodeDerSignatureToRaw(negative), /INTEGER must be unsigned/);
+});
+
 test('AwsKmsProvider: throws if KMS_KEY_ID not set', async () => {
   await withKmsKeyId(undefined, async () => {
     assert.throws(() => new AwsKmsProvider(), /KMS_KEY_ID/);
@@ -456,8 +489,8 @@ test('signDigest / verifyDigestSignature: backward-compatible return types after
   // signDigest は Buffer のみ、verifyDigestSignature は boolean のみを返すこと
   // （resolvedKeyId が漏れ出ていないこと）を確認する回帰テスト。
   await withKmsKeyId('test-key', async () => {
-    const r = Buffer.alloc(32, 0xab);
-    const s = Buffer.alloc(32, 0xcd);
+    const r = Buffer.alloc(32, 0x2b);
+    const s = Buffer.alloc(32, 0x4d);
     const fakeClient = new FakeKmsClient({
       GetPublicKeyCommand: validKeySpecHandler(),
       SignCommand: () => ({ Signature: derSig(r, s), KeyId: PHYSICAL_KEY_ARN }),
@@ -477,5 +510,48 @@ test('signDigest / verifyDigestSignature: backward-compatible return types after
     assert.equal(typeof verifyResult, 'boolean',
       'verifyDigestSignature must return a boolean (backward compatible)');
     assert.equal(verifyResult, true);
+  });
+});
+
+test('signRawMessage / verifyRawMessageSignature expose the canonical RAW API', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const r = Buffer.alloc(32, 0x31);
+    const s = Buffer.alloc(32, 0x32);
+    const fakeClient = new FakeKmsClient({
+      GetPublicKeyCommand: validKeySpecHandler(),
+      SignCommand: () => ({ Signature: derSig(r, s), KeyId: 'physical-key-arn' }),
+      VerifyCommand: () => ({ SignatureValid: true, KeyId: 'physical-key-arn' }),
+    });
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+    const message = Buffer.from('canonical raw message');
+
+    const signature = await provider.signRawMessage(message);
+    const valid = await provider.verifyRawMessageSignature(message, signature);
+
+    assert.equal(signature.length, 64);
+    assert.equal(valid, true);
+    const sign = fakeClient.calls.find((call) => call.constructor.name === 'SignCommand');
+    const verify = fakeClient.calls.find((call) => call.constructor.name === 'VerifyCommand');
+    assert.equal(sign.input.MessageType, 'RAW');
+    assert.equal(verify.input.MessageType, 'RAW');
+    assert.equal(sign.input.SigningAlgorithm, 'ECDSA_SHA_256');
+    assert.equal(verify.input.SigningAlgorithm, 'ECDSA_SHA_256');
+    assert.deepEqual(sign.input.Message, message);
+    assert.deepEqual(verify.input.Message, message);
+  });
+});
+
+test('canonical KMS API rejects invalid input before any KMS command', async () => {
+  await withKmsKeyId('test-key', async () => {
+    const fakeClient = new FakeKmsClient();
+    const provider = new AwsKmsProvider({ kmsClient: fakeClient });
+
+    await assert.rejects(() => provider.signRawMessage('message'), /must be a Buffer/);
+    await assert.rejects(() => provider.signRawMessage(Buffer.alloc(0)), /must not be empty/);
+    assert.equal(
+      await provider.verifyRawMessageSignature(Buffer.from('message'), Buffer.alloc(63)),
+      false
+    );
+    assert.equal(fakeClient.calls.length, 0);
   });
 });

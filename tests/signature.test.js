@@ -3,6 +3,10 @@ const assert = require('node:assert/strict');
 
 const {
   generateEcKeyPair,
+  signRawMessage,
+  verifyRawMessageSignature,
+  signDigest,
+  verifyDigestSignature,
   signEvidence,
   verifyEvidenceSignature,
 } = require('../lib/signature');
@@ -28,6 +32,17 @@ const sampleEvidence = {
     notes: 'This is synthetic sample data for demonstration only.',
   },
 };
+
+test('facade exposes canonical raw-message APIs and compatible legacy aliases', () => {
+  const { privateKey, publicKey } = generateEcKeyPair();
+  const message = Buffer.from('facade raw message');
+
+  const canonicalSignature = signRawMessage(message, privateKey);
+  const legacySignature = signDigest(message, privateKey);
+
+  assert.equal(verifyRawMessageSignature(message, canonicalSignature, publicKey), true);
+  assert.equal(verifyDigestSignature(message, legacySignature, publicKey), true);
+});
 
 test('signs and verifies canonical evidence digest', async () => {
   const { privateKey, publicKey } = generateEcKeyPair();

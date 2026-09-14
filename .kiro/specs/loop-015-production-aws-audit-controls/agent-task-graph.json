@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-015-production-aws-audit-controls",
+  "generatedAt": "2026-09-14T01:40:43.094Z",
+  "updatedAt": "2026-09-14T10:39:11.040Z",
+  "status": "FAILED",
+  "maxRetries": 2,
+  "retryCount": 2,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": "codex-security-reviewer"
+  },
+  "tasks": {
+    "builder": {
+      "status": "PASS",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "FAIL",
+      "actor": "codex-reviewer"
+    },
+    "securityReviewer": {
+      "status": "BLOCKED",
+      "actor": "codex-security-reviewer"
+    },
+    "verification": {
+      "status": "BLOCKED",
+      "actor": "verification-gate"
+    }
+  },
+  "history": [
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 0,
+      "at": "2026-09-14T01:49:25.325Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "RETRY",
+      "retryCount": 1,
+      "at": "2026-09-14T10:27:54.871Z"
+    },
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 1,
+      "at": "2026-09-14T10:29:02.891Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "RETRY",
+      "retryCount": 2,
+      "at": "2026-09-14T10:33:44.001Z"
+    },
+    {
+      "event": "builder-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 2,
+      "at": "2026-09-14T10:35:50.491Z"
+    },
+    {
+      "event": "reviewer-fail",
+      "source": "reviewer",
+      "outcome": "FAILED_MAX_RETRIES",
+      "retryCount": 3,
+      "at": "2026-09-14T10:39:11.040Z"
+    }
+  ]
+}

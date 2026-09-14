@@ -30,6 +30,7 @@ The implementation policy is **Local-first / AWS-on-demand**. Normal development
 - `EvidenceProcessingService`
 - real/fake integration test separation
 - S3 Object Lock Terraform module
+- standalone production AWS audit-controls Terraform module (not deployed)
 - AWS Budgets cost guardrail
 
 ### Security engineering
@@ -145,14 +146,15 @@ The bundle should be understandable by security, internal audit, compliance, or 
 
 ## Phase D: AWS Production Hardening
 
-Status: Planned
+Status: **In progress — repository-only baseline, not deployed**
 
 Priority items:
 
 - real AWS KMS + PostgreSQL integration coverage
 - production IAM/key policy and separation of duties
 - S3 Object Lock deployment and retention operations
-- CloudTrail/CloudWatch correlation
+- CloudTrail multi-Region/log-validation/Evidence data-event Terraform baseline implemented; live deployment and correlation verification pending
+- home-Region EventBridge security-control rules and minimized SNS notification boundary implemented; multi-Region detection topology, subscriber, and alert-path verification pending
 - backup/HA and recovery
 - evidence retention lifecycle
 - operational alerts

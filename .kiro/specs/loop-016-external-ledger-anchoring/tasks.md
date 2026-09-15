@@ -21,5 +21,5 @@
 - [x] Run focused/full tests, local Hardhat tests, conformance, and `git diff --check`.
 - [x] Obtain independent Reviewer PASS.
 - [x] Obtain independent Security Reviewer PASS.
-- [ ] Generate Verification Evidence and transition new Task Graph to COMPLETE.
-- [ ] Stop at HUMAN_MERGE_DECISION without transaction/deploy/AWS/push/PR/merge.
+- [x] Generate Verification Evidence and transition new Task Graph to COMPLETE.
+- [x] Stop at HUMAN_MERGE_DECISION without transaction/deploy/AWS/push/PR/merge.

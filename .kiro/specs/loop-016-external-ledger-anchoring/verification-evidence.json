@@ -1,0 +1,125 @@
+{
+  "payload": {
+    "schemaVersion": 1,
+    "gate": "verification-evidence-gate",
+    "feature": "loop-016-external-ledger-anchoring",
+    "generatedAt": "2026-09-15T01:55:46.120Z",
+    "baseRef": "9849d394931b20b96d6a488e735dd4f04bcdb0a6",
+    "status": "PASS",
+    "provenance": {
+      "sourceContext": "knowledge/20-research/context-packs/loop-016-external-ledger-anchoring-context.md",
+      "contextId": "context-pack-loop-016-external-ledger-anchoring",
+      "specDir": ".kiro/specs/loop-016-external-ledger-anchoring"
+    },
+    "roles": {
+      "builder": "chatgpt-builder",
+      "reviewer": "codex-reviewer",
+      "securityReviewer": "codex-security-reviewer"
+    },
+    "orchestrator": {
+      "status": "ACTIVE",
+      "retryCount": 1,
+      "maxRetries": 2,
+      "tasks": {
+        "builder": {
+          "status": "PASS",
+          "actor": "chatgpt-builder"
+        },
+        "reviewer": {
+          "status": "PASS",
+          "actor": "codex-reviewer"
+        },
+        "securityReviewer": {
+          "status": "PASS",
+          "actor": "codex-security-reviewer"
+        },
+        "verification": {
+          "status": "READY",
+          "actor": "verification-gate"
+        }
+      }
+    },
+    "runtime": {
+      "adapters": {
+        "builder": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "reviewer": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "securityReviewer": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        },
+        "verification": {
+          "type": "dry-run",
+          "timeoutMs": 300000
+        }
+      },
+      "runs": {
+        "builder": {
+          "runCount": 1,
+          "latestResult": "DRY_RUN",
+          "latestAdapter": "dry-run",
+          "latestRunId": "e3afa11d-e7bd-4a24-8d8d-5607ab8eceab",
+          "latestGraphEvent": null,
+          "latestProvider": null,
+          "latestProviderSessionId": null,
+          "latestProviderExecutionStatus": null
+        }
+      }
+    },
+    "checks": {
+      "implementationConformance": "PASS",
+      "structureValidation": "PASS",
+      "reviewerReview": "PASS",
+      "securityReview": "N/A"
+    },
+    "commands": {
+      "structureValidation": "npm run check:structure"
+    },
+    "changedFiles": [
+      ".kiro/specs/loop-016-external-ledger-anchoring/agent-delegation.json",
+      ".kiro/specs/loop-016-external-ledger-anchoring/agent-runs/e3afa11d-e7bd-4a24-8d8d-5607ab8eceab.json",
+      ".kiro/specs/loop-016-external-ledger-anchoring/agent-runtime.json",
+      ".kiro/specs/loop-016-external-ledger-anchoring/agent-task-graph.json",
+      ".kiro/specs/loop-016-external-ledger-anchoring/design.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/implementation-handoff.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/requirements.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/reviewer-review-attempt-1.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/reviewer-review.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/security-review-attempt-1.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/security-review.md",
+      ".kiro/specs/loop-016-external-ledger-anchoring/tasks.md",
+      "docs/architecture.md",
+      "docs/evidence-lifecycle.md",
+      "docs/module-registry.md",
+      "docs/roadmap.md",
+      "knowledge/20-research/context-packs/loop-016-external-ledger-anchoring-context.md",
+      "knowledge/30-learnings/loop-016-external-ledger-anchoring.md",
+      "lib/internal-ledger-verifier.js",
+      "lib/pg-signing-logger.js",
+      "lib/verified-anchor-service.js",
+      "scripts/anchor-evidence.js",
+      "tests/anchor-evidence-script.test.js",
+      "tests/internal-ledger-verifier.test.js",
+      "tests/pg-signing-logger.test.js",
+      "tests/verified-anchor-service.test.js"
+    ],
+    "sensitiveFiles": [],
+    "reviewerReview": {
+      "status": "PASS",
+      "reviewedBy": "codex-reviewer"
+    },
+    "securityReview": {
+      "status": "N/A",
+      "reviewedBy": null
+    }
+  },
+  "digest": {
+    "algorithm": "sha256",
+    "value": "7ef54ced9d85f9fa7a69789eaa56e9519e04a75d9076718a951b52ce5dc3c718"
+  }
+}

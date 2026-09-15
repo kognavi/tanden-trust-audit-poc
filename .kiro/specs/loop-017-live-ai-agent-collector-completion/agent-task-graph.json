@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-017-live-ai-agent-collector-completion",
+  "generatedAt": "2026-09-15T03:03:34.579Z",
+  "updatedAt": "2026-09-15T03:03:34.579Z",
+  "status": "ACTIVE",
+  "maxRetries": 2,
+  "retryCount": 0,
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": "codex-security-reviewer"
+  },
+  "tasks": {
+    "builder": {
+      "status": "READY",
+      "actor": "chatgpt-builder"
+    },
+    "reviewer": {
+      "status": "BLOCKED",
+      "actor": "codex-reviewer"
+    },
+    "securityReviewer": {
+      "status": "BLOCKED",
+      "actor": "codex-security-reviewer"
+    },
+    "verification": {
+      "status": "BLOCKED",
+      "actor": "verification-gate"
+    }
+  },
+  "history": []
+}

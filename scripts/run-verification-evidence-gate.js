@@ -283,7 +283,11 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
 
   let securityReview = { status: "N/A", reviewedBy: null };
   const sensitiveFiles = conformance.sensitiveFiles || [];
-  if (sensitiveFiles.length > 0) {
+  const delegatedSecurityReviewer = Boolean(
+    delegation.valid && delegation.roles.securityReviewer
+  );
+  const securityReviewRequired = sensitiveFiles.length > 0 || delegatedSecurityReviewer;
+  if (securityReviewRequired) {
     if (!delegation.valid || !delegation.roles.securityReviewer) {
       errors.push("sensitive changes require delegated securityReviewer identity");
     }
@@ -296,7 +300,11 @@ function validateVerificationEvidenceGate(repositoryRoot, featureSlug, options =
     );
 
     if (!fs.existsSync(securityReviewPath)) {
-      errors.push("sensitive changes require security-review.md");
+      errors.push(
+        sensitiveFiles.length > 0
+          ? "sensitive changes require security-review.md"
+          : "delegated Security Reviewer requires security-review.md"
+      );
     } else {
       securityReview = parseSecurityReview(fs.readFileSync(securityReviewPath, "utf8"));
       if (securityReview.status !== "PASS") {

@@ -33,6 +33,7 @@ Amazon Bedrock AgentCoreの1回の合成tool-call responseを、既存local-firs
 - [x] Regression tests cover live adapter correlation, mapping parity, processing order, reload verification, data minimization, and tamper/failure paths.
 - [x] Runtime application, live workflow, IAM/CDK, and AWS resources remain unchanged unless a verified blocker requires a separately reviewed change.
 - [x] Security Reviewer is mandatory and independent.
+- [x] Verification Evidence records Security Review PASS whenever a Security Reviewer is explicitly delegated, even when path heuristics find no sensitive file; missing/mismatched review fails closed.
 
 ## Invariants
 
@@ -49,6 +50,7 @@ Amazon Bedrock AgentCoreの1回の合成tool-call responseを、既存local-firs
 - [x] New tests prove the live response follows Store append → Ledger append → Store reload → signature verification.
 - [x] New tests prove full actor/agent/model/policy/tool/approval/side-effect mapping parity.
 - [x] New tests prove secret/PII rejection and reload identity/digest/signature tamper fail closed.
+- [x] Verification-gate regression proves delegated Security Review provenance cannot be reduced to `N/A`.
 - [x] Spec Readiness, Implementation Conformance, architecture checks, focused tests, full suite, independent Reviewer, independent Security Reviewer, Verification Evidence, and `git diff --check` pass.
 - [x] No AWS invocation, deploy, IAM/KMS mutation, persistent resource creation, blockchain/external anchor, push, PR, or merge occurs.
 - [x] After all local gates pass, the process stops at `HUMAN_AWS_DEMO_DECISION` because one real invocation is still needed to claim an observed live AWS demonstration.

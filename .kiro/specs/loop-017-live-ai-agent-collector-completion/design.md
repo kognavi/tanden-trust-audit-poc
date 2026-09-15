@@ -39,6 +39,10 @@ Tests compare all required mapping objects between the validated Runtime audit e
 
 No live invocation is required to implement or validate this change. Once local gates, Reviewer, Security Reviewer, and Verification Evidence pass, Loop 017 stops at `HUMAN_AWS_DEMO_DECISION`. A future approved action may run the existing manual workflow exactly once against an existing Runtime; no deploy/resource creation is included.
 
+### Security-review provenance gate
+
+The first Verification Evidence attempt exposed a governance mismatch: an explicitly delegated and completed Security Review was serialized as `N/A` because no changed path matched the generic sensitive-path heuristic. The Gate will require and record `security-review.md` when either sensitive paths exist or a Security Reviewer is delegated. Existing behavior for undelegated, non-sensitive work remains unchanged. A deterministic regression covers delegated/no-sensitive-path PASS and missing-review failure.
+
 ## Affected Components
 
 - `lib/agentcore-live-demo.js`
@@ -50,6 +54,8 @@ No live invocation is required to implement or validate this change. Once local 
 - `docs/ai-agent-evidence-profile.md`
 - `docs/architecture-diagram.md`
 - `docs/roadmap.md`
+- `scripts/run-verification-evidence-gate.js`
+- `tests/verification-evidence-gate.test.js`
 - `knowledge/20-research/context-packs/loop-017-live-ai-agent-collector-completion-context.md`
 - `knowledge/30-learnings/loop-017-live-ai-agent-collector-completion.md`
 - `.kiro/specs/loop-017-live-ai-agent-collector-completion/`
@@ -93,6 +99,7 @@ No live invocation is required to implement or validate this change. Once local 
 - `npm run impl:conform -- loop-017-live-ai-agent-collector-completion 08ed70e8e2ffc9582ad0d03994d9ea9187bac811`
 - independent Reviewer, independent Security Reviewer, Verification Evidence Gate
 - `git diff --check`
+- `node --test tests/verification-evidence-gate.test.js`
 
 ## Review Checklist
 

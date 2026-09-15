@@ -70,6 +70,7 @@ Phase Bのlocal-first collector/mapperを維持したまま、Amazon Bedrock Age
 2. Store → Ledger → reload → verifyの順序と、再読込recordが欠落・identity不一致・digest/signature不整合の場合のfail-closed semanticsが明文化・テストされていない。
 3. live summaryはreload verificationの成否を区別しておらず、actor / agent / model mapping preservationも回帰テストで明示していない。
 4. 一部のarchitecture/profile documentationにはcollectorがfuture workという古い記述が残る。実装source of truthに合わせた最小更新が必要である。
+5. Verification Evidence Gateはpath heuristicがsensitive fileを検出した場合だけSecurity Review artifactを読むため、明示的にSecurity Reviewerを委任しTask GraphがPASSでもEvidenceへ`N/A`と記録する。Security Reviewer必須Loopではprovenance不整合となる。
 
 ## Minimal Design Direction
 
@@ -79,6 +80,7 @@ Phase Bのlocal-first collector/mapperを維持したまま、Amazon Bedrock Age
 4. summaryはsecret/raw payloadを増やさず、reload verificationとcanonical stage completionを最小のstatus/provenanceで表現する。
 5. testsでcanonical order、reloaded recordの使用、全主要mappingの保持、top-level/raw prompt除外、identity/digest/signature tamper拒否を固定する。
 6. AgentCore Runtime application、IAM/CDK、live workflowのAWS invocation semanticsは具体的blockerがない限り変更しない。Node/runtimeやCLI差分はlocal static checkで確認できる範囲に留める。
+7. Verification Gateはsensitive-path検出に加え、Security Reviewerが明示的に委任されている場合もPASS artifactと委任identityを必須化してEvidenceへ記録する。
 
 ## Security Constraints
 
@@ -110,6 +112,8 @@ Phase Bのlocal-first collector/mapperを維持したまま、Amazon Bedrock Age
 - `docs/ai-agent-evidence-profile.md`（stale cross-referenceのみ）
 - `docs/architecture-diagram.md`（stale cross-referenceのみ）
 - `docs/roadmap.md`
+- `scripts/run-verification-evidence-gate.js`
+- `tests/verification-evidence-gate.test.js`
 - `knowledge/30-learnings/loop-017-live-ai-agent-collector-completion.md`
 - `.kiro/specs/loop-017-live-ai-agent-collector-completion/`
 

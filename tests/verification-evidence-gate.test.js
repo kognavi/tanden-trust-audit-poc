@@ -237,6 +237,57 @@ test("sensitive changes pass with explicit security review", () =>
     assert.equal(result.evidence.payload.securityReview.reviewedBy, "codex-security");
   }));
 
+test("delegated Security Reviewer is recorded even without sensitive-path matches", () =>
+  fixture((root) => {
+    const specDir = path.join(root, ".kiro", "specs", "feature");
+    const delegationPath = path.join(specDir, "agent-delegation.json");
+    const delegation = JSON.parse(fs.readFileSync(delegationPath, "utf8"));
+    delegation.roles.securityReviewer = "codex-security";
+    fs.writeFileSync(delegationPath, JSON.stringify(delegation, null, 2) + "\n");
+    fs.writeFileSync(
+      path.join(specDir, "security-review.md"),
+      "# Security Review\n\n- Status: PASS\n- Reviewed by: codex-security\n"
+    );
+
+    const graphPath = path.join(specDir, "agent-task-graph.json");
+    const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    graph.roles.securityReviewer = "codex-security";
+    graph.tasks.securityReviewer = { status: "PASS", actor: "codex-security" };
+    fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2) + "\n");
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+
+    assert.equal(result.verified, true);
+    assert.equal(result.evidence.payload.checks.securityReview, "PASS");
+    assert.equal(result.evidence.payload.securityReview.reviewedBy, "codex-security");
+  }));
+
+test("delegated Security Reviewer fails closed when its review artifact is missing", () =>
+  fixture((root) => {
+    const specDir = path.join(root, ".kiro", "specs", "feature");
+    const delegationPath = path.join(specDir, "agent-delegation.json");
+    const delegation = JSON.parse(fs.readFileSync(delegationPath, "utf8"));
+    delegation.roles.securityReviewer = "codex-security";
+    fs.writeFileSync(delegationPath, JSON.stringify(delegation, null, 2) + "\n");
+
+    const graphPath = path.join(specDir, "agent-task-graph.json");
+    const graph = JSON.parse(fs.readFileSync(graphPath, "utf8"));
+    graph.roles.securityReviewer = "codex-security";
+    graph.tasks.securityReviewer = { status: "PASS", actor: "codex-security" };
+    fs.writeFileSync(graphPath, JSON.stringify(graph, null, 2) + "\n");
+
+    const result = validateVerificationEvidenceGate(root, "feature", {
+      conformanceResult: conformant(),
+      structureResult: { passed: true, command: "npm run check:structure", output: "ok" }
+    });
+
+    assert.equal(result.verified, false);
+    assert.ok(result.errors.includes("delegated Security Reviewer requires security-review.md"));
+  }));
+
 
 test("missing reviewer review blocks verification", () =>
   fixture((root) => {

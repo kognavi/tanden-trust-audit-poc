@@ -18,7 +18,7 @@
 - [x] Reject secret-bearing events before processing and preserve output minimization.
 - [x] Add mapping, order, reload, tamper, and failure regression tests.
 - [x] Update only stale/current-state documentation and module registry entries.
-- [ ] Run focused tests, AgentCore local checks, full structure suite, conformance, and `git diff --check`.
+- [x] Run focused tests, available local checks, full structure suite, conformance, and `git diff --check`; record AgentCore app/CDK tooling unavailable because isolated dependencies are absent.
 - [ ] Obtain independent Reviewer PASS.
 - [ ] Obtain independent Security Reviewer PASS.
 - [ ] Generate Verification Evidence and transition Task Graph to COMPLETE.

@@ -32,7 +32,9 @@ This PoC therefore separates two concerns:
 - observability: what the runtime emitted
 - evidence: what must be preserved and verified for audit, incident response, or compliance review
 
-The current repository implements the evidence integrity pipeline. Runtime collectors for specific agent frameworks are planned.
+The current repository implements the evidence integrity pipeline, a runtime-neutral fixture collector,
+and an Amazon Bedrock AgentCore response adapter. The AgentCore path is locally tested; a real AWS
+invocation remains an explicit human-approved demonstration step.
 
 ## Profile
 
@@ -92,7 +94,7 @@ For agent workloads, the intended target flow is:
 ~~~text
 AI Agent / SaaS
       ↓
-Runtime collector or adapter        planned
+Runtime collector or adapter        local + AgentCore adapter implemented
       ↓
 AI Agent Evidence envelope
       ↓
@@ -124,7 +126,9 @@ The current implementation can:
 - verify evidence integrity after loading
 - optionally extend proof outside the primary storage boundary
 
-The current repository does not yet contain an automatic production collector for a live AI agent runtime.
+The current repository does not claim an automatic production ingestion service. It contains a
+local-first collector/mapper and a manually triggered one-shot AgentCore adapter whose real AWS
+invocation remains pending Human Approval.
 
 ## Security Properties
 
@@ -160,15 +164,9 @@ The design must therefore combine evidence integrity with:
 
 ## Next Implementation Slice
 
-The next product-oriented implementation should add one runtime adapter that converts a security-relevant AI agent event into this schema without changing the core trust boundary.
-
-Preferred acceptance criteria:
-
-1. collect one tool-call event from an agent runtime
-2. map it to the AI Agent Evidence profile
-3. exclude raw secrets and sensitive payloads by default
-4. process it through EvidenceProcessingService
+After local conformance, independent reviews, and Verification Evidence pass, the next Phase B action is
+a human decision on one controlled AWS AgentCore invocation. Production automatic ingestion,
+completeness monitoring, and immutable retention remain later, separately reviewed work.
 5. store and verify the resulting evidence
 6. demonstrate tampering detection
 7. show the evidence bundle to an auditor or compliance practitioner for feedback
-

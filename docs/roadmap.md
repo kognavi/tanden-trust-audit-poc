@@ -68,7 +68,7 @@ Define the minimum security-relevant context required to reconstruct and verify 
 
 ## Phase B: Live Runtime Collector
 
-Status: **In progress**
+Status: **Local completion implemented; controlled live invocation pending Human Approval**
 
 Implementation policy: **Local-first**. Build and test the collector with fixtures and local/fake dependencies first. Add one manually triggered AWS demo only after the local path is complete.
 
@@ -87,6 +87,7 @@ Candidate scope:
 - actor/agent/model/policy/tool/approval/side-effect mapping
 - no raw secrets or unnecessary PII
 - process through `EvidenceProcessingService`
+- reload the stored version only after internal Ledger completion and verify it locally
 
 Acceptance criteria:
 
@@ -231,7 +232,9 @@ funded transactions remain human-approved future operations.
 7. control-framework mapping
 8. optional external anchor hardening
 
-Detailed implementation spec: `.kiro/specs/live-agent-collector-local-first/`
+Historical local-first spec: `.kiro/specs/live-agent-collector-local-first/`
+
+Current completion spec: `.kiro/specs/loop-017-live-ai-agent-collector-completion/`
 
 Previous ordering retained below for history.
 

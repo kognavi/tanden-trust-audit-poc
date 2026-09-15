@@ -12,12 +12,12 @@
 - [x] Finalize reviewed requirements/design/tasks with Security Reviewer mandatory.
 - [x] Run Spec Readiness Gate.
 - [x] Generate and review Implementation Handoff.
-- [ ] Bootstrap Work-first Delegation, Task Graph, and committed dry-run Runtime.
-- [ ] Record Builder dry-run evidence without treating DRY_RUN as semantic PASS.
-- [ ] Implement deterministic Store reload verification after internal Ledger completion.
-- [ ] Reject secret-bearing events before processing and preserve output minimization.
-- [ ] Add mapping, order, reload, tamper, and failure regression tests.
-- [ ] Update only stale/current-state documentation and module registry entries.
+- [x] Bootstrap Work-first Delegation, Task Graph, and committed dry-run Runtime.
+- [x] Record Builder dry-run evidence without treating DRY_RUN as semantic PASS.
+- [x] Implement deterministic Store reload verification after internal Ledger completion.
+- [x] Reject secret-bearing events before processing and preserve output minimization.
+- [x] Add mapping, order, reload, tamper, and failure regression tests.
+- [x] Update only stale/current-state documentation and module registry entries.
 - [ ] Run focused tests, AgentCore local checks, full structure suite, conformance, and `git diff --check`.
 - [ ] Obtain independent Reviewer PASS.
 - [ ] Obtain independent Security Reviewer PASS.

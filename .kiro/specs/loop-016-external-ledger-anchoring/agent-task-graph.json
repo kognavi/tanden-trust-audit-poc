@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "feature": "loop-016-external-ledger-anchoring",
   "generatedAt": "2026-09-14T13:22:22.091Z",
-  "updatedAt": "2026-09-14T13:41:53.461Z",
+  "updatedAt": "2026-09-15T01:55:20.911Z",
   "status": "ACTIVE",
   "maxRetries": 2,
   "retryCount": 1,
@@ -21,11 +21,11 @@
       "actor": "codex-reviewer"
     },
     "securityReviewer": {
-      "status": "READY",
+      "status": "PASS",
       "actor": "codex-security-reviewer"
     },
     "verification": {
-      "status": "BLOCKED",
+      "status": "READY",
       "actor": "verification-gate"
     }
   },
@@ -54,6 +54,12 @@
       "outcome": "ACTIVE",
       "retryCount": 1,
       "at": "2026-09-14T13:41:53.461Z"
+    },
+    {
+      "event": "security-pass",
+      "outcome": "ACTIVE",
+      "retryCount": 1,
+      "at": "2026-09-15T01:55:20.911Z"
     }
   ]
 }

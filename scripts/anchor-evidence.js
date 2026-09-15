@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { Pool } = require("pg");
 const hre = require("hardhat");
 const {
   readJsonFile,
@@ -8,41 +9,66 @@ const {
   VerifiedAnchorService,
   TrustedKeyResolver,
 } = require("../lib/verified-anchor-service");
+const { PgSigningLogger } = require("../lib/pg-signing-logger");
+const { PgInternalLedgerVerifier } = require("../lib/internal-ledger-verifier");
 
 async function main() {
   const evidenceFilePath = requireEnvironment("EVIDENCE_FILE");
   const metadataFilePath = requireEnvironment("EVIDENCE_METADATA_FILE");
   const trustedKeyringFilePath = requireEnvironment("TRUSTED_KEYRING_FILE");
   const contractAddress = requireEnvironment("TRUST_ANCHOR_ADDRESS");
+  const ledgerEventId = requireEnvironment("LEDGER_EVENT_ID");
+  const databaseUrl = requireEnvironment("DATABASE_URL");
+  const network = requireEnvironment("ANCHOR_NETWORK");
+  const chainId = requireEnvironment("ANCHOR_CHAIN_ID");
 
   const evidence = readJsonFile(evidenceFilePath);
   const metadata = readJsonFile(metadataFilePath);
   const trustedKeyResolver = loadTrustedKeyResolver(trustedKeyringFilePath);
 
-  const contract = await hre.ethers.getContractAt("TrustAnchor", contractAddress);
-  const anchorClient = {
-    getAnchoredAt: (digestBytes32) => contract.anchoredAt(digestBytes32),
+  const pool = new Pool({ connectionString: databaseUrl });
+  try {
+    const anchorClient = createLazyAnchorClient({
+      ethers: hre.ethers,
+      contractAddress,
+      network,
+      chainId,
+    });
+    const internalLedgerVerifier = new PgInternalLedgerVerifier({
+      pgLogger: new PgSigningLogger({ pool }),
+    });
+    const result = await new VerifiedAnchorService({
+      anchorClient,
+      trustedKeyResolver,
+      internalLedgerVerifier,
+    }).anchorVerifiedEvidence({ evidence, metadata, ledgerEventId });
+
+    console.log(JSON.stringify(result.anchorVerification));
+    console.log(
+      "The recorded block number is transaction provenance, not a trusted timestamp authority."
+    );
+  } finally {
+    await pool.end();
+  }
+}
+
+function createLazyAnchorClient({ ethers, contractAddress, network, chainId }) {
+  let contractPromise;
+  const getContract = () => {
+    contractPromise ??= ethers.getContractAt("TrustAnchor", contractAddress);
+    return contractPromise;
+  };
+  return {
+    provenance: { provider: "ethereum", network, chainId, contractAddress },
+    async getAnchoredAt(digestBytes32) {
+      return (await getContract()).anchoredAt(digestBytes32);
+    },
     async anchorDigest(digestBytes32) {
-      const transaction = await contract.anchor(digestBytes32);
+      const transaction = await (await getContract()).anchor(digestBytes32);
       const receipt = await transaction.wait();
-      return {
-        transactionHash: transaction.hash,
-        blockNumber: receipt.blockNumber,
-      };
+      return { transactionHash: transaction.hash, blockNumber: receipt.blockNumber };
     },
   };
-
-  const result = await new VerifiedAnchorService({
-    anchorClient,
-    trustedKeyResolver,
-  }).anchorVerifiedEvidence({ evidence, metadata });
-
-  console.log(`Verified digest anchored: ${result.digestBytes32}`);
-  console.log(`Transaction: ${result.transactionResult.transactionHash}`);
-  console.log(`Block: ${result.transactionResult.blockNumber}`);
-  console.log(
-    "The recorded block timestamp is ordering evidence, not a trusted timestamp authority."
-  );
 }
 
 function loadTrustedKeyResolver(keyringFilePath) {
@@ -70,7 +96,11 @@ function requireEnvironment(name) {
   return value;
 }
 
-main().catch((error) => {
-  console.error(`Anchoring failed [${error.code ?? error.name}]: ${error.message}`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`Anchoring failed [${error.code ?? error.name}]: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { createLazyAnchorClient };

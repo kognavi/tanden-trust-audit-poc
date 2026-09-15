@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "runId": "e3afa11d-e7bd-4a24-8d8d-5607ab8eceab",
+  "feature": "loop-016-external-ledger-anchoring",
+  "task": "builder",
+  "actor": "chatgpt-builder",
+  "adapter": "dry-run",
+  "timeoutMs": 300000,
+  "result": "DRY_RUN",
+  "graphEvent": null,
+  "provider": null,
+  "verdict": null,
+  "startedAt": "2026-09-14T13:22:22.318Z",
+  "finishedAt": "2026-09-14T13:22:22.319Z"
+}

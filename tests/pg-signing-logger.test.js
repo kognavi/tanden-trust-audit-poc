@@ -29,7 +29,7 @@ class FakeClient {
 
   async query(text, params = []) {
     const sql = text.trim();
-    this._callLog.push(sql.split("\n")[0].trim());
+    this._callLog.push(sql.replace(/\s+/g, " "));
 
     if (/^BEGIN/i.test(sql)) return { rows: [] };
     if (/^COMMIT/i.test(sql)) return { rows: [] };
@@ -52,6 +52,11 @@ class FakeClient {
     if (/^SELECT row_hash FROM signing_events/i.test(sql)) {
       const last = this._table.rows[this._table.rows.length - 1];
       return { rows: last ? [{ row_hash: last.row_hash }] : [] };
+    }
+
+    if (/WHERE event_id = \$1/i.test(sql)) {
+      const row = this._table.rows.find((candidate) => candidate.event_id === params[0]);
+      return { rows: row ? [{ ...row }] : [] };
     }
 
     if (/^INSERT INTO signing_events/i.test(sql)) {
@@ -325,4 +330,36 @@ test("getLatestEvent returns the most recently appended event", async () => {
   assert.equal(latest.eventType, "t2");
   assert.deepEqual(latest.payload, { n: 2 });
   assert.equal(latest.rowHash, second.rowHash);
+});
+
+test("getEventById validates the UUID and returns only the requested immutable row", async () => {
+  const { logger, pool } = makeLogger();
+  const first = await logger.appendEvent({ eventType: "t1", payload: { n: 1 }, signature: "s1" });
+  await logger.appendEvent({ eventType: "t2", payload: { n: 2 }, signature: "s2" });
+
+  const found = await logger.getEventById(first.eventId);
+  assert.equal(found.eventId, first.eventId);
+  assert.equal(found.eventType, "t1");
+  assert.deepEqual(found.payload, { n: 1 });
+  assert.deepEqual(pool.callLog.some((entry) => /WHERE event_id = \$1/i.test(entry)), true);
+
+  assert.equal(
+    await logger.getEventById("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+    null
+  );
+  await assert.rejects(() => logger.getEventById("not-a-uuid"), /valid UUID/);
+});
+
+test("verifyChainIntegrityAndGetEvent uses one row snapshot for both decisions", async () => {
+  const { logger, pool } = makeLogger();
+  const first = await logger.appendEvent({ eventType: "t1", payload: { n: 1 }, signature: "s1" });
+  await logger.appendEvent({ eventType: "t2", payload: { n: 2 }, signature: "s2" });
+  const queryCount = pool.callLog.length;
+
+  const result = await logger.verifyChainIntegrityAndGetEvent(first.eventId);
+  assert.equal(result.integrity.valid, true);
+  assert.equal(result.event.eventId, first.eventId);
+  assert.equal(result.event.rowHash, first.rowHash);
+  assert.equal(pool.callLog.length, queryCount + 1);
+  assert.match(pool.callLog.at(-1), /ORDER BY sequence ASC/);
 });

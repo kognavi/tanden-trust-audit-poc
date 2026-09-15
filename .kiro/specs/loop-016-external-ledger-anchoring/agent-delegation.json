@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "feature": "loop-016-external-ledger-anchoring",
+  "generatedAt": "2026-09-14T13:22:22.091Z",
+  "roles": {
+    "builder": "chatgpt-builder",
+    "reviewer": "codex-reviewer",
+    "securityReviewer": "codex-security-reviewer"
+  }
+}

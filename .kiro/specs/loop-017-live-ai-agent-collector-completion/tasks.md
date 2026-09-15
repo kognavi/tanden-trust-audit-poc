@@ -23,5 +23,5 @@
 - [x] Obtain independent Security Reviewer PASS.
 - [x] Remediate Verification Evidence Security Review provenance gap and add regression coverage.
 - [x] Rerun Builder, Reviewer, and Security Reviewer after remediation.
-- [ ] Generate Verification Evidence and transition Task Graph to COMPLETE.
-- [ ] Stop at `HUMAN_AWS_DEMO_DECISION`; do not invoke AWS/push/create PR/merge.
+- [x] Generate Verification Evidence and transition Task Graph to COMPLETE.
+- [x] Stop at `HUMAN_AWS_DEMO_DECISION`; do not invoke AWS/push/create PR/merge.

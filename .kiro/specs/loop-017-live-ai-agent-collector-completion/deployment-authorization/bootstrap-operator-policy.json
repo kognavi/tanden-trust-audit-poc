@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CreateTaggedOneShotRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:TagRole"
+      ],
+      "Resource": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnOneShotDeployRole",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "Tanden",
+          "aws:RequestTag/Loop": "017",
+          "aws:RequestTag/Purpose": "one-shot-direct-cfn-deploy"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Project",
+            "Loop",
+            "Purpose"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ConfigureInspectAndRemoveOneShotRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PutRolePolicy",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:DeleteRole"
+      ],
+      "Resource": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnOneShotDeployRole"
+    },
+    {
+      "Sid": "AssumeOnlyOneShotRole",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnOneShotDeployRole"
+    }
+  ]
+}

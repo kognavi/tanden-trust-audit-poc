@@ -1,0 +1,198 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ManageOnlyLoop017Stack",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DeleteStack"
+      ],
+      "Resource": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*"
+    },
+    {
+      "Sid": "UploadFrozenArtifactWithSseS3",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+      "Condition": {
+        "StringEquals": {
+          "s3:x-amz-server-side-encryption": "AES256"
+        }
+      }
+    },
+    {
+      "Sid": "ReadAndRemoveOnlyFrozenArtifact",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:DeleteObject",
+        "s3:DeleteObjectVersion"
+      ],
+      "Resource": "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip"
+    },
+    {
+      "Sid": "CreateTaggedRuntimeExecutionRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:TagRole"
+      ],
+      "Resource": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "Tanden",
+          "aws:RequestTag/Loop": "017",
+          "aws:RequestTag/Purpose": "temporary-live-evidence-demo"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Project",
+            "Loop",
+            "Purpose"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ManageOnlyRuntimeExecutionRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:DeleteRole",
+        "iam:UntagRole",
+        "iam:ListRoleTags",
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies"
+      ],
+      "Resource": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole"
+    },
+    {
+      "Sid": "PassOnlyRuntimeExecutionRoleToAgentCore",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "bedrock-agentcore.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "CreateOnlyTaggedPublicLoop017Runtime",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:CreateAgentRuntime",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "Tanden",
+          "aws:RequestTag/Loop": "017",
+          "aws:RequestTag/Purpose": "temporary-live-evidence-demo",
+          "aws:RequestTag/ArtifactSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Project",
+            "Loop",
+            "Purpose",
+            "ArtifactSha256"
+          ]
+        },
+        "Null": {
+          "bedrock-agentcore:securityGroups": "true",
+          "bedrock-agentcore:subnets": "true"
+        }
+      }
+    },
+    {
+      "Sid": "CreateOnlyTaggedDefaultEndpoint",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "Tanden",
+          "aws:RequestTag/Loop": "017",
+          "aws:RequestTag/Purpose": "temporary-live-evidence-demo",
+          "aws:ResourceTag/Project": "Tanden",
+          "aws:ResourceTag/Loop": "017"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Project",
+            "Loop",
+            "Purpose"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "TagOnlyLoop017RuntimeResources",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:TagResource",
+      "Resource": [
+        "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*",
+        "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*/runtime-endpoint/DEFAULT-*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "Tanden",
+          "aws:RequestTag/Loop": "017",
+          "aws:RequestTag/Purpose": "temporary-live-evidence-demo"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Project",
+            "Loop",
+            "Purpose",
+            "ArtifactSha256"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadAndDeleteOnlyLoop017RuntimeResources",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:GetAgentRuntime",
+        "bedrock-agentcore:DeleteAgentRuntime",
+        "bedrock-agentcore:GetAgentRuntimeEndpoint",
+        "bedrock-agentcore:DeleteAgentRuntimeEndpoint",
+        "bedrock-agentcore:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*",
+        "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*/runtime-endpoint/DEFAULT-*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "Tanden",
+          "aws:ResourceTag/Loop": "017"
+        }
+      }
+    },
+    {
+      "Sid": "DeleteGeneratedRuntimeWorkloadIdentityDuringRollback",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:DeleteWorkloadIdentity",
+      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:workload-identity-directory/default/workload-identity/*"
+    },
+    {
+      "Sid": "CreateRuntimeIdentityServiceLinkedRoleOnlyIfAbsent",
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "arn:aws:iam::*:role/aws-service-role/runtime-identity.bedrock-agentcore.amazonaws.com/AWSServiceRoleForBedrockAgentCoreRuntimeIdentity",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": "runtime-identity.bedrock-agentcore.amazonaws.com"
+        }
+      }
+    }
+  ]
+}

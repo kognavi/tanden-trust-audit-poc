@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "loop": "017",
+  "feature": "loop-017-live-ai-agent-collector-completion",
+  "decision": {
+    "gate": "HUMAN_ONE_SHOT_DEPLOY_ROLE_DECISION",
+    "result": "GO"
+  },
+  "repository": {
+    "branch": "feature/loop-017-live-ai-agent-collector-completion",
+    "sourceHead": "e9330a7d7412d8ca65760caa8723839b958749d5"
+  },
+  "deploymentProvenance": {
+    "accountId": "270887329967",
+    "region": "ap-northeast-1",
+    "oneShotRoleArn": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnOneShotDeployRole",
+    "runtimeExecutionRoleArn": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole",
+    "stackArnPattern": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*",
+    "artifactObjectArn": "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+    "artifactSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c"
+  },
+  "artifacts": [
+    {
+      "path": "one-shot-deployment-authorization.md",
+      "sha256": "71fafd67fd4328e1a4526c5f7b1e4b067c40c5bb7a738cf8ad0f1a0f82bdf4c7"
+    },
+    {
+      "path": "one-shot-role-trust-policy.json",
+      "sha256": "1bfcb80a36d585d6d286fbf77be9f1f8a57678d2b2cd29afd44479bcf295834b"
+    },
+    {
+      "path": "one-shot-role-permissions-policy.json",
+      "sha256": "a8a895a4d20238f3cc29680e5563ba5d592a23b1d467a51d44f404ecf25d3a9a"
+    },
+    {
+      "path": "bootstrap-operator-policy.json",
+      "sha256": "b5628c39b25c4c4a59b73a3c392f916057a31f45bf7fcb68cb50c736ad1ee8f4"
+    },
+    {
+      "path": "runtime-execution-role-trust-policy.json",
+      "sha256": "dd09d0d6b5f943df23e281cebfc169fd53836f7bbdf476a9687fdd4a8b057abb"
+    },
+    {
+      "path": "runtime-execution-role-permissions-policy.json",
+      "sha256": "5f023402754fd2a16ee2e5a185d0b08be262de8701d7894df4bf186c572655e8"
+    }
+  ],
+  "governance": {
+    "taskGraphPath": "../agent-task-graph.json",
+    "taskGraphStatus": "COMPLETE",
+    "taskGraphModified": false,
+    "verificationEvidencePath": "../verification-evidence.json",
+    "verificationEvidenceDigest": "d3f1bc442d19b24e3ee12d319962fb386c0ee12b4d3cc3623dbd0ead44335d88",
+    "verificationEvidenceModified": false,
+    "reason": "Post-completion human deployment authorization preservation does not alter the verified implementation or prior review results."
+  },
+  "awsMutationCount": 0
+}

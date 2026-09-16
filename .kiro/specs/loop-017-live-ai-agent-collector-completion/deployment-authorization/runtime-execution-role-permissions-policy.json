@@ -1,0 +1,51 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeNova2LiteJpOnly",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:ap-northeast-1:270887329967:inference-profile/jp.amazon.nova-2-lite-v1:0",
+        "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.nova-2-lite-v1:0",
+        "arn:aws:bedrock:ap-northeast-3::foundation-model/amazon.nova-2-lite-v1:0"
+      ]
+    },
+    {
+      "Sid": "DiscoverAgentCoreLogGroups",
+      "Effect": "Allow",
+      "Action": "logs:DescribeLogGroups",
+      "Resource": "*"
+    },
+    {
+      "Sid": "ManageAgentCoreRuntimeLogGroup",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": "arn:aws:logs:ap-northeast-1:270887329967:log-group:/aws/bedrock-agentcore/runtimes/TandenEvidenceDemo-*"
+    },
+    {
+      "Sid": "WriteAgentCoreRuntimeLogStreams",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:ap-northeast-1:270887329967:log-group:/aws/bedrock-agentcore/runtimes/TandenEvidenceDemo-*:log-stream:*"
+    },
+    {
+      "Sid": "WriteAgentCoreTraces",
+      "Effect": "Allow",
+      "Action": [
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

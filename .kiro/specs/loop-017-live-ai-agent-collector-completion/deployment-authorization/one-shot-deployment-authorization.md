@@ -4,7 +4,7 @@
 
 `HUMAN_ONE_SHOT_DEPLOY_ROLE_DECISION = GO`
 
-This decision authorizes preservation of the reviewed least-privilege authorization set. It does not itself execute or authorize an AWS mutation from this repository operation. Any deployment must use the reviewed policies in this directory without broadening them and remains subject to the existing Loop 017 human gates.
+This is the historical authorization decision. The later dependent-endpoint authorization candidate failed Security Review and was never approved for application. The revised initial-create design below is a new review candidate, not authorization to deploy. The CodeZip and template version IDs remain unknown; placeholders intentionally deny creation until an independently reviewed freeze and human decision.
 
 ## Frozen deployment provenance
 
@@ -19,6 +19,8 @@ This decision authorizes preservation of the reviewed least-privilege authorizat
 - Stack ARN scope: `arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*`
 - Artifact bucket: `tanden-trust-audit-poc-test-bucket`
 - Frozen CodeZip SHA-256: `ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c`
+- Frozen CodeZip S3 VersionId: **not provided**; `__FROZEN_CODEZIP_VERSION_ID_REQUIRED__` is a fail-closed placeholder.
+- Initial-create template S3 VersionId: **not provided**; `__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__` is a fail-closed placeholder.
 - Frozen object ARN: `arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip`
 - `iam:PassRole` target: `arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole`
 - Nova 2 Lite JP inference profile: `arn:aws:bedrock:ap-northeast-1:270887329967:inference-profile/jp.amazon.nova-2-lite-v1:0`
@@ -34,7 +36,9 @@ The human operator may create, tag, configure, inspect, assume, and later remove
 
 ### One-shot deployment role
 
-The role may manage only the named Loop 017 stack; upload/read/delete only the frozen CodeZip object; create and manage only the named runtime execution role; pass only that role to AgentCore; create, tag, inspect, and delete only the tagged Loop 017 Runtime and `DEFAULT` endpoint; remove the generated workload identity during rollback; and conditionally create only the required Runtime Identity service-linked role when absent.
+The revised one-shot role can create the named stack only with the exact S3 template URL and the declared `AWS::BedrockAgentCore::Runtime` resource type. It can read only the frozen CodeZip and template objects; it cannot upload/delete them or create/edit the execution role. A human must separately provision the already reviewed execution role under a distinct approval and upload a versioned, read-only-to-the-deploy-role template. The role can pass only the named execution role to AgentCore. Existing tagged Runtime, default endpoint, rollback workload identity, and conditional service-linked-role operations retain their narrower scopes. Any human provisioning or AWS retry needs a separate decision.
+
+CloudFormation's `CreateStack` API prohibits specifying both `Capabilities` and `ResourceTypes`. A template with `AWS::IAM::Role` would require `CAPABILITY_NAMED_IAM`, so the proposed initial-create stack contains **one** resource, `AWS::BedrockAgentCore::Runtime`; the execution role is provisioned separately. The explicit `AWS::BedrockAgentCore::RuntimeEndpoint` resource is removed: `CreateAgentRuntime` already creates `DEFAULT` and separate CloudFormation ownership of the same qualifier can collide. The exact endpoint conflict response is not established without an AWS call.
 
 `bedrock-agentcore:CreateAgentRuntime` retains its reviewed `Resource: "*"` because the runtime ARN does not exist before creation. It is constrained by mandatory Loop 017 request tags, the frozen artifact digest, and the absence of VPC subnet/security-group inputs. No other wildcard IAM action is approved.
 
@@ -45,6 +49,16 @@ The exact reviewed trust and permissions are in `one-shot-role-trust-policy.json
 A direct CloudFormation deployment attempt was denied at `AWS::BedrockAgentCore::Runtime` creation. CloudTrail showed that `CreateAgentRuntime` carried the four required Tanden tags and CloudFormation's `aws:cloudformation:stack-name`, `aws:cloudformation:stack-id`, and `aws:cloudformation:logical-id` keys. The `ForAllValues:StringEquals` allowlist in `aws:TagKeys` excluded those three system keys.
 
 The allowlists for `CreateAgentRuntime`, `CreateAgentRuntimeEndpoint`, and `TagResource` now admit exactly those three additional CloudFormation keys, accounting for tag propagation at Runtime creation and the subsequent Endpoint/tagging paths. Existing required `aws:RequestTag` conditions, resource and role scopes, and PUBLIC/no-VPC conditions are unchanged. This is a policy preparation; no retry or additional AWS call was made during remediation. Whether a later `TagResource` call includes the required Tanden request tags must be checked from CloudTrail if that call is denied; the required conditions are not relaxed here.
+
+### Initial DEFAULT endpoint dependent authorization
+
+On the second, human-run CloudFormation attempt, the tag-key check passed and `CreateAgentRuntime` then failed its dependent `bedrock-agentcore:CreateAgentRuntimeEndpoint` authorization on `arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*`. AgentCore creates the initial `DEFAULT` endpoint as part of runtime creation, before the new runtime's resource tags can be relied on for the dependent permission check.
+
+The historical candidate added `CreateInitialDefaultEndpointDuringRuntimeBootstrap` for only `bedrock-agentcore:CreateAgentRuntimeEndpoint` on the account- and region-scoped `runtime/*` ARN. Required Tanden and CloudFormation request-tag values and exact tag keys remain. The redesign additionally requires `aws:ViaAWSService = true` and `aws:CalledVia = cloudformation.amazonaws.com`; direct calls cannot use this bootstrap Allow. CloudFormation must use a forward access session for these keys to exist. Whether the AgentCore dependent authorization receives that context and all required request tags is **unverified**; missing context denies by default, and must never be addressed by silently relaxing the condition. The `CreateOnlyTaggedDefaultEndpoint` statement remains byte-for-byte unchanged. Runtime digest, PUBLIC/no-VPC and exact PassRole remain unchanged.
+
+Historical Security re-review **FAIL** is preserved in `authorization-provenance.json`: the former policy could submit another template with the approved stack name/logical ID to operate on an unrelated runtime. The new `CreateStack` statement binds the exact versioned `TemplateUrl` and requires the declared single resource type; the one-shot role has no object-write permission, and the only pinned template resource is `Runtime`. A versioned bucket is not intrinsically immutable: a privileged operator can still change/upload objects or edit IAM; control of the template and role bootstrap must remain outside this deployment role. The restrictive `CreateStack` policy does not grant `UpdateStack` or `CreateChangeSet`.
+
+This remediation is based on the reported CloudTrail denial; the dependent authorization context has not been retested. If the service does not supply the required Tanden and reserved CloudFormation request tags to that check, it will remain denied and must be diagnosed from a separately authorized retry. No AWS call or deploy was performed during preparation.
 
 ### Runtime execution role
 

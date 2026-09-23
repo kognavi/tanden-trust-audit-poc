@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "one-shot-deployment-authorization.md",
-      "sha256": "2474fb5275c9084398054e78704371a0b14dc4360425bc9b2f160e208d6df536"
+      "sha256": "2f9d4225d2d9be695311b45d9e8551aa604f5d6500f66841d5b6ebf847092465"
     },
     {
       "path": "one-shot-role-trust-policy.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "one-shot-role-permissions-policy.json",
-      "sha256": "b42dd704c937059145d7f7fd20430835f9b6e9ff962b7ef76639cc8e279bbbfd"
+      "sha256": "32095bf9a66c46031ad62df604f981cf41f5ceddde0785b50fe4c771d175c3e1"
     },
     {
       "path": "bootstrap-operator-policy.json",
@@ -43,6 +43,22 @@
     {
       "path": "runtime-execution-role-permissions-policy.json",
       "sha256": "5f023402754fd2a16ee2e5a185d0b08be262de8701d7894df4bf186c572655e8"
+    },
+    {
+      "path": "loop-017-agentcore-initial-create.template.yaml",
+      "sha256": "4d0513235f3b71f073b886afacb27ebe8f7ad70e072ca1052fa1127ffe8093a8"
+    },
+    {
+      "path": "direct-cfn-bootstrap-redesign.md",
+      "sha256": "b4b950c5f5cd281408244bf5affb9a4098b65b56bf28eeefa6f97bb0f8c7bb16"
+    },
+    {
+      "path": "bootstrap-redesign-reviewer.md",
+      "sha256": "faf1d65ccfc37c1c03a0ed0da3865b31865bcd1315e3176dc5a8ae3661690a59"
+    },
+    {
+      "path": "bootstrap-redesign-security-review.md",
+      "sha256": "742cbc20b05823a143006db83edc355369c60243631a74e8f09ca3dfa9696bbf"
     }
   ],
   "governance": {
@@ -81,5 +97,75 @@
       "result": "PASS"
     },
     "residualCheck": "If a separately authorized retry produces a TagResource call without the required Tanden request tags, inspect CloudTrail and stop; required aws:RequestTag conditions were not relaxed."
+  },
+  "bootstrapDependencyRemediation": {
+    "trigger": "Second CloudFormation attempt passed tag-key authorization but CreateAgentRuntime was denied for dependent bedrock-agentcore:CreateAgentRuntimeEndpoint on arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*.",
+    "sourceHead": "ca6a2612b18f979587b8eb5f7855dbe8bee1265d",
+    "addedStatementSid": "CreateInitialDefaultEndpointDuringRuntimeBootstrap",
+    "addedAction": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+    "resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*",
+    "requiredRequestTags": {
+      "Project": "Tanden",
+      "Loop": "017",
+      "Purpose": "temporary-live-evidence-demo",
+      "aws:cloudformation:stack-name": "tanden-loop017-agentcore-direct",
+      "aws:cloudformation:logical-id": "Runtime",
+      "aws:cloudformation:stack-id": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*"
+    },
+    "allowedTagKeys": [
+      "Project",
+      "Loop",
+      "Purpose",
+      "aws:cloudformation:stack-name",
+      "aws:cloudformation:stack-id",
+      "aws:cloudformation:logical-id"
+    ],
+    "resourceTagConditionsAdded": false,
+    "awsCallsDuringRemediation": 0,
+    "deploymentRetryPerformed": false,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "securityReviewAttempt1": {
+      "result": "FAIL",
+      "finding": "Tanden request tags alone allowed direct endpoint creation on unrelated runtimes through runtime/*, bypassing the older statement's runtime-name and resource-tag restrictions."
+    },
+    "reviewer": {
+      "identity": "loop017_bootstrap_reviewer",
+      "result": "PASS",
+      "qualification": "IAM statement is correctly scoped as requested, but dependent request-tag propagation remains unverified."
+    },
+    "securityReviewer": {
+      "identity": "loop017_bootstrap_security_reviewer",
+      "result": "FAIL",
+      "finding": "A different CloudFormation template under the allowed stack name and Runtime logical ID could create an endpoint for an unrelated runtime/*, bypassing the stricter statement's runtime-name and resource-tag checks."
+    },
+    "readyForApplication": false,
+    "residualCheck": "Dependent authorization must carry both Tanden and CloudFormation-generated request-tag context; if absent, it will remain denied. Do not apply the candidate policy while Security Reviewer result is FAIL."
+  },
+  "bootstrapRedesign": {
+    "sourceHead": "ca6a2612b18f979587b8eb5f7855dbe8bee1265d",
+    "reason": "Replace FAILED substitute-template bootstrap permission with pinned versioned template, declared Runtime-only resource type, read-only deployment inputs, and FAS-limited dependent action.",
+    "historicalSecurityFailPreserved": true,
+    "templatePath": "loop-017-agentcore-initial-create.template.yaml",
+    "templateResources": [
+      "AWS::BedrockAgentCore::Runtime"
+    ],
+    "codeZipVersionId": "__FROZEN_CODEZIP_VERSION_ID_REQUIRED__",
+    "templateVersionId": "__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__",
+    "reviewer": {
+      "identity": "loop017_redesign_reviewer",
+      "result": "PASS",
+      "scope": "fail-closed design artifacts only",
+      "record": "bootstrap-redesign-reviewer.md"
+    },
+    "securityReviewer": {
+      "identity": "loop017_redesign_security",
+      "result": "PASS",
+      "scope": "fail-closed design artifacts only",
+      "record": "bootstrap-redesign-security-review.md"
+    },
+    "readyForApplication": false,
+    "awsCallsDuringRedesign": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "deploymentGate": "NO-GO until both S3 VersionIds and exact bytes are frozen and separately reviewed, execution role is separately approved and provisioned, and a human approves retry."
   }
 }

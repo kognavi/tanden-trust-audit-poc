@@ -1,0 +1,45 @@
+# Loop 017 direct CloudFormation bootstrap redesign
+
+Status: review candidate; no AWS mutation authorized by this document. Preserve the earlier failed bootstrap candidate and its Security Reviewer FAIL in `authorization-provenance.json`.
+
+## Initial-create architecture
+
+1. Under a separate human decision, a bootstrap operator creates the **already reviewed**, named `TandenEvidenceDemoRuntimeExecutionRole` using `runtime-execution-role-trust-policy.json` and `runtime-execution-role-permissions-policy.json`. The existing `bootstrap-operator-policy.json` only creates the one-shot role; it does **not** authorize this extra IAM operation. Do not silently extend that policy.
+2. A separate trusted operator uploads the unchanged ZIP (SHA-256 `ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c`) and the exact reviewed template to the existing private versioned S3 bucket. Record and independently review both VersionIds. The one-shot role has read-only access to these two keys, not permission to replace either object.
+3. Bind the one-shot role's `CreateStack` permission to the named stack ARN, **one** declared `AWS::BedrockAgentCore::Runtime` resource type, and the exact S3 `TemplateUrl` with its VersionId. The template has no parameters. Call `CreateStack` with the matching `--resource-types AWS::BedrockAgentCore::Runtime`, `--template-url`, and **without** `--capabilities`.
+4. The reviewed execution role is passed only to AgentCore. `CreateAgentRuntime` itself creates the `DEFAULT` endpoint; the stack does not create an additional endpoint resource. Read the endpoint ARN after creation through a separately authorized read, rather than a CloudFormation endpoint output.
+
+The requested two-resource alternative (IAM Role + Runtime) is incompatible with the mandatory `cloudformation:ResourceTypes` check: `CreateStack` disallows `Capabilities` together with `ResourceTypes`, whereas a named IAM role requires `CAPABILITY_NAMED_IAM`. We choose one Runtime resource and a separate, explicitly approved IAM creation. No CDK bootstrap, ECR, image, VPC, or new bucket is introduced.
+
+## Freeze prerequisites
+
+`__FROZEN_CODEZIP_VERSION_ID_REQUIRED__` and `__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__` are intentional fail-closed placeholders. The earlier ZIP digest and exact object key remain unchanged. Neither S3 VersionId is present in reviewed repository evidence. Replace placeholders in a separate review only after the upload and version verification. The template digest also changes when its embedded CodeZip VersionId is frozen, so upload the finalized template, record its VersionId, and then freeze the URL condition in the policy. Never use `latest`, a mutable unversioned template URL, or an unreviewed copy. S3 versioning and deploy-role read-only access prevent **this role** from replacing a pinned version; they do not make S3 objects WORM against another privileged identity.
+
+## Exact authorization changes from the prior reviewed policy
+
+| Statement | Delta | Security effect |
+| --- | --- | --- |
+| `ManageOnlyLoop017Stack` | Replace with `CreateOnlyFrozenRuntimeStack` (`CreateStack` only), `InspectAndDeleteOnlyLoop017Stack` (DescribeStacks, DescribeStackEvents, DeleteStack). Add exact versioned `cloudformation:TemplateUrl`, `ForAllValues:StringEquals` and `Null=false` on `cloudformation:ResourceTypes` allowing only `AWS::BedrockAgentCore::Runtime`. | A different template, an omitted resource-type declaration, or a declaration of IAM/Endpoint resources cannot use this role. No UpdateStack or change-set grant. |
+| `UploadFrozenArtifactWithSseS3` and `ReadAndRemoveOnlyFrozenArtifact` | Replace with `ReadOnlyFrozenDeploymentInputs`: `s3:GetObject`, `s3:GetObjectVersion` on only the unchanged ZIP key and the named template key; remove PutObject/DeleteObject. | The deploy role cannot replace the approved ZIP or template. |
+| `CreateTaggedRuntimeExecutionRole`, `ManageOnlyRuntimeExecutionRole` | Remove their `iam:CreateRole`, `iam:TagRole`, `iam:UntagRole`, `iam:PutRolePolicy`, `iam:GetRole`, `iam:GetRolePolicy`, `iam:ListAttachedRolePolicies`, `iam:ListRolePolicies`, `iam:ListRoleTags`, `iam:DeleteRolePolicy`, and `iam:DeleteRole` permissions. | The deploy role cannot rewrite a passable execution role or its trust/permissions. The separate IAM setup needs a new human decision. |
+| `CreateInitialDefaultEndpointDuringRuntimeBootstrap` | Retain the exact account/Region `runtime/*` dependent action and required Tanden/CloudFormation request tags; add `Bool aws:ViaAWSService=true` and `ForAnyValue:StringEquals aws:CalledVia=cloudformation.amazonaws.com`. | Direct caller-generated endpoint requests cannot satisfy the new FAS conditions. If the dependent authorization context lacks FAS or request tags, creation remains denied. |
+| All other statements | Unchanged, including stricter post-create `CreateOnlyTaggedDefaultEndpoint`, runtime SHA tag/no-VPC, `iam:PassRole` target/service, rollback and SLR conditions. | Existing restrictions remain. |
+
+`CreateAgentRuntimeEndpoint` remains only because the observed CloudTrail denial and AWS Service Authorization Reference establish it as a **dependent** action of `CreateAgentRuntime`. No `AWS::BedrockAgentCore::RuntimeEndpoint` resource remains in the pinned template. `aws:ResourceTag` is not used on the bootstrap statement; it is retained on the separate normal post-create statement. `aws:CalledVia`/`aws:ViaAWSService` are set by AWS only for a forward access session. We have **not** confirmed their presence on this particular dependent authorization; they are fail-closed requirements, not evidence of an AWS PASS.
+
+## Exact template changes from the historical three-resource template
+
+- Remove `RuntimeEndpoint` and its three outputs. Runtime creation automatically establishes `DEFAULT`; an explicit endpoint resource for the same qualifier risks duplicate creation or two owners. The exact error on an attempted duplicate has not been tested.
+- Remove `RuntimeExecutionRole` and its output, along with all input parameters; keep only `Runtime`, whose `RoleArn` is the exact reviewed execution-role ARN.
+- Inline the already reviewed bucket, CodeZip key, `NODE_22`, entry point, digest, PUBLIC network, region, Nova 2 Lite JP model, and Lifecycle configuration. Keep `VersionId` mandatory, with a fail-closed placeholder until independently frozen.
+- Keep Runtime ARN/ID/version outputs. Obtain DEFAULT endpoint identity separately after creation; the template makes no false endpoint output claim.
+
+## Privilege reuse and residual risk
+
+The historical failed candidate allowed a substitute CloudFormation template under the same stack name/logical ID to act on an unrelated `runtime/*`. The new role accepts only the pinned, versioned template and the single declared Runtime type; it cannot upload a replacement or expand IAM through the stack. FAS conditions further restrict the bootstrap endpoint allowance to a CloudFormation-mediated dependent call. The more specific normal endpoint statement is unchanged.
+
+`cloudformation:ResourceTypes` alone checks the **declared** list, so a caller could still lie about a different template. Exact `TemplateUrl` plus VersionId and no S3 write closes that route for this role. A privileged human can change the role policy, assume another principal, or prepare an incorrect template version; the reviewed, immutable-version artifact and separate human freeze are still required. CreateAgentRuntime's `Resource: "*"` is unchanged because no runtime ARN exists before creation; its required tags/SHA/no-VPC remain. PUBLIC is pinned in the template, but not independently expressible via the existing IAM no-VPC keys. The model, trust, and execution role policy stay unchanged.
+
+The policy intentionally remains unusable until both VersionIds are recorded and the execution role is separately approved and provisioned. If dependent FAS context or CloudFormation-propagated tags are absent on a later separately authorized retry, stop on AccessDenied, preserve CloudTrail evidence, and request a new review. Do not remove the conditions to make it pass.
+
+Official references: [CreateAgentRuntime](https://docs.aws.amazon.com/bedrock-agentcore-control/latest/APIReference/API_CreateAgentRuntime.html), [AgentCore Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_bedrock-agentcore.html), [CloudFormation CreateStack API](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html), [CloudFormation IAM condition keys](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/control-access-with-iam.html), [IAM forward access sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-calledvia).

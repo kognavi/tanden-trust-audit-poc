@@ -2,10 +2,28 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ManageOnlyLoop017Stack",
+      "Sid": "CreateOnlyFrozenRuntimeStack",
+      "Effect": "Allow",
+      "Action": "cloudformation:CreateStack",
+      "Resource": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*",
+      "Condition": {
+        "StringEquals": {
+          "cloudformation:TemplateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__"
+        },
+        "ForAllValues:StringEquals": {
+          "cloudformation:ResourceTypes": [
+            "AWS::BedrockAgentCore::Runtime"
+          ]
+        },
+        "Null": {
+          "cloudformation:ResourceTypes": "false"
+        }
+      }
+    },
+    {
+      "Sid": "InspectAndDeleteOnlyLoop017Stack",
       "Effect": "Allow",
       "Action": [
-        "cloudformation:CreateStack",
         "cloudformation:DescribeStacks",
         "cloudformation:DescribeStackEvents",
         "cloudformation:DeleteStack"
@@ -13,65 +31,16 @@
       "Resource": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*"
     },
     {
-      "Sid": "UploadFrozenArtifactWithSseS3",
-      "Effect": "Allow",
-      "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
-      "Condition": {
-        "StringEquals": {
-          "s3:x-amz-server-side-encryption": "AES256"
-        }
-      }
-    },
-    {
-      "Sid": "ReadAndRemoveOnlyFrozenArtifact",
+      "Sid": "ReadOnlyFrozenDeploymentInputs",
       "Effect": "Allow",
       "Action": [
         "s3:GetObject",
-        "s3:GetObjectVersion",
-        "s3:DeleteObject",
-        "s3:DeleteObjectVersion"
+        "s3:GetObjectVersion"
       ],
-      "Resource": "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip"
-    },
-    {
-      "Sid": "CreateTaggedRuntimeExecutionRole",
-      "Effect": "Allow",
-      "Action": [
-        "iam:CreateRole",
-        "iam:TagRole"
-      ],
-      "Resource": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole",
-      "Condition": {
-        "StringEquals": {
-          "aws:RequestTag/Project": "Tanden",
-          "aws:RequestTag/Loop": "017",
-          "aws:RequestTag/Purpose": "temporary-live-evidence-demo"
-        },
-        "ForAllValues:StringEquals": {
-          "aws:TagKeys": [
-            "Project",
-            "Loop",
-            "Purpose"
-          ]
-        }
-      }
-    },
-    {
-      "Sid": "ManageOnlyRuntimeExecutionRole",
-      "Effect": "Allow",
-      "Action": [
-        "iam:GetRole",
-        "iam:DeleteRole",
-        "iam:UntagRole",
-        "iam:ListRoleTags",
-        "iam:PutRolePolicy",
-        "iam:GetRolePolicy",
-        "iam:DeleteRolePolicy",
-        "iam:ListRolePolicies",
-        "iam:ListAttachedRolePolicies"
-      ],
-      "Resource": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole"
+      "Resource": [
+        "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+        "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml"
+      ]
     },
     {
       "Sid": "PassOnlyRuntimeExecutionRoleToAgentCore",
@@ -125,6 +94,40 @@
           "aws:RequestTag/Purpose": "temporary-live-evidence-demo",
           "aws:ResourceTag/Project": "Tanden",
           "aws:ResourceTag/Loop": "017"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Project",
+            "Loop",
+            "Purpose",
+            "aws:cloudformation:stack-name",
+            "aws:cloudformation:stack-id",
+            "aws:cloudformation:logical-id"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "CreateInitialDefaultEndpointDuringRuntimeBootstrap",
+      "Effect": "Allow",
+      "Action": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "Tanden",
+          "aws:RequestTag/Loop": "017",
+          "aws:RequestTag/Purpose": "temporary-live-evidence-demo",
+          "aws:RequestTag/aws:cloudformation:stack-name": "tanden-loop017-agentcore-direct",
+          "aws:RequestTag/aws:cloudformation:logical-id": "Runtime"
+        },
+        "StringLike": {
+          "aws:RequestTag/aws:cloudformation:stack-id": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*"
+        },
+        "Bool": {
+          "aws:ViaAWSService": "true"
+        },
+        "ForAnyValue:StringEquals": {
+          "aws:CalledVia": "cloudformation.amazonaws.com"
         },
         "ForAllValues:StringEquals": {
           "aws:TagKeys": [

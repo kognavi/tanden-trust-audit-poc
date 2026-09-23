@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Loop 017 initial AgentCore Runtime only. The execution role is approved and
+  created separately; AgentCore automatically creates the DEFAULT endpoint.
+
+Resources:
+  Runtime:
+    Type: AWS::BedrockAgentCore::Runtime
+    Properties:
+      AgentRuntimeName: TandenEvidenceDemo
+      Description: Temporary Loop 017 synthetic evidence demo; delete after one invocation.
+      AgentRuntimeArtifact:
+        CodeConfiguration:
+          Code:
+            S3:
+              Bucket: tanden-trust-audit-poc-test-bucket
+              Prefix: loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip
+              VersionId: __FROZEN_CODEZIP_VERSION_ID_REQUIRED__
+          EntryPoint:
+            - dist/main.js
+          Runtime: NODE_22
+      RoleArn: arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole
+      NetworkConfiguration:
+        NetworkMode: PUBLIC
+      ProtocolConfiguration: HTTP
+      LifecycleConfiguration:
+        IdleRuntimeSessionTimeout: 60
+        MaxLifetime: 300
+      EnvironmentVariables:
+        AWS_REGION: ap-northeast-1
+        BEDROCK_MODEL_ID: jp.amazon.nova-2-lite-v1:0
+      Tags:
+        Project: Tanden
+        Loop: '017'
+        Purpose: temporary-live-evidence-demo
+        ArtifactSha256: ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c
+
+Outputs:
+  RuntimeArn:
+    Value: !GetAtt Runtime.AgentRuntimeArn
+  RuntimeId:
+    Value: !GetAtt Runtime.AgentRuntimeId
+  RuntimeVersion:
+    Value: !GetAtt Runtime.AgentRuntimeVersion

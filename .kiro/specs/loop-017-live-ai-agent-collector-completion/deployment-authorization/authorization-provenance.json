@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "one-shot-deployment-authorization.md",
-      "sha256": "71fafd67fd4328e1a4526c5f7b1e4b067c40c5bb7a738cf8ad0f1a0f82bdf4c7"
+      "sha256": "2474fb5275c9084398054e78704371a0b14dc4360425bc9b2f160e208d6df536"
     },
     {
       "path": "one-shot-role-trust-policy.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "one-shot-role-permissions-policy.json",
-      "sha256": "a8a895a4d20238f3cc29680e5563ba5d592a23b1d467a51d44f404ecf25d3a9a"
+      "sha256": "b42dd704c937059145d7f7fd20430835f9b6e9ff962b7ef76639cc8e279bbbfd"
     },
     {
       "path": "bootstrap-operator-policy.json",
@@ -54,5 +54,32 @@
     "verificationEvidenceModified": false,
     "reason": "Post-completion human deployment authorization preservation does not alter the verified implementation or prior review results."
   },
-  "awsMutationCount": 0
+  "awsMutationCount": 0,
+  "awsMutationCountScope": "Original authorization-preservation operation only; excludes the later human deployment attempt.",
+  "remediation": {
+    "trigger": "CloudTrail observed CreateAgentRuntime AccessDenied with four required Tanden tags and three injected CloudFormation system tags.",
+    "sourceHead": "0088a2053424d1dc07e42908b50e20d981aeb648",
+    "affectedActions": [
+      "bedrock-agentcore:CreateAgentRuntime",
+      "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+      "bedrock-agentcore:TagResource"
+    ],
+    "addedTagKeysOnly": [
+      "aws:cloudformation:stack-name",
+      "aws:cloudformation:stack-id",
+      "aws:cloudformation:logical-id"
+    ],
+    "awsCallsDuringRemediation": 0,
+    "deploymentRetryPerformed": false,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "reviewer": {
+      "identity": "loop017_authz_reviewer",
+      "result": "PASS"
+    },
+    "securityReviewer": {
+      "identity": "loop017_authz_security_reviewer",
+      "result": "PASS"
+    },
+    "residualCheck": "If a separately authorized retry produces a TagResource call without the required Tanden request tags, inspect CloudTrail and stop; required aws:RequestTag conditions were not relaxed."
+  }
 }

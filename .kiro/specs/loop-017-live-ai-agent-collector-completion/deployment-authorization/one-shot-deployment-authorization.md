@@ -40,6 +40,12 @@ The role may manage only the named Loop 017 stack; upload/read/delete only the f
 
 The exact reviewed trust and permissions are in `one-shot-role-trust-policy.json` and `one-shot-role-permissions-policy.json`.
 
+### CloudFormation tag authorization remediation
+
+A direct CloudFormation deployment attempt was denied at `AWS::BedrockAgentCore::Runtime` creation. CloudTrail showed that `CreateAgentRuntime` carried the four required Tanden tags and CloudFormation's `aws:cloudformation:stack-name`, `aws:cloudformation:stack-id`, and `aws:cloudformation:logical-id` keys. The `ForAllValues:StringEquals` allowlist in `aws:TagKeys` excluded those three system keys.
+
+The allowlists for `CreateAgentRuntime`, `CreateAgentRuntimeEndpoint`, and `TagResource` now admit exactly those three additional CloudFormation keys, accounting for tag propagation at Runtime creation and the subsequent Endpoint/tagging paths. Existing required `aws:RequestTag` conditions, resource and role scopes, and PUBLIC/no-VPC conditions are unchanged. This is a policy preparation; no retry or additional AWS call was made during remediation. Whether a later `TagResource` call includes the required Tanden request tags must be checked from CloudTrail if that call is denied; the required conditions are not relaxed here.
+
 ### Runtime execution role
 
 AgentCore may assume only the named execution role from account `270887329967` for `TandenEvidenceDemo-*` runtimes in `ap-northeast-1`. Runtime permissions are limited to Nova 2 Lite JP invocation and the reviewed CloudWatch Logs/X-Ray telemetry operations. The `Resource: "*"` uses for `logs:DescribeLogGroups` and X-Ray write APIs are retained only where those APIs do not support narrower resource authorization.

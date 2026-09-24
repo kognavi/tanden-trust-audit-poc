@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "one-shot-deployment-authorization.md",
-      "sha256": "2f9d4225d2d9be695311b45d9e8551aa604f5d6500f66841d5b6ebf847092465"
+      "sha256": "9050d637c781a0935870a53d27618056a05101c9b5b2baf5c754635296eb7efe"
     },
     {
       "path": "one-shot-role-trust-policy.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "one-shot-role-permissions-policy.json",
-      "sha256": "32095bf9a66c46031ad62df604f981cf41f5ceddde0785b50fe4c771d175c3e1"
+      "sha256": "adf37a1a08cef503f04a64be482ff5621e531b21d6de9af008bb72ccfdde9298"
     },
     {
       "path": "bootstrap-operator-policy.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "loop-017-agentcore-initial-create.template.yaml",
-      "sha256": "4d0513235f3b71f073b886afacb27ebe8f7ad70e072ca1052fa1127ffe8093a8"
+      "sha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2"
     },
     {
       "path": "direct-cfn-bootstrap-redesign.md",
-      "sha256": "b4b950c5f5cd281408244bf5affb9a4098b65b56bf28eeefa6f97bb0f8c7bb16"
+      "sha256": "81af623d626b0d0a14ceba6e353b1e307c60a1569645b870da33c7dffb9a72d1"
     },
     {
       "path": "bootstrap-redesign-reviewer.md",
@@ -59,6 +59,22 @@
     {
       "path": "bootstrap-redesign-security-review.md",
       "sha256": "742cbc20b05823a143006db83edc355369c60243631a74e8f09ca3dfa9696bbf"
+    },
+    {
+      "path": "bootstrap-version-freeze-reviewer.md",
+      "sha256": "5bc116dba348a52e26e40679dff7c0fb860fb3c34402af4f534efbe37fae245b"
+    },
+    {
+      "path": "bootstrap-version-freeze-security-review.md",
+      "sha256": "1931f29c9ac95999553cda8d4c57d795679198a0186df7feb7ede4a0c586170a"
+    },
+    {
+      "path": "bootstrap-final-version-reviewer.md",
+      "sha256": "2550ed7d9392f528c2ba55c54b713ae54be6b03bb45b77127d24509a443c04ff"
+    },
+    {
+      "path": "bootstrap-final-version-security-review.md",
+      "sha256": "4c574ca983ea6f6ba0bca9d1980b376c6b65b0bd617e282b4a6121c10b113035"
     }
   ],
   "governance": {
@@ -167,5 +183,66 @@
     "awsCallsDuringRedesign": 0,
     "originalTaskGraphAndVerificationEvidenceModified": false,
     "deploymentGate": "NO-GO until both S3 VersionIds and exact bytes are frozen and separately reviewed, execution role is separately approved and provisioned, and a human approves retry."
+  },
+  "versionFreezeAttempt": {
+    "sourceHead": "5411bc40ab9e87b2b648480312ddc08ac97f6c1a",
+    "reportedCodeZipVersionId": "JIomLDig_.IZDKIHa3WFja.qJHIELImp",
+    "reportedCodeZipSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c",
+    "reportedTemplateVersionId": "PR7supqi6_lC.IdM_0ErW82M.RhKDwRA",
+    "reportedTemplateSha256": "4d0513235f3b71f073b886afacb27ebe8f7ad70e072ca1052fa1127ffe8093a8",
+    "finalLocalTemplateSha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2",
+    "versionedTemplateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=PR7supqi6_lC.IdM_0ErW82M.RhKDwRA",
+    "uploadedTemplateMatchesFinalLocalTemplate": false,
+    "uploadedTemplateBytesRead": false,
+    "blocker": "Reported template SHA-256 equals prior placeholder template and differs from final local template SHA-256; new version of finalized bytes is needed before deployment.",
+    "reviewer": {
+      "identity": "loop017_freeze_reviewer",
+      "result": "FAIL",
+      "record": "bootstrap-version-freeze-reviewer.md",
+      "finding": "Reported S3 template SHA matches placeholder template, not finalized local template."
+    },
+    "securityReviewer": {
+      "identity": "loop017_freeze_security_reviewer",
+      "result": "FAIL",
+      "record": "bootstrap-version-freeze-security-review.md",
+      "finding": "TemplateUrl pins a reported S3 version with bytes inconsistent with finalized local template; no-go."
+    },
+    "readyForApplication": false,
+    "awsCallsDuringAttempt": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "commitGate": "BLOCKED: both reviews must PASS before committing this candidate."
+  },
+  "finalizedVersionFreeze": {
+    "sourceHead": "5411bc40ab9e87b2b648480312ddc08ac97f6c1a",
+    "accountId": "270887329967",
+    "region": "ap-northeast-1",
+    "artifactBucket": "tanden-trust-audit-poc-test-bucket",
+    "codeZipKey": "loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+    "codeZipVersionId": "JIomLDig_.IZDKIHa3WFja.qJHIELImp",
+    "codeZipSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c",
+    "templateKey": "loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml",
+    "templateVersionId": "NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr",
+    "reportedTemplateSha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2",
+    "localTemplateSha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2",
+    "templateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr",
+    "s3ObjectBytesReadByThisOperation": false,
+    "provenanceBasis": "S3 VersionIds and associated SHA-256 values were supplied by the human operator as confirmed AWS facts; local template bytes hashed independently.",
+    "historicalVersionFreezeFailPreserved": true,
+    "reviewer": {
+      "identity": "loop017_final_s3_reviewer",
+      "result": "PASS",
+      "scope": "commit of version-specific authorization artifacts only",
+      "record": "bootstrap-final-version-reviewer.md"
+    },
+    "securityReviewer": {
+      "identity": "loop017_final_s3_security",
+      "result": "PASS",
+      "scope": "commit of version-specific authorization artifacts only",
+      "record": "bootstrap-final-version-security-review.md"
+    },
+    "readyForApplication": false,
+    "humanAwsApplicationApproval": false,
+    "awsCallsDuringFinalization": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false
   }
 }

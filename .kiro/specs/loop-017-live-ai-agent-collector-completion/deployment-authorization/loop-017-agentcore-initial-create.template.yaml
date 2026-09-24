@@ -15,7 +15,7 @@ Resources:
             S3:
               Bucket: tanden-trust-audit-poc-test-bucket
               Prefix: loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip
-              VersionId: __FROZEN_CODEZIP_VERSION_ID_REQUIRED__
+              VersionId: JIomLDig_.IZDKIHa3WFja.qJHIELImp
           EntryPoint:
             - dist/main.js
           Runtime: NODE_22

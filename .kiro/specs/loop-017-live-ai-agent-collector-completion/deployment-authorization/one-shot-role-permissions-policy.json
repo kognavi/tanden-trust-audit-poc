@@ -8,7 +8,7 @@
       "Resource": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*",
       "Condition": {
         "StringEquals": {
-          "cloudformation:TemplateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__"
+          "cloudformation:TemplateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr"
         },
         "ForAllValues:StringEquals": {
           "cloudformation:ResourceTypes": [

@@ -4,7 +4,7 @@
 
 `HUMAN_ONE_SHOT_DEPLOY_ROLE_DECISION = GO`
 
-This is the historical authorization decision. The later dependent-endpoint authorization candidate failed Security Review and was never approved for application. The revised initial-create design below is a new review candidate, not authorization to deploy. The CodeZip and template version IDs remain unknown; placeholders intentionally deny creation until an independently reviewed freeze and human decision.
+This is the historical authorization decision. The later dependent-endpoint authorization candidate failed Security Review and was never approved for application. The earlier S3 template freeze attempt failed both reviews because its reported digest belonged to the placeholder template. The operator has now reported a new S3 version whose digest matches the finalized local template. This is an authorization artifact review, not permission to create or modify AWS resources; deployment remains a separate human decision.
 
 ## Frozen deployment provenance
 
@@ -19,8 +19,10 @@ This is the historical authorization decision. The later dependent-endpoint auth
 - Stack ARN scope: `arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*`
 - Artifact bucket: `tanden-trust-audit-poc-test-bucket`
 - Frozen CodeZip SHA-256: `ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c`
-- Frozen CodeZip S3 VersionId: **not provided**; `__FROZEN_CODEZIP_VERSION_ID_REQUIRED__` is a fail-closed placeholder.
-- Initial-create template S3 VersionId: **not provided**; `__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__` is a fail-closed placeholder.
+- Reported CodeZip S3 VersionId: `JIomLDig_.IZDKIHa3WFja.qJHIELImp` (reported SHA-256 matches the frozen CodeZip digest; AWS object bytes were not read during this operation).
+- Reported final initial-create template S3 VersionId: `NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr`; operator-reported S3 SHA-256 `39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2` matches the local finalized template. The S3 object bytes were not read by this repository operation.
+- Exact versioned policy URL: `https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr`.
+- Previous version-freeze FAIL for template VersionId `PR7supqi6_lC.IdM_0ErW82M.RhKDwRA` and SHA-256 `4d0513235f3b71f073b886afacb27ebe8f7ad70e072ca1052fa1127ffe8093a8` remains recorded separately. Do not use that earlier S3 version for deployment.
 - Frozen object ARN: `arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip`
 - `iam:PassRole` target: `arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole`
 - Nova 2 Lite JP inference profile: `arn:aws:bedrock:ap-northeast-1:270887329967:inference-profile/jp.amazon.nova-2-lite-v1:0`
@@ -42,7 +44,7 @@ CloudFormation's `CreateStack` API prohibits specifying both `Capabilities` and 
 
 `bedrock-agentcore:CreateAgentRuntime` retains its reviewed `Resource: "*"` because the runtime ARN does not exist before creation. It is constrained by mandatory Loop 017 request tags, the frozen artifact digest, and the absence of VPC subnet/security-group inputs. No other wildcard IAM action is approved.
 
-The exact reviewed trust and permissions are in `one-shot-role-trust-policy.json` and `one-shot-role-permissions-policy.json`.
+The reviewed trust policy and current version-specific permissions candidate are in `one-shot-role-trust-policy.json` and `one-shot-role-permissions-policy.json`, respectively. Approval to apply this policy or deploy remains a separate human decision.
 
 ### CloudFormation tag authorization remediation
 
@@ -76,6 +78,6 @@ The exact reviewed trust and permissions are in `runtime-execution-role-trust-po
 
 ## Integrity and governance
 
-`authorization-provenance.json` records the SHA-256 digest of each reviewed artifact. Existing Loop 017 Task Graph and Verification Evidence remain immutable because this post-completion human authorization preservation does not alter the verified implementation or its prior review results.
+`authorization-provenance.json` records the SHA-256 digest of the current local artifacts and preserves the prior failed version-freeze review separately from the current review. Neither reviewer PASS nor an artifact hash authorizes deployment. Existing Loop 017 Task Graph and Verification Evidence remain immutable because this post-completion human authorization preservation does not alter the verified implementation or its prior review results.
 
 AWS mutation count for this preservation step: `0`.

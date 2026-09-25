@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "one-shot-deployment-authorization.md",
-      "sha256": "9050d637c781a0935870a53d27618056a05101c9b5b2baf5c754635296eb7efe"
+      "sha256": "f006c5be91deb89a548b5d377722eddc09ce654309ca374657cdb4340f5cb8ab"
     },
     {
       "path": "one-shot-role-trust-policy.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "one-shot-role-permissions-policy.json",
-      "sha256": "adf37a1a08cef503f04a64be482ff5621e531b21d6de9af008bb72ccfdde9298"
+      "sha256": "502ac875e35098145bb39028b0b2766084720fa239c5329dad819749494e1c53"
     },
     {
       "path": "bootstrap-operator-policy.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "loop-017-agentcore-initial-create.template.yaml",
-      "sha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2"
+      "sha256": "53817314deb0cad92a4dd5a852f00ad142b5576c55d5f9f2f52eff1de09581b2"
     },
     {
       "path": "direct-cfn-bootstrap-redesign.md",
-      "sha256": "81af623d626b0d0a14ceba6e353b1e307c60a1569645b870da33c7dffb9a72d1"
+      "sha256": "c6e9f914dfe18851ee434fb28500de45351f5ccf7332235c5005a9217c6a829c"
     },
     {
       "path": "bootstrap-redesign-reviewer.md",
@@ -75,6 +75,26 @@
     {
       "path": "bootstrap-final-version-security-review.md",
       "sha256": "4c574ca983ea6f6ba0bca9d1980b376c6b65b0bd617e282b4a6121c10b113035"
+    },
+    {
+      "path": "sha256-first-deployment.md",
+      "sha256": "4f39edaf31edbff289fd2d5e2cc0ccb25943e2ea7e537e6b12568f949fe41441"
+    },
+    {
+      "path": "../../../../scripts/verify-loop-017-deployment-inputs.js",
+      "sha256": "c4b03f8032faa003c9fceb05e282e81bf208198d8e24c29c07227b53d5fd0a99"
+    },
+    {
+      "path": "../../../../tests/verify-loop-017-deployment-inputs.test.js",
+      "sha256": "cabaad405f79a594554b4445cc84afe55fd9df683e6461d86e356ee4b5d7b99b"
+    },
+    {
+      "path": "sha256-first-reviewer.md",
+      "sha256": "9267b5973d07419ab34927bccbfd1c6fd7b27cfb8eddf8b1d05676ffaee53815"
+    },
+    {
+      "path": "sha256-first-security-review.md",
+      "sha256": "acf8e61e3fe41d65b481f3bd2003799d0a6a6e542ea0dd02f20ec027c4ba7764"
     }
   ],
   "governance": {
@@ -244,5 +264,40 @@
     "humanAwsApplicationApproval": false,
     "awsCallsDuringFinalization": 0,
     "originalTaskGraphAndVerificationEvidenceModified": false
+  },
+  "sha256FirstDeployment": {
+    "sourceHead": "986e51aa7d5db7276f059882f25a0c060a98f3be",
+    "status": "DESIGN_REVIEW_PASS_AWS_DEPLOYMENT_NO_GO",
+    "accountId": "270887329967",
+    "region": "ap-northeast-1",
+    "artifactBucket": "tanden-trust-audit-poc-test-bucket",
+    "codeZipKey": "loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+    "codeZipSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c",
+    "templateKey": "loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml",
+    "templateSha256": "53817314deb0cad92a4dd5a852f00ad142b5576c55d5f9f2f52eff1de09581b2",
+    "templateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml",
+    "preDeployVerifier": "../../../../scripts/verify-loop-017-deployment-inputs.js",
+    "versionIds": "Observed at read-only pre-deploy S3 get-object and retained in the verifier output; no IAM/template regeneration.",
+    "artifactCommit": "Externally approved full Git commit SHA-1 supplied as --expected-commit; verifier requires clean HEAD to equal it (no self-referential SHA in committed manifest).",
+    "historicalFailuresAndVersionSpecificPassPreserved": true,
+    "residualRisk": "Latest S3 versions can change after verification by a separate write-capable principal; no cryptographic/atomic enforcement by CloudFormation or AgentCore.",
+    "trustAssumption": "A separately reviewed inventory establishes exclusive trusted publisher access and a human-confirmed no-write window for both exact keys through all service reads; otherwise NO-GO.",
+    "reviewer": {
+      "identity": "loop017_sha_first_reviewer",
+      "result": "PASS",
+      "scope": "local design and implementation only",
+      "record": "sha256-first-reviewer.md"
+    },
+    "securityReviewer": {
+      "identity": "loop017_sha_first_security",
+      "result": "PASS",
+      "scope": "local design under exclusive-publisher assumption only",
+      "record": "sha256-first-security-review.md"
+    },
+    "readyForApplication": false,
+    "humanAwsApplicationApproval": false,
+    "awsCallsDuringSimplification": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "nextGate": "Human review of writer inventory/no-write window, separately approved new template upload and SHA read-back, independently approved Git SHA, and separate AWS deployment decision."
   }
 }

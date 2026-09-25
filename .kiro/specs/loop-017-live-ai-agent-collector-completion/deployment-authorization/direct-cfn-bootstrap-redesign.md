@@ -1,6 +1,6 @@
 # Loop 017 direct CloudFormation bootstrap redesign
 
-Status: S3 version-specific authorization candidate; no AWS mutation authorized by this document. Preserve the earlier failed bootstrap candidate and the first failed S3 version freeze in `authorization-provenance.json`.
+Status: **historical version-specific design**, superseded for deployment planning by `sha256-first-deployment.md`. Its analysis of the prior FAILED bootstrap candidate and mismatched S3 version remains preserved. No AWS mutation is authorized by either document.
 
 ## Initial-create architecture
 

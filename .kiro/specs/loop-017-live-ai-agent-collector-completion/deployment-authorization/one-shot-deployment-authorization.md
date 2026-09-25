@@ -4,7 +4,7 @@
 
 `HUMAN_ONE_SHOT_DEPLOY_ROLE_DECISION = GO`
 
-This is the historical authorization decision. The later dependent-endpoint authorization candidate failed Security Review and was never approved for application. The earlier S3 template freeze attempt failed both reviews because its reported digest belonged to the placeholder template. The operator has now reported a new S3 version whose digest matches the finalized local template. This is an authorization artifact review, not permission to create or modify AWS resources; deployment remains a separate human decision.
+This is the historical authorization decision. The dependent-endpoint authorization candidate failed Security Review, and the first S3 template freeze failed because its digest belonged to a placeholder template. The corrected version-specific authorization is now historical. The current SHA-256-first design and mandatory pre-deploy gate are in `sha256-first-deployment.md`. This repository change authorizes no AWS operation or policy application.
 
 ## Frozen deployment provenance
 
@@ -21,7 +21,7 @@ This is the historical authorization decision. The later dependent-endpoint auth
 - Frozen CodeZip SHA-256: `ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c`
 - Reported CodeZip S3 VersionId: `JIomLDig_.IZDKIHa3WFja.qJHIELImp` (reported SHA-256 matches the frozen CodeZip digest; AWS object bytes were not read during this operation).
 - Reported final initial-create template S3 VersionId: `NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr`; operator-reported S3 SHA-256 `39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2` matches the local finalized template. The S3 object bytes were not read by this repository operation.
-- Exact versioned policy URL: `https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr`.
+- Historical version-specific policy URL: `https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr`. Current IAM uses this exact bucket/key without a VersionId and requires the pre-deploy SHA-256 gate.
 - Previous version-freeze FAIL for template VersionId `PR7supqi6_lC.IdM_0ErW82M.RhKDwRA` and SHA-256 `4d0513235f3b71f073b886afacb27ebe8f7ad70e072ca1052fa1127ffe8093a8` remains recorded separately. Do not use that earlier S3 version for deployment.
 - Frozen object ARN: `arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip`
 - `iam:PassRole` target: `arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole`
@@ -38,7 +38,7 @@ The human operator may create, tag, configure, inspect, assume, and later remove
 
 ### One-shot deployment role
 
-The revised one-shot role can create the named stack only with the exact S3 template URL and the declared `AWS::BedrockAgentCore::Runtime` resource type. It can read only the frozen CodeZip and template objects; it cannot upload/delete them or create/edit the execution role. A human must separately provision the already reviewed execution role under a distinct approval and upload a versioned, read-only-to-the-deploy-role template. The role can pass only the named execution role to AgentCore. Existing tagged Runtime, default endpoint, rollback workload identity, and conditional service-linked-role operations retain their narrower scopes. Any human provisioning or AWS retry needs a separate decision.
+The one-shot role can create the named stack only with the exact unversioned S3 template URL and the declared `AWS::BedrockAgentCore::Runtime` resource type. It can read only the frozen CodeZip and template keys; it cannot upload/delete them or create/edit the execution role. A human must separately provision the reviewed execution role under another approval. Before any deployment, the operator must compare downloaded S3 bytes against the Git-committed SHA-256 values and record the observed VersionIds using `sha256-first-deployment.md`. The role passes only the named execution role to AgentCore; all other action and resource scopes remain. Any AWS action needs a separate human decision.
 
 CloudFormation's `CreateStack` API prohibits specifying both `Capabilities` and `ResourceTypes`. A template with `AWS::IAM::Role` would require `CAPABILITY_NAMED_IAM`, so the proposed initial-create stack contains **one** resource, `AWS::BedrockAgentCore::Runtime`; the execution role is provisioned separately. The explicit `AWS::BedrockAgentCore::RuntimeEndpoint` resource is removed: `CreateAgentRuntime` already creates `DEFAULT` and separate CloudFormation ownership of the same qualifier can collide. The exact endpoint conflict response is not established without an AWS call.
 
@@ -58,7 +58,7 @@ On the second, human-run CloudFormation attempt, the tag-key check passed and `C
 
 The historical candidate added `CreateInitialDefaultEndpointDuringRuntimeBootstrap` for only `bedrock-agentcore:CreateAgentRuntimeEndpoint` on the account- and region-scoped `runtime/*` ARN. Required Tanden and CloudFormation request-tag values and exact tag keys remain. The redesign additionally requires `aws:ViaAWSService = true` and `aws:CalledVia = cloudformation.amazonaws.com`; direct calls cannot use this bootstrap Allow. CloudFormation must use a forward access session for these keys to exist. Whether the AgentCore dependent authorization receives that context and all required request tags is **unverified**; missing context denies by default, and must never be addressed by silently relaxing the condition. The `CreateOnlyTaggedDefaultEndpoint` statement remains byte-for-byte unchanged. Runtime digest, PUBLIC/no-VPC and exact PassRole remain unchanged.
 
-Historical Security re-review **FAIL** is preserved in `authorization-provenance.json`: the former policy could submit another template with the approved stack name/logical ID to operate on an unrelated runtime. The new `CreateStack` statement binds the exact versioned `TemplateUrl` and requires the declared single resource type; the one-shot role has no object-write permission, and the only pinned template resource is `Runtime`. A versioned bucket is not intrinsically immutable: a privileged operator can still change/upload objects or edit IAM; control of the template and role bootstrap must remain outside this deployment role. The restrictive `CreateStack` policy does not grant `UpdateStack` or `CreateChangeSet`.
+Historical Security re-review **FAIL** is preserved in `authorization-provenance.json`: the former policy could submit another template under the allowed stack name/logical ID to operate on an unrelated runtime. The current `CreateStack` statement binds the exact template bucket/key URL and the single Runtime type; the one-shot role has no object-write, `UpdateStack`, or `CreateChangeSet` grant. An independent writer to that exact S3 key could still replace bytes between verification and CloudFormation's read. This residual race and its NO-GO condition are documented in `sha256-first-deployment.md`.
 
 This remediation is based on the reported CloudTrail denial; the dependent authorization context has not been retested. If the service does not supply the required Tanden and reserved CloudFormation request tags to that check, it will remain denied and must be diagnosed from a separately authorized retry. No AWS call or deploy was performed during preparation.
 
@@ -78,6 +78,6 @@ The exact reviewed trust and permissions are in `runtime-execution-role-trust-po
 
 ## Integrity and governance
 
-`authorization-provenance.json` records the SHA-256 digest of the current local artifacts and preserves the prior failed version-freeze review separately from the current review. Neither reviewer PASS nor an artifact hash authorizes deployment. Existing Loop 017 Task Graph and Verification Evidence remain immutable because this post-completion human authorization preservation does not alter the verified implementation or its prior review results.
+`authorization-provenance.json` records current SHA-256 values and preserves all prior failed and completed version-specific reviews. The Git commit and SHA-256-first gate replace VersionIds as executable inputs; VersionIds remain observational provenance. Neither reviewer PASS nor an artifact hash authorizes deployment. Existing Loop 017 Task Graph and Verification Evidence remain immutable because this change does not alter the verified collector implementation.
 
 AWS mutation count for this preservation step: `0`.

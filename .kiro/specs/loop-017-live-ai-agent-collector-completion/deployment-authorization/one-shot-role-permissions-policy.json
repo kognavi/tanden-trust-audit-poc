@@ -108,7 +108,7 @@
       "Sid": "CreateInitialDefaultEndpointDuringRuntimeBootstrap",
       "Effect": "Allow",
       "Action": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
-      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*",
+      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*",
       "Condition": {
         "StringEquals": {
           "aws:RequestTag/Project": "Tanden",
@@ -119,12 +119,6 @@
         },
         "StringLike": {
           "aws:RequestTag/aws:cloudformation:stack-id": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*"
-        },
-        "Bool": {
-          "aws:ViaAWSService": "true"
-        },
-        "ForAnyValue:StringEquals": {
-          "aws:CalledVia": "cloudformation.amazonaws.com"
         },
         "ForAllValues:StringEquals": {
           "aws:TagKeys": [

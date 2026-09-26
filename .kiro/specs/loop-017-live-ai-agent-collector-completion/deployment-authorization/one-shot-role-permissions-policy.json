@@ -108,7 +108,7 @@
       "Sid": "CreateInitialDefaultEndpointDuringRuntimeBootstrap",
       "Effect": "Allow",
       "Action": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
-      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/TandenEvidenceDemo-*",
+      "Resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*",
       "Condition": {
         "StringEquals": {
           "aws:RequestTag/Project": "Tanden",

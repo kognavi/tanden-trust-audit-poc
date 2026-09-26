@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "one-shot-deployment-authorization.md",
-      "sha256": "3f721ae9bc857be3fef3b01b4afe87c281b9188330e1a5210aa5859d26442bf5"
+      "sha256": "bd5e17bb047a902995d893f5ab05403126ade96a41c802a279a1dd413c2b592f"
     },
     {
       "path": "one-shot-role-trust-policy.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "one-shot-role-permissions-policy.json",
-      "sha256": "3b36e61242dbd250fd6c210b2cd6bd60390db0e0caad698496bdb8d4e6b972ea"
+      "sha256": "42e9c48752f28e7e5454a5b055835ee57ec4fec157e12f68170ced22662c5e35"
     },
     {
       "path": "bootstrap-operator-policy.json",
@@ -78,7 +78,7 @@
     },
     {
       "path": "sha256-first-deployment.md",
-      "sha256": "82999f7224c3df12df8b923f648ae7a1ca3d8cfa0729063e1e86c92312b16b30"
+      "sha256": "faf4c600c6ae2f528e2e62cd5f8dd61ee5c5931eccd47af123d443e5c03eb94c"
     },
     {
       "path": "../../../../scripts/verify-loop-017-deployment-inputs.js",

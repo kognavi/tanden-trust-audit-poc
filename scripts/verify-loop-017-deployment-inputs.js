@@ -64,9 +64,11 @@ function verify(options, repoRoot = join(__dirname, '..')) {
   const policy = JSON.parse(policyBytes);
   const create = policy.Statement.find((statement) => statement.Sid === 'CreateOnlyFrozenRuntimeStack');
   if (create?.Condition?.StringEquals?.['cloudformation:TemplateUrl'] !== expected.templateUrl ||
+      create?.Condition?.StringEquals?.['cloudformation:RoleARN'] !== expected.cloudFormationServiceRoleArn ||
+      expected.cloudFormationServiceRoleArn !== 'arn:aws:iam::270887329967:role/TandenLoop017DirectCfnServiceRole' ||
       create?.Condition?.['ForAllValues:StringEquals']?.['cloudformation:ResourceTypes']?.join(',') !==
         'AWS::BedrockAgentCore::Runtime') {
-    throw new Error('IAM TemplateUrl or ResourceTypes diverges from committed review');
+    throw new Error('IAM TemplateUrl, RoleARN or ResourceTypes diverges from committed review');
   }
   if (template.includes(Buffer.from('VersionId:')) || expected.templateUrl.includes('?')) {
     throw new Error('Version-specific deployment input reintroduced');

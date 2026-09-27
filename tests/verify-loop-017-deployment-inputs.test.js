@@ -32,16 +32,17 @@ test('pre-deploy gate binds downloaded S3 bytes to a clean reviewed Git commit',
     const codeZip = Buffer.from('reviewed ZIP bytes');
     const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
     const templateUrl = 'https://s3.ap-northeast-1.amazonaws.com/test-bucket/only-template.yaml';
+    const cloudFormationServiceRoleArn = 'arn:aws:iam::270887329967:role/TandenLoop017DirectCfnServiceRole';
     writeFileSync(join(spec, 'loop-017-agentcore-initial-create.template.yaml'), template);
     writeFileSync(join(spec, 'one-shot-role-permissions-policy.json'), JSON.stringify({
       Statement: [{ Sid: 'CreateOnlyFrozenRuntimeStack', Condition: {
-        StringEquals: { 'cloudformation:TemplateUrl': templateUrl },
+        StringEquals: { 'cloudformation:TemplateUrl': templateUrl, 'cloudformation:RoleARN': cloudFormationServiceRoleArn },
         'ForAllValues:StringEquals': { 'cloudformation:ResourceTypes': ['AWS::BedrockAgentCore::Runtime'] },
       } }],
     }));
     writeFileSync(join(spec, 'authorization-provenance.json'), JSON.stringify({ sha256FirstDeployment: {
       readyForApplication: false, templateSha256: digest(template), codeZipSha256: digest(codeZip),
-      templateUrl, artifactBucket: 'test-bucket', codeZipKey: 'codezip.zip', templateKey: 'only-template.yaml',
+      templateUrl, cloudFormationServiceRoleArn, artifactBucket: 'test-bucket', codeZipKey: 'codezip.zip', templateKey: 'only-template.yaml',
     } }));
     execFileSync('git', ['-C', root, 'init', '-q']);
     execFileSync('git', ['-C', root, 'add', '.']);
@@ -64,8 +65,17 @@ test('pre-deploy gate binds downloaded S3 bytes to a clean reviewed Git commit',
       writeFileSync(files.templateFile, Buffer.from('substituted S3 template'));
       assert.throws(() => verify(files, root), /downloaded template SHA-256 mismatch/);
       writeFileSync(files.templateFile, template);
-      writeFileSync(join(spec, 'one-shot-role-permissions-policy.json'), '{}');
+      writeFileSync(join(spec, 'one-shot-role-permissions-policy.json'), JSON.stringify({
+        Statement: [{ Sid: 'CreateOnlyFrozenRuntimeStack', Condition: {
+          StringEquals: { 'cloudformation:TemplateUrl': templateUrl },
+          'ForAllValues:StringEquals': { 'cloudformation:ResourceTypes': ['AWS::BedrockAgentCore::Runtime'] },
+        } }],
+      }));
       assert.throws(() => verify(files, root), /working tree must be clean/);
+      execFileSync('git', ['-C', root, 'add', '.']);
+      execFileSync('git', ['-C', root, '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'missing-role-arn']);
+      const missingRoleCommit = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+      assert.throws(() => verify({ ...files, expectedCommit: missingRoleCommit }, root), /RoleARN or ResourceTypes/);
     } finally {
       for (const path of [files.codezipFile, files.templateFile, files.codezipReceipt, files.templateReceipt]) {
         rmSync(path, { force: true });

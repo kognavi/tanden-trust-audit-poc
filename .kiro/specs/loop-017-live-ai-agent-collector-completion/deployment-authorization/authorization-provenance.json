@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "one-shot-deployment-authorization.md",
-      "sha256": "bd5e17bb047a902995d893f5ab05403126ade96a41c802a279a1dd413c2b592f"
+      "sha256": "f270e6ef334830690ffb29ae38380ccff2b7a42b7a8c7e6184d344ea2fefb4ca"
     },
     {
       "path": "one-shot-role-trust-policy.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "one-shot-role-permissions-policy.json",
-      "sha256": "42e9c48752f28e7e5454a5b055835ee57ec4fec157e12f68170ced22662c5e35"
+      "sha256": "27053081cc836b013940bea4fe6dca5454dd4e98c2045317ff6a827efeaa97fe"
     },
     {
       "path": "bootstrap-operator-policy.json",
@@ -78,15 +78,15 @@
     },
     {
       "path": "sha256-first-deployment.md",
-      "sha256": "faf4c600c6ae2f528e2e62cd5f8dd61ee5c5931eccd47af123d443e5c03eb94c"
+      "sha256": "7fb344b90ef9bb6b20e86037f18130e3766cb47e2d63b76441d83b8b338f6467"
     },
     {
       "path": "../../../../scripts/verify-loop-017-deployment-inputs.js",
-      "sha256": "c4b03f8032faa003c9fceb05e282e81bf208198d8e24c29c07227b53d5fd0a99"
+      "sha256": "9d93e17eb86009498ba57e320dfe6d19ff5208f2e57ae85d2ff67ea8a37e10f3"
     },
     {
       "path": "../../../../tests/verify-loop-017-deployment-inputs.test.js",
-      "sha256": "cabaad405f79a594554b4445cc84afe55fd9df683e6461d86e356ee4b5d7b99b"
+      "sha256": "afaecf9e30642f54e287f8d669b0386b1571e8b212492ecaf014995ebb63d5f3"
     },
     {
       "path": "sha256-first-reviewer.md",
@@ -95,6 +95,18 @@
     {
       "path": "sha256-first-security-review.md",
       "sha256": "acf8e61e3fe41d65b481f3bd2003799d0a6a6e542ea0dd02f20ec027c4ba7764"
+    },
+    {
+      "path": "cfn-service-role-trust-policy.json",
+      "sha256": "04cb1a30b96aeda5ff5c37765001355a9ec780cbdc9fe4863b4d46bcdd5a15f4"
+    },
+    {
+      "path": "cfn-service-role-permissions-policy.json",
+      "sha256": "ade5a1886311597689f7f92eb914a8be6aae17029d6ad98647d96ce2b55e0905"
+    },
+    {
+      "path": "../../../../tests/loop-017-service-role-authorization.test.js",
+      "sha256": "cf9fae8b1265274716a5877f20d9ee07315542e983837a6f9d17b2a4dceb8f81"
     }
   ],
   "governance": {
@@ -298,6 +310,37 @@
     "humanAwsApplicationApproval": false,
     "awsCallsDuringSimplification": 0,
     "originalTaskGraphAndVerificationEvidenceModified": false,
-    "nextGate": "Human review of writer inventory/no-write window, separately approved new template upload and SHA read-back, independently approved Git SHA, and separate AWS deployment decision."
+    "nextGate": "Human review of writer inventory/no-write window, separately approved new template upload and SHA read-back, independently approved Git SHA, and separate AWS deployment decision.",
+    "cloudFormationServiceRoleArn": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnServiceRole"
+  },
+  "cloudFormationServiceRoleRedesign": {
+    "sourceHead": "48ea4aaac26e72b02fb23ba8443f33f9f825dfcc",
+    "status": "LOCAL_IMPLEMENTATION_AWS_DEPLOYMENT_NO_GO",
+    "roleName": "TandenLoop017DirectCfnServiceRole",
+    "roleArn": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnServiceRole",
+    "trustPolicy": "cfn-service-role-trust-policy.json",
+    "permissionsPolicy": "cfn-service-role-permissions-policy.json",
+    "oneShotCreateStackRoleArnRequired": true,
+    "oneShotDeleteStackRoleArnRequired": false,
+    "existingFailedStackRoleAssociation": "UNKNOWN_REQUIRES_SEPARATE_APPROVED_AWS_INSPECTION_AND_CLEANUP",
+    "bootstrapOperatorPolicyChanged": false,
+    "serviceRoleProvisioned": false,
+    "readyForApplication": false,
+    "humanAwsApplicationApproval": false,
+    "awsCallsDuringImplementation": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "nextGate": "Existing failed-stack cleanup and service-role access inventory, separately authorized IAM provisioning, template upload and S3 read-back/no-write window, independently approved commit SHA and separate deployment decision.",
+    "reviewer": {
+      "identity": "implementation_reviewer",
+      "result": "PASS",
+      "scope": "local implementation only"
+    },
+    "securityReviewer": {
+      "identity": "implementation_security_reviewer",
+      "result": "PASS",
+      "scope": "local implementation; AWS deployment NO-GO"
+    },
+    "focusedTests": "PASS: 6 tests (service-role split and pre-deploy gate)",
+    "diffCheck": "PASS"
   }
 }

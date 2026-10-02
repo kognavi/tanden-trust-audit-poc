@@ -116,6 +116,10 @@ resource "aws_cloudwatch_log_group" "lambda" {
   tags              = local.tags
 }
 
+# Intentional Loop 017B one-shot PoC exception: no automatic triggers.
+# Evidence correlation uses sanitized request IDs, CloudWatch Logs and CloudTrail.
+# Reassess before reuse, automatic triggers or production use.
+# nosemgrep: terraform.aws.security.aws-lambda-x-ray-tracing-not-active.aws-lambda-x-ray-tracing-not-active
 resource "aws_lambda_function" "nova_demo" {
   function_name    = local.function_name
   role             = aws_iam_role.lambda_execution.arn

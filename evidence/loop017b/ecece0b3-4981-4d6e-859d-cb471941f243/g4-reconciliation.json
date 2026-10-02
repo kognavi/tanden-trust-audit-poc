@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordType": "loop017b-g4-reconciliation",
+  "baselineHead": "9148c8451d7b092397ecdf5b3fb1d37c64233546",
+  "runId": "ecece0b3-4981-4d6e-859d-cb471941f243",
+  "lambdaRequestId": "79a84759-437b-4da0-a246-034a09db0126",
+  "bedrockRequestId": "f348dfd1-d25e-4bcf-8ae8-0ac523dda3e1",
+  "cloudTrailEventId": "a2beaeb9-8b15-45da-bb62-05c5b2a71b0d",
+  "observationWindow": {
+    "start": "2026-10-01T01:14:42Z",
+    "end": "2026-10-01T01:44:42Z",
+    "scope": "Prior read-only reconciliation window for this run; not an account-wide lifetime count"
+  },
+  "occurredAt": "2026-10-01T01:29:49.421Z",
+  "lambdaInvocationCount": 1,
+  "successfulConverseCount": 1,
+  "executionRoleName": "TandenLoop017BLambdaExecutionRole",
+  "lambdaFunctionName": "tanden-loop017b-nova",
+  "region": "ap-northeast-1",
+  "actualInferenceRegion": "ap-northeast-1",
+  "modelId": "jp.amazon.nova-2-lite-v1:0",
+  "profileDestinationRegions": [
+    "ap-northeast-1",
+    "ap-northeast-3"
+  ],
+  "verificationResult": "PASS",
+  "noSecondInference": true,
+  "usage": {
+    "inputTokens": 973,
+    "outputTokens": 49,
+    "totalTokens": 1022
+  },
+  "fixedInputSha256": "ec0e0ba2e591576940c85124d7c8114da2a0f8e89fcea4a548dcf612917c09d9",
+  "codeSha256": "b9b7dd49f8ca4e85c395119324a9c510e272f728fc4d0f28233c8eb72322a7be",
+  "lambdaResponsePath": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/lambda-response.json",
+  "lambdaResponseSha256": "6b5cc899e7a43ab63edc2f459e15f8fb2dfcf320f863ad99c3730cad8bc32d46",
+  "provenance": {
+    "source": "Previously verified read-only G4 reconciliation confirmed by the operator, plus the existing saved sanitized Lambda response",
+    "recordCreation": "Local transcription of prior verified observations; no AWS reread or inference during publication",
+    "rawCloudTrailOrLogExportIncluded": false,
+    "limitations": "This sanitized reconciliation summary is not a signed AWS-native export; it does not establish global exactly-once execution."
+  },
+  "modelInvocationLoggingGate": {
+    "ap-northeast-1": "PASS in prior approved preflight",
+    "ap-northeast-3": "PASS in prior approved preflight",
+    "configurationChanged": false
+  },
+  "dataMinimization": {
+    "rawPromptPersisted": false,
+    "rawModelOutputPersisted": false,
+    "rawToolArgumentsPersisted": false,
+    "humanSsoSessionPersisted": false
+  },
+  "agentCoreStatus": "BLOCKED",
+  "awsCleanupStatus": "PENDING"
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "runId": "da9aef79-8c51-40ba-b9ae-9bdb02e9b0a4",
+  "feature": "loop-017-live-ai-agent-collector-completion",
+  "task": "builder",
+  "actor": "chatgpt-builder",
+  "adapter": "dry-run",
+  "timeoutMs": 300000,
+  "result": "DRY_RUN",
+  "graphEvent": null,
+  "provider": null,
+  "verdict": null,
+  "startedAt": "2026-09-15T03:03:51.044Z",
+  "finishedAt": "2026-09-15T03:03:51.046Z"
+}

@@ -14,6 +14,7 @@ This directory contains design, security, audit, and product-facing documentatio
 | `agentcore-live-demo.md` | Manual one-shot Amazon Bedrock AgentCore evidence demo contract |
 | `agentcore-runtime-deploy.md` | Minimal Runtime deployment and cleanup runbook |
 | `agentcore-runtime-preflight.md` | AWS-free Runtime TypeScript preflight |
+| `loop-017b-lambda-nova-live-demo.md` | Completed Lambda/Nova PoC, local/test evidence limits, and pending cleanup |
 | `cost-guardrails.md` | Local-first / AWS-on-demand cost policy |
 | `verification-runbook.md` | Reviewer verification guide |
 | `work-first-development-orchestration.md` | ChatGPT Work control-plane bootstrap and status contract |

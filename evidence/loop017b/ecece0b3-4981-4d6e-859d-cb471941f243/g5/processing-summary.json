@@ -1,0 +1,45 @@
+{
+  "demoVersion": "1.0.0",
+  "source": "aws-lambda-bedrock-nova-loop017b",
+  "runId": "ecece0b3-4981-4d6e-859d-cb471941f243",
+  "lambdaRequestId": "79a84759-437b-4da0-a246-034a09db0126",
+  "bedrockRequestId": "f348dfd1-d25e-4bcf-8ae8-0ac523dda3e1",
+  "region": "ap-northeast-1",
+  "modelId": "jp.amazon.nova-2-lite-v1:0",
+  "fixedInputSha256": "ec0e0ba2e591576940c85124d7c8114da2a0f8e89fcea4a548dcf612917c09d9",
+  "codeSha256": "b9b7dd49f8ca4e85c395119324a9c510e272f728fc4d0f28233c8eb72322a7be",
+  "occurredAt": "2026-10-01T01:29:49.421Z",
+  "usage": {
+    "inputTokens": 973,
+    "outputTokens": 49,
+    "totalTokens": 1022
+  },
+  "evidenceId": "evd-2026-301671",
+  "eventType": "AGENT_TOOL_CALL",
+  "toolName": "record_synthetic_noop",
+  "operation": "EXECUTE",
+  "sideEffectCategory": "NONE",
+  "digestSha256": "e5bb8535b082321bb3c00198b49bdf3f8140ecde6256a1b648e62f22ba40702f",
+  "ledgerEventId": "ledger-loop017b-evd-2026-301671",
+  "processingStages": [
+    "store",
+    "ledger",
+    "reload",
+    "verify-reloaded",
+    "verify-tampered"
+  ],
+  "verification": {
+    "reloaded": "PASS",
+    "tampered": "FAIL"
+  },
+  "dataMinimization": {
+    "containsPersonalData": false,
+    "containsSecrets": false,
+    "rawPromptPersisted": false,
+    "rawModelOutputPersisted": false,
+    "rawToolArgumentsPersisted": false
+  },
+  "storeType": "local-demo-memory",
+  "ledgerType": "local-demo-double",
+  "awsWritesPerformedByProcessor": false
+}

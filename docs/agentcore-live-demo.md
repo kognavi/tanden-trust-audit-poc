@@ -23,7 +23,7 @@ EvidenceProcessingService
         ↓
 Local ECDSA → local/test Store → local/test Ledger
         ↓
-Verify PASS
+Reload from local/test Store → Verify PASS
         ↓
 Tamper
         ↓
@@ -90,7 +90,8 @@ The sanitized summary contains only:
 - Evidence ID
 - tool/action summary
 - Evidence digest
-- verification PASS/FAIL results
+- Store/Ledger/reload stage order
+- reloaded/tampered verification PASS/FAIL results
 
 ## Manual Workflow
 
@@ -139,6 +140,9 @@ After the demonstration, the Runtime can be removed if it is no longer needed. T
 
 ## Status
 
-The repository contains the collector, processor, tests, and manual workflow.
+The repository contains the collector, canonical processor, append-only local demo Store,
+local Ledger test double, post-Ledger Store reload verification, regression tests, and manual workflow.
 
-The actual AWS Runtime invocation remains pending until an AgentCore Runtime ARN is explicitly supplied by the human operator.
+All local checks can run without AWS. The actual AWS Runtime invocation remains pending an explicit
+`HUMAN_AWS_DEMO_DECISION` and an existing Runtime ARN; repository readiness is not evidence that a
+live invocation occurred.

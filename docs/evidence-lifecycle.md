@@ -41,11 +41,11 @@ The current repository contains a synthetic tool-call sample.
 
 ## 2. Runtime Collection
 
-Target state:
+Current PoC state:
 
-A collector/adapter receives runtime metadata from an agent platform.
-
-The collector is not yet implemented.
+`FixtureAgentCollector` and `BedrockAgentCoreCollector` receive local fixture or AgentCore Runtime
+response metadata and converge on the same Normalized Agent Event contract and Evidence mapper.
+The AgentCore adapter is locally tested; a human-approved real AWS invocation remains pending.
 
 It should collect only the context required for the control objective and must avoid unnecessary secrets/PII.
 
@@ -224,4 +224,5 @@ This state model is conceptual and not yet implemented as a persistent state mac
 
 ## Current Next Step
 
-Implement one live runtime collector and run the full lifecycle for one security-relevant tool call.
+After all local gates pass, obtain an explicit `HUMAN_AWS_DEMO_DECISION` before invoking one existing
+AgentCore Runtime for the synthetic tool-call demonstration. Do not infer live proof from fixture PASS.

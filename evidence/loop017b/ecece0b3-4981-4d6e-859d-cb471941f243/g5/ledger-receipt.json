@@ -1,0 +1,26 @@
+{
+  "implementation": "local-demo-double",
+  "request": {
+    "eventType": "evidence.stored",
+    "payload": {
+      "evidenceId": "evd-2026-301671",
+      "version": 1,
+      "digestHex": "e5bb8535b082321bb3c00198b49bdf3f8140ecde6256a1b648e62f22ba40702f",
+      "canonicalization": "RFC 8785 JSON Canonicalization Scheme (JCS)",
+      "hashAlgorithm": "SHA-256",
+      "signatureAlgorithm": "ECDSA_SHA_256",
+      "kmsKeyId": null,
+      "storeReference": {
+        "id": 1701,
+        "evidenceId": "evd-2026-301671",
+        "version": 1,
+        "digestHex": "e5bb8535b082321bb3c00198b49bdf3f8140ecde6256a1b648e62f22ba40702f",
+        "createdAt": "2026-10-01T01:29:49.421Z"
+      }
+    },
+    "signature": "DebIWhMRCgVIE76tQHRBrrw8jVKcDqgxtuWCoDDysudc4BjMDMhy0WSrUzbWZKC0jNkOiS/ueEeT7u3ndlJrLg=="
+  },
+  "receipt": {
+    "eventId": "ledger-loop017b-evd-2026-301671"
+  }
+}

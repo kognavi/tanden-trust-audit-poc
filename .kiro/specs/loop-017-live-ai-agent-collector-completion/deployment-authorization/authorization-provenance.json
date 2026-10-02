@@ -1,0 +1,346 @@
+{
+  "schemaVersion": 1,
+  "loop": "017",
+  "feature": "loop-017-live-ai-agent-collector-completion",
+  "decision": {
+    "gate": "HUMAN_ONE_SHOT_DEPLOY_ROLE_DECISION",
+    "result": "GO"
+  },
+  "repository": {
+    "branch": "feature/loop-017-live-ai-agent-collector-completion",
+    "sourceHead": "e9330a7d7412d8ca65760caa8723839b958749d5"
+  },
+  "deploymentProvenance": {
+    "accountId": "270887329967",
+    "region": "ap-northeast-1",
+    "oneShotRoleArn": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnOneShotDeployRole",
+    "runtimeExecutionRoleArn": "arn:aws:iam::270887329967:role/TandenEvidenceDemoRuntimeExecutionRole",
+    "stackArnPattern": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*",
+    "artifactObjectArn": "arn:aws:s3:::tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+    "artifactSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c"
+  },
+  "artifacts": [
+    {
+      "path": "one-shot-deployment-authorization.md",
+      "sha256": "f270e6ef334830690ffb29ae38380ccff2b7a42b7a8c7e6184d344ea2fefb4ca"
+    },
+    {
+      "path": "one-shot-role-trust-policy.json",
+      "sha256": "1bfcb80a36d585d6d286fbf77be9f1f8a57678d2b2cd29afd44479bcf295834b"
+    },
+    {
+      "path": "one-shot-role-permissions-policy.json",
+      "sha256": "27053081cc836b013940bea4fe6dca5454dd4e98c2045317ff6a827efeaa97fe"
+    },
+    {
+      "path": "bootstrap-operator-policy.json",
+      "sha256": "b5628c39b25c4c4a59b73a3c392f916057a31f45bf7fcb68cb50c736ad1ee8f4"
+    },
+    {
+      "path": "runtime-execution-role-trust-policy.json",
+      "sha256": "dd09d0d6b5f943df23e281cebfc169fd53836f7bbdf476a9687fdd4a8b057abb"
+    },
+    {
+      "path": "runtime-execution-role-permissions-policy.json",
+      "sha256": "5f023402754fd2a16ee2e5a185d0b08be262de8701d7894df4bf186c572655e8"
+    },
+    {
+      "path": "loop-017-agentcore-initial-create.template.yaml",
+      "sha256": "53817314deb0cad92a4dd5a852f00ad142b5576c55d5f9f2f52eff1de09581b2"
+    },
+    {
+      "path": "direct-cfn-bootstrap-redesign.md",
+      "sha256": "c6e9f914dfe18851ee434fb28500de45351f5ccf7332235c5005a9217c6a829c"
+    },
+    {
+      "path": "bootstrap-redesign-reviewer.md",
+      "sha256": "faf1d65ccfc37c1c03a0ed0da3865b31865bcd1315e3176dc5a8ae3661690a59"
+    },
+    {
+      "path": "bootstrap-redesign-security-review.md",
+      "sha256": "742cbc20b05823a143006db83edc355369c60243631a74e8f09ca3dfa9696bbf"
+    },
+    {
+      "path": "bootstrap-version-freeze-reviewer.md",
+      "sha256": "5bc116dba348a52e26e40679dff7c0fb860fb3c34402af4f534efbe37fae245b"
+    },
+    {
+      "path": "bootstrap-version-freeze-security-review.md",
+      "sha256": "1931f29c9ac95999553cda8d4c57d795679198a0186df7feb7ede4a0c586170a"
+    },
+    {
+      "path": "bootstrap-final-version-reviewer.md",
+      "sha256": "2550ed7d9392f528c2ba55c54b713ae54be6b03bb45b77127d24509a443c04ff"
+    },
+    {
+      "path": "bootstrap-final-version-security-review.md",
+      "sha256": "4c574ca983ea6f6ba0bca9d1980b376c6b65b0bd617e282b4a6121c10b113035"
+    },
+    {
+      "path": "sha256-first-deployment.md",
+      "sha256": "7fb344b90ef9bb6b20e86037f18130e3766cb47e2d63b76441d83b8b338f6467"
+    },
+    {
+      "path": "../../../../scripts/verify-loop-017-deployment-inputs.js",
+      "sha256": "9d93e17eb86009498ba57e320dfe6d19ff5208f2e57ae85d2ff67ea8a37e10f3"
+    },
+    {
+      "path": "../../../../tests/verify-loop-017-deployment-inputs.test.js",
+      "sha256": "afaecf9e30642f54e287f8d669b0386b1571e8b212492ecaf014995ebb63d5f3"
+    },
+    {
+      "path": "sha256-first-reviewer.md",
+      "sha256": "9267b5973d07419ab34927bccbfd1c6fd7b27cfb8eddf8b1d05676ffaee53815"
+    },
+    {
+      "path": "sha256-first-security-review.md",
+      "sha256": "acf8e61e3fe41d65b481f3bd2003799d0a6a6e542ea0dd02f20ec027c4ba7764"
+    },
+    {
+      "path": "cfn-service-role-trust-policy.json",
+      "sha256": "04cb1a30b96aeda5ff5c37765001355a9ec780cbdc9fe4863b4d46bcdd5a15f4"
+    },
+    {
+      "path": "cfn-service-role-permissions-policy.json",
+      "sha256": "ade5a1886311597689f7f92eb914a8be6aae17029d6ad98647d96ce2b55e0905"
+    },
+    {
+      "path": "../../../../tests/loop-017-service-role-authorization.test.js",
+      "sha256": "cf9fae8b1265274716a5877f20d9ee07315542e983837a6f9d17b2a4dceb8f81"
+    }
+  ],
+  "governance": {
+    "taskGraphPath": "../agent-task-graph.json",
+    "taskGraphStatus": "COMPLETE",
+    "taskGraphModified": false,
+    "verificationEvidencePath": "../verification-evidence.json",
+    "verificationEvidenceDigest": "d3f1bc442d19b24e3ee12d319962fb386c0ee12b4d3cc3623dbd0ead44335d88",
+    "verificationEvidenceModified": false,
+    "reason": "Post-completion human deployment authorization preservation does not alter the verified implementation or prior review results."
+  },
+  "awsMutationCount": 0,
+  "awsMutationCountScope": "Original authorization-preservation operation only; excludes the later human deployment attempt.",
+  "remediation": {
+    "trigger": "CloudTrail observed CreateAgentRuntime AccessDenied with four required Tanden tags and three injected CloudFormation system tags.",
+    "sourceHead": "0088a2053424d1dc07e42908b50e20d981aeb648",
+    "affectedActions": [
+      "bedrock-agentcore:CreateAgentRuntime",
+      "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+      "bedrock-agentcore:TagResource"
+    ],
+    "addedTagKeysOnly": [
+      "aws:cloudformation:stack-name",
+      "aws:cloudformation:stack-id",
+      "aws:cloudformation:logical-id"
+    ],
+    "awsCallsDuringRemediation": 0,
+    "deploymentRetryPerformed": false,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "reviewer": {
+      "identity": "loop017_authz_reviewer",
+      "result": "PASS"
+    },
+    "securityReviewer": {
+      "identity": "loop017_authz_security_reviewer",
+      "result": "PASS"
+    },
+    "residualCheck": "If a separately authorized retry produces a TagResource call without the required Tanden request tags, inspect CloudTrail and stop; required aws:RequestTag conditions were not relaxed."
+  },
+  "bootstrapDependencyRemediation": {
+    "trigger": "Second CloudFormation attempt passed tag-key authorization but CreateAgentRuntime was denied for dependent bedrock-agentcore:CreateAgentRuntimeEndpoint on arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*.",
+    "sourceHead": "ca6a2612b18f979587b8eb5f7855dbe8bee1265d",
+    "addedStatementSid": "CreateInitialDefaultEndpointDuringRuntimeBootstrap",
+    "addedAction": "bedrock-agentcore:CreateAgentRuntimeEndpoint",
+    "resource": "arn:aws:bedrock-agentcore:ap-northeast-1:270887329967:runtime/*",
+    "requiredRequestTags": {
+      "Project": "Tanden",
+      "Loop": "017",
+      "Purpose": "temporary-live-evidence-demo",
+      "aws:cloudformation:stack-name": "tanden-loop017-agentcore-direct",
+      "aws:cloudformation:logical-id": "Runtime",
+      "aws:cloudformation:stack-id": "arn:aws:cloudformation:ap-northeast-1:270887329967:stack/tanden-loop017-agentcore-direct/*"
+    },
+    "allowedTagKeys": [
+      "Project",
+      "Loop",
+      "Purpose",
+      "aws:cloudformation:stack-name",
+      "aws:cloudformation:stack-id",
+      "aws:cloudformation:logical-id"
+    ],
+    "resourceTagConditionsAdded": false,
+    "awsCallsDuringRemediation": 0,
+    "deploymentRetryPerformed": false,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "securityReviewAttempt1": {
+      "result": "FAIL",
+      "finding": "Tanden request tags alone allowed direct endpoint creation on unrelated runtimes through runtime/*, bypassing the older statement's runtime-name and resource-tag restrictions."
+    },
+    "reviewer": {
+      "identity": "loop017_bootstrap_reviewer",
+      "result": "PASS",
+      "qualification": "IAM statement is correctly scoped as requested, but dependent request-tag propagation remains unverified."
+    },
+    "securityReviewer": {
+      "identity": "loop017_bootstrap_security_reviewer",
+      "result": "FAIL",
+      "finding": "A different CloudFormation template under the allowed stack name and Runtime logical ID could create an endpoint for an unrelated runtime/*, bypassing the stricter statement's runtime-name and resource-tag checks."
+    },
+    "readyForApplication": false,
+    "residualCheck": "Dependent authorization must carry both Tanden and CloudFormation-generated request-tag context; if absent, it will remain denied. Do not apply the candidate policy while Security Reviewer result is FAIL."
+  },
+  "bootstrapRedesign": {
+    "sourceHead": "ca6a2612b18f979587b8eb5f7855dbe8bee1265d",
+    "reason": "Replace FAILED substitute-template bootstrap permission with pinned versioned template, declared Runtime-only resource type, read-only deployment inputs, and FAS-limited dependent action.",
+    "historicalSecurityFailPreserved": true,
+    "templatePath": "loop-017-agentcore-initial-create.template.yaml",
+    "templateResources": [
+      "AWS::BedrockAgentCore::Runtime"
+    ],
+    "codeZipVersionId": "__FROZEN_CODEZIP_VERSION_ID_REQUIRED__",
+    "templateVersionId": "__FROZEN_TEMPLATE_VERSION_ID_REQUIRED__",
+    "reviewer": {
+      "identity": "loop017_redesign_reviewer",
+      "result": "PASS",
+      "scope": "fail-closed design artifacts only",
+      "record": "bootstrap-redesign-reviewer.md"
+    },
+    "securityReviewer": {
+      "identity": "loop017_redesign_security",
+      "result": "PASS",
+      "scope": "fail-closed design artifacts only",
+      "record": "bootstrap-redesign-security-review.md"
+    },
+    "readyForApplication": false,
+    "awsCallsDuringRedesign": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "deploymentGate": "NO-GO until both S3 VersionIds and exact bytes are frozen and separately reviewed, execution role is separately approved and provisioned, and a human approves retry."
+  },
+  "versionFreezeAttempt": {
+    "sourceHead": "5411bc40ab9e87b2b648480312ddc08ac97f6c1a",
+    "reportedCodeZipVersionId": "JIomLDig_.IZDKIHa3WFja.qJHIELImp",
+    "reportedCodeZipSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c",
+    "reportedTemplateVersionId": "PR7supqi6_lC.IdM_0ErW82M.RhKDwRA",
+    "reportedTemplateSha256": "4d0513235f3b71f073b886afacb27ebe8f7ad70e072ca1052fa1127ffe8093a8",
+    "finalLocalTemplateSha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2",
+    "versionedTemplateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=PR7supqi6_lC.IdM_0ErW82M.RhKDwRA",
+    "uploadedTemplateMatchesFinalLocalTemplate": false,
+    "uploadedTemplateBytesRead": false,
+    "blocker": "Reported template SHA-256 equals prior placeholder template and differs from final local template SHA-256; new version of finalized bytes is needed before deployment.",
+    "reviewer": {
+      "identity": "loop017_freeze_reviewer",
+      "result": "FAIL",
+      "record": "bootstrap-version-freeze-reviewer.md",
+      "finding": "Reported S3 template SHA matches placeholder template, not finalized local template."
+    },
+    "securityReviewer": {
+      "identity": "loop017_freeze_security_reviewer",
+      "result": "FAIL",
+      "record": "bootstrap-version-freeze-security-review.md",
+      "finding": "TemplateUrl pins a reported S3 version with bytes inconsistent with finalized local template; no-go."
+    },
+    "readyForApplication": false,
+    "awsCallsDuringAttempt": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "commitGate": "BLOCKED: both reviews must PASS before committing this candidate."
+  },
+  "finalizedVersionFreeze": {
+    "sourceHead": "5411bc40ab9e87b2b648480312ddc08ac97f6c1a",
+    "accountId": "270887329967",
+    "region": "ap-northeast-1",
+    "artifactBucket": "tanden-trust-audit-poc-test-bucket",
+    "codeZipKey": "loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+    "codeZipVersionId": "JIomLDig_.IZDKIHa3WFja.qJHIELImp",
+    "codeZipSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c",
+    "templateKey": "loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml",
+    "templateVersionId": "NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr",
+    "reportedTemplateSha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2",
+    "localTemplateSha256": "39afd82b613d4e6146a15a9c8e48d01733597e45e26e594fdf3c57cc46c8ccd2",
+    "templateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml?versionId=NCd4Nwob4IzIBElxVNiSFu8g_o2l5Xlr",
+    "s3ObjectBytesReadByThisOperation": false,
+    "provenanceBasis": "S3 VersionIds and associated SHA-256 values were supplied by the human operator as confirmed AWS facts; local template bytes hashed independently.",
+    "historicalVersionFreezeFailPreserved": true,
+    "reviewer": {
+      "identity": "loop017_final_s3_reviewer",
+      "result": "PASS",
+      "scope": "commit of version-specific authorization artifacts only",
+      "record": "bootstrap-final-version-reviewer.md"
+    },
+    "securityReviewer": {
+      "identity": "loop017_final_s3_security",
+      "result": "PASS",
+      "scope": "commit of version-specific authorization artifacts only",
+      "record": "bootstrap-final-version-security-review.md"
+    },
+    "readyForApplication": false,
+    "humanAwsApplicationApproval": false,
+    "awsCallsDuringFinalization": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false
+  },
+  "sha256FirstDeployment": {
+    "sourceHead": "986e51aa7d5db7276f059882f25a0c060a98f3be",
+    "status": "DESIGN_REVIEW_PASS_AWS_DEPLOYMENT_NO_GO",
+    "accountId": "270887329967",
+    "region": "ap-northeast-1",
+    "artifactBucket": "tanden-trust-audit-poc-test-bucket",
+    "codeZipKey": "loop-017/agentcore/TandenEvidenceDemo/ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c/deployment_package.zip",
+    "codeZipSha256": "ea9dee6f3887a16d2362d88cf9ed68a3716bcaacb7b9830e5c3d5e9f3184488c",
+    "templateKey": "loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml",
+    "templateSha256": "53817314deb0cad92a4dd5a852f00ad142b5576c55d5f9f2f52eff1de09581b2",
+    "templateUrl": "https://s3.ap-northeast-1.amazonaws.com/tanden-trust-audit-poc-test-bucket/loop-017/agentcore/TandenEvidenceDemo/initial-create.template.yaml",
+    "preDeployVerifier": "../../../../scripts/verify-loop-017-deployment-inputs.js",
+    "versionIds": "Observed at read-only pre-deploy S3 get-object and retained in the verifier output; no IAM/template regeneration.",
+    "artifactCommit": "Externally approved full Git commit SHA-1 supplied as --expected-commit; verifier requires clean HEAD to equal it (no self-referential SHA in committed manifest).",
+    "historicalFailuresAndVersionSpecificPassPreserved": true,
+    "residualRisk": "Latest S3 versions can change after verification by a separate write-capable principal; no cryptographic/atomic enforcement by CloudFormation or AgentCore.",
+    "trustAssumption": "A separately reviewed inventory establishes exclusive trusted publisher access and a human-confirmed no-write window for both exact keys through all service reads; otherwise NO-GO.",
+    "reviewer": {
+      "identity": "loop017_sha_first_reviewer",
+      "result": "PASS",
+      "scope": "local design and implementation only",
+      "record": "sha256-first-reviewer.md"
+    },
+    "securityReviewer": {
+      "identity": "loop017_sha_first_security",
+      "result": "PASS",
+      "scope": "local design under exclusive-publisher assumption only",
+      "record": "sha256-first-security-review.md"
+    },
+    "readyForApplication": false,
+    "humanAwsApplicationApproval": false,
+    "awsCallsDuringSimplification": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "nextGate": "Human review of writer inventory/no-write window, separately approved new template upload and SHA read-back, independently approved Git SHA, and separate AWS deployment decision.",
+    "cloudFormationServiceRoleArn": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnServiceRole"
+  },
+  "cloudFormationServiceRoleRedesign": {
+    "sourceHead": "48ea4aaac26e72b02fb23ba8443f33f9f825dfcc",
+    "status": "LOCAL_IMPLEMENTATION_AWS_DEPLOYMENT_NO_GO",
+    "roleName": "TandenLoop017DirectCfnServiceRole",
+    "roleArn": "arn:aws:iam::270887329967:role/TandenLoop017DirectCfnServiceRole",
+    "trustPolicy": "cfn-service-role-trust-policy.json",
+    "permissionsPolicy": "cfn-service-role-permissions-policy.json",
+    "oneShotCreateStackRoleArnRequired": true,
+    "oneShotDeleteStackRoleArnRequired": false,
+    "existingFailedStackRoleAssociation": "UNKNOWN_REQUIRES_SEPARATE_APPROVED_AWS_INSPECTION_AND_CLEANUP",
+    "bootstrapOperatorPolicyChanged": false,
+    "serviceRoleProvisioned": false,
+    "readyForApplication": false,
+    "humanAwsApplicationApproval": false,
+    "awsCallsDuringImplementation": 0,
+    "originalTaskGraphAndVerificationEvidenceModified": false,
+    "nextGate": "Existing failed-stack cleanup and service-role access inventory, separately authorized IAM provisioning, template upload and S3 read-back/no-write window, independently approved commit SHA and separate deployment decision.",
+    "reviewer": {
+      "identity": "implementation_reviewer",
+      "result": "PASS",
+      "scope": "local implementation only"
+    },
+    "securityReviewer": {
+      "identity": "implementation_security_reviewer",
+      "result": "PASS",
+      "scope": "local implementation; AWS deployment NO-GO"
+    },
+    "focusedTests": "PASS: 6 tests (service-role split and pre-deploy gate)",
+    "diffCheck": "PASS"
+  }
+}

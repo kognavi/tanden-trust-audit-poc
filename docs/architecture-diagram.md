@@ -4,7 +4,7 @@
 
 ~~~mermaid
 flowchart LR
-    AR[AI Agent / SaaS Runtime] --> RC[Runtime Collector / Adapter<br/>planned]
+    AR[AI Agent / SaaS Runtime] --> RC[Runtime Collector / Adapter<br/>local + AgentCore]
     RC --> AE[AI Agent Evidence Profile]
     AE --> PS[EvidenceProcessingService]
     PS --> SC[JSON Schema validation]
@@ -40,7 +40,7 @@ flowchart LR
 
 実線は実装済みmoduleの責務を示しますが、production deploy済みという意味ではありません。
 
-AI Agent-specific runtime collectorはまだ未実装です。新しい `schemas/ai-agent-evidence.schema.json` はEvidence envelopeを定義し、既存のEvidenceProcessingServiceへ接続する前段のprofileです。
+Local fixture collectorとAmazon Bedrock AgentCore response adapterは実装済みです。両者は同じNormalized Agent Event contractとmapperから `schemas/ai-agent-evidence.schema.json` へ接続します。AgentCoreの実AWS invocationは未実施で、Human Approvalが必要です。
 
 ## Trust Boundary
 
@@ -74,7 +74,7 @@ Targetはproduction-orientedであり、未deploy部分を含みます。
 
 | Property | Current PoC | Target |
 |---|---|---|
-| AI Agent context | schema/profile added | live runtime collectors |
+| AI Agent context | schema/profile + local/AgentCore adapters | production ingestion/completeness |
 | Structural validation | implemented | ingestionでfail-closed |
 | Authenticity | local + AwsKmsProvider | least-privilege IAM / key policy / separation of duties |
 | Storage | local/S3 adapter + PgEvidenceStore | WORM retention + HA/backup |

@@ -1,0 +1,112 @@
+{
+  "gate": "G5",
+  "status": "COMPLETE",
+  "scope": "Loop 017B approved local/test PoC path",
+  "generatedAt": "2026-10-01T13:08:02.573Z",
+  "g4": {
+    "runId": "ecece0b3-4981-4d6e-859d-cb471941f243",
+    "lambdaRequestId": "79a84759-437b-4da0-a246-034a09db0126",
+    "bedrockRequestId": "f348dfd1-d25e-4bcf-8ae8-0ac523dda3e1",
+    "cloudTrailEventId": "a2beaeb9-8b15-45da-bb62-05c5b2a71b0d",
+    "cloudTrailReferenceSource": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g4-reconciliation.json"
+  },
+  "input": {
+    "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/lambda-response.json",
+    "sha256": "6b5cc899e7a43ab63edc2f459e15f8fb2dfcf320f863ad99c3730cad8bc32d46"
+  },
+  "schemas": {
+    "lambdaEnvelope": "PASS: existing collector strict envelope and fixed wrapper equality",
+    "normalizedAgentEvent": {
+      "isValid": true,
+      "errors": []
+    },
+    "evidence": {
+      "isValid": true,
+      "errors": []
+    }
+  },
+  "signing": {
+    "status": "PASS",
+    "provider": "LocalEcdsaProvider",
+    "canonicalization": "RFC 8785 JSON Canonicalization Scheme (JCS)",
+    "hashAlgorithm": "SHA-256",
+    "signatureAlgorithm": "ECDSA_SHA_256",
+    "kmsKeyId": null,
+    "signedAt": null,
+    "privateKeyPersisted": false,
+    "publicKeyFile": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/signing-public-key.pem"
+  },
+  "store": {
+    "status": "PASS",
+    "implementation": "local-demo-memory",
+    "receipt": {
+      "id": 1701,
+      "evidenceId": "evd-2026-301671",
+      "version": 1,
+      "digestHex": "e5bb8535b082321bb3c00198b49bdf3f8140ecde6256a1b648e62f22ba40702f",
+      "kmsKeyId": null,
+      "createdAt": "2026-10-01T01:29:49.421Z"
+    },
+    "exportedRecord": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/signed-store-record.json"
+  },
+  "ledger": {
+    "status": "PASS",
+    "implementation": "local-demo-double",
+    "eventId": "ledger-loop017b-evd-2026-301671",
+    "export": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/ledger-receipt.json",
+    "durableHashChainedLedger": false
+  },
+  "pipelineCounts": {
+    "collect": 1,
+    "sign": 1,
+    "store": 1,
+    "ledger": 1,
+    "reload": 1
+  },
+  "pipelineStages": [
+    "store",
+    "ledger",
+    "reload",
+    "verify-reloaded",
+    "verify-tampered"
+  ],
+  "verification": {
+    "existingStoreReread": "PASS",
+    "existingTamperCheck": "FAIL (expected)",
+    "diskExportReread": "PASS",
+    "diskExportTamperCheck": "FAIL (expected)",
+    "digestSha256": "e5bb8535b082321bb3c00198b49bdf3f8140ecde6256a1b648e62f22ba40702f"
+  },
+  "dataMinimization": {
+    "strictFixedWrapperEquality": "PASS",
+    "schemaChecks": "PASS",
+    "forbiddenPayloadFieldScan": "PASS",
+    "privateKeyAndAwsCredentialPatternScan": "PASS",
+    "rawPromptPersisted": false,
+    "rawModelOutputPersisted": false,
+    "rawToolArgumentsPersisted": false,
+    "containsPersonalData": false,
+    "containsSecrets": false,
+    "untrustedModelAssertionsPersisted": false
+  },
+  "networkAttempts": 0,
+  "additionalModelInferences": 0,
+  "agentCore": {
+    "status": "BLOCKED",
+    "separateFromLoop017B": true,
+    "historyModified": false
+  },
+  "warnings": [
+    "Store is the existing memory test implementation; disk record is a verification export, not PostgreSQL storage.",
+    "Ledger is the existing test double; exported receipt is not a durable hash-chained production ledger.",
+    "Signing uses an ephemeral local secp256k1 key; private key was not persisted.",
+    "AWS cleanup was not performed in G5."
+  ],
+  "publication": {
+    "sourceReportSha256": "6958cbb30ddf5f86ee0ddd1c732588a05d2a1ddb4462d05713b560c346f75a0c",
+    "changes": "Portable path and provenance references only; signed Evidence and public key copied byte-for-byte",
+    "originalLocalEvidenceUnchanged": true,
+    "originalArchivedOutsideGit": true
+  },
+  "awsCleanupStatus": "PENDING"
+}

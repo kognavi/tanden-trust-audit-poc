@@ -21,6 +21,7 @@
     "check:depcruise": "depcruise --config .dependency-cruiser.js lib",
     "check:structure": "npm run check:depcruise && npm run check:circular && npm run validate:knowledge && npm test",
     "demo:agentcore:process": "node scripts/process-agentcore-live-response.js",
+    "demo:lambda-nova:process": "node scripts/process-lambda-nova-response.js",
     "validate:knowledge": "node scripts/validate-knowledge-metadata.js",
     "context:generate": "node scripts/generate-context-pack.js",
     "spec:scaffold": "node scripts/scaffold-spec-from-context.js",
@@ -56,6 +57,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1093.0",
     "@aws-sdk/client-kms": "^3.1093.0",
     "@aws-sdk/client-s3": "^3.1093.0",
     "ajv": "8.20.0",

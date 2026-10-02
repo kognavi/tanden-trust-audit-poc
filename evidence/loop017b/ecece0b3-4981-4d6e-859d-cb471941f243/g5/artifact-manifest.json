@@ -1,0 +1,47 @@
+{
+  "gate": "G5",
+  "runId": "ecece0b3-4981-4d6e-859d-cb471941f243",
+  "pathBase": "repository-root",
+  "artifacts": [
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/README.md",
+      "bytes": 2080,
+      "sha256": "aa51d03b20c3574d19cade36abc65c2c8f855da1814076e67ef575775af3f729"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g4-reconciliation.json",
+      "bytes": 2429,
+      "sha256": "ceb6ff59b69d4f2516e91168f2f4e97c37b77ea89e0f463de82e692678c8ee63"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/ledger-receipt.json",
+      "bytes": 877,
+      "sha256": "ebe7075e12717305f377c0c4e4632f5b93fbdb65c1f7a7ccd319ad5eaee741b4"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/processing-summary.json",
+      "bytes": 1444,
+      "sha256": "76d97e75fb3d2b7db945aa2a7eb895bd602549b9075c45010b8eb691be17d596"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/signed-store-record.json",
+      "bytes": 2480,
+      "sha256": "dc6ce4e93da045533b64848abf84a93d12b65761cd94b6af1f66e6a6e4b2a173"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/signing-public-key.pem",
+      "bytes": 174,
+      "sha256": "15086501d40c43601df3ada33200e1027e636ccc9f2798a37669fd0776ee06fc"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/g5/verification-report.json",
+      "bytes": 3891,
+      "sha256": "13ab0c6ca9f766becbe405656ac359197cc321f2fe04fe036ec7ffe748a70ac2"
+    },
+    {
+      "path": "evidence/loop017b/ecece0b3-4981-4d6e-859d-cb471941f243/lambda-response.json",
+      "bytes": 2097,
+      "sha256": "6b5cc899e7a43ab63edc2f459e15f8fb2dfcf320f863ad99c3730cad8bc32d46"
+    }
+  ]
+}

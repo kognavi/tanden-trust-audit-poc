@@ -211,3 +211,6 @@ agentcore/.env.local
 
 # Local AI provider runtime opt-in
 **/agent-runtime.local.json
+
+# Local one-shot Loop 017B runs; selected portable evidence lives in evidence/loop017b/
+/loop017b-live/

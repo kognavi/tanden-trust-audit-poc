@@ -1,0 +1,76 @@
+{
+  "id": 1701,
+  "evidenceId": "evd-2026-301671",
+  "version": 1,
+  "evidence": {
+    "schemaVersion": "1.0.0",
+    "hashAlgorithm": "SHA-256",
+    "evidenceId": "evd-2026-301671",
+    "eventType": "AGENT_TOOL_CALL",
+    "occurredAt": "2026-10-01T01:29:49.421Z",
+    "sourceSystem": "aws-lambda-bedrock-nova-loop017b",
+    "actor": {
+      "type": "service",
+      "id": "loop017b-manual-demo",
+      "principalRef": "synthetic:principal/loop017b"
+    },
+    "agent": {
+      "agentId": "loop017b-lambda-wrapper",
+      "agentVersion": "1.0.0",
+      "framework": "lambda-converse-demo",
+      "promptConfigDigestSha256": "ec0e0ba2e591576940c85124d7c8114da2a0f8e89fcea4a548dcf612917c09d9"
+    },
+    "model": {
+      "provider": "aws-bedrock",
+      "modelId": "jp.amazon.nova-2-lite-v1:0",
+      "modelVersion": "v1:0"
+    },
+    "execution": {
+      "traceId": "trace-ecece0b3-4981-4d6e-859d-cb471941f243",
+      "sessionId": "ecece0b3-4981-4d6e-859d-cb471941f243",
+      "taskId": "lambda-79a84759-437b-4da0-a246-034a09db0126"
+    },
+    "policy": {
+      "policyId": "loop017b-fixed-noop",
+      "policyVersion": "1.0.0",
+      "decision": "allow",
+      "reasonCode": "FIXED_SYNTHETIC_TARGET"
+    },
+    "action": {
+      "toolName": "record_synthetic_noop",
+      "operation": "EXECUTE",
+      "target": "synthetic://loop-017b/resource/demo-1"
+    },
+    "approval": {
+      "required": false,
+      "status": "not_required"
+    },
+    "sideEffect": {
+      "category": "NONE",
+      "resource": "synthetic://loop-017b/resource/demo-1",
+      "outcome": "SUCCESS"
+    },
+    "contextReferences": [
+      {
+        "type": "INPUT",
+        "reference": "synthetic://loop-017b/fixed-input/v1",
+        "digestSha256": "ec0e0ba2e591576940c85124d7c8114da2a0f8e89fcea4a548dcf612917c09d9"
+      }
+    ],
+    "artifacts": [],
+    "metadata": {
+      "environment": "demo",
+      "containsPersonalData": false,
+      "containsSecrets": false,
+      "retentionClass": "demo-30d",
+      "notes": "Synthetic no-op observed by the Lambda wrapper; no external resource was changed."
+    }
+  },
+  "canonicalization": "RFC 8785 JSON Canonicalization Scheme (JCS)",
+  "hashAlgorithm": "SHA-256",
+  "digestHex": "e5bb8535b082321bb3c00198b49bdf3f8140ecde6256a1b648e62f22ba40702f",
+  "signature": "DebIWhMRCgVIE76tQHRBrrw8jVKcDqgxtuWCoDDysudc4BjMDMhy0WSrUzbWZKC0jNkOiS/ueEeT7u3ndlJrLg==",
+  "signingAlgorithm": "ECDSA_SHA_256",
+  "kmsKeyId": null,
+  "createdAt": "2026-10-01T01:29:49.421Z"
+}
